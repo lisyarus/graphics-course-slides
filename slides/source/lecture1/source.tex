@@ -11,6 +11,11 @@
 
 \usepackage{adjustbox}
 
+\usepackage{color}
+\usepackage{soul}
+
+\definecolor{blue}{rgb}{0,0,1}
+
 \makeatletter
 \newcommand{\slideimage}[1]{
   \begin{figure}
@@ -236,5 +241,32 @@
 \end{frame}
 
 \againframe<9>{what_is}
+
+\begin{frame}[label=clafssification]
+\frametitle{Грубая и неточная классификация}
+\pause
+\begin{itemize}
+\item \only<2>{2D / 3D} \pause \only<3->{2D / 2.5D / 3D}
+\pause
+\item Векторная / растровая
+\pause
+\item \only<5>{Realtime / offline} \pause \only<6->{Realtime / near real-time / offline}
+\pause
+\item Фотореалистичная / стилизованная
+\pause
+\item CPU / GPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=our_course]
+\frametitle{Чем мы будем заниматься?}
+\begin{itemize}
+\item \only<-1>{2D / 2.5D / 3D}\only<2->{{\color{blue}\underline{2D / 2.5D / 3D}}}
+\item Векторная / \only<-2>{растровая}\only<3->{{\color{blue}\underline{растровая}}}
+\item \only<-3>{Realtime}\only<4->{{\color{blue}\underline{Realtime}}} / near real-time / offline
+\item \only<-4>{Фотореалистичная / стилизованная}\only<5->{{\color{blue}\underline{Фотореалистичная / стилизованная}}}
+\item CPU / \only<-5>{GPU}\only<6->{{\color{blue}\underline{GPU}}}
+\end{itemize}
+\end{frame}
 
 \end{document}
