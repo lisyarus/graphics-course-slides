@@ -1,0 +1,240 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 1: Введение в курс}
+\date{2021}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}<1-2>[label=what_is]
+\frametitle{Что такое компьютерная графика?}
+\begin{itemize}
+\pause % 1
+\item Кинематограф
+\pause % 2
+\item Компьютерные игры
+\pause % 3
+\item Рисунки, concept art
+\pause % 4
+\item Графический интерфейс
+\pause % 5
+\item Визуализация данных
+\pause % 6
+\item Научная визуализация
+\pause % 7
+\item Карты
+\pause % 8
+\item И т.д.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{The Matrix Revolutions (2003)}}
+\begin{figure}
+\slideimage{matrix.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Avatar (2009)}}
+\begin{figure}
+\slideimage{avatar.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{The Avengers (2012)}}
+\begin{figure}
+\slideimage{avengers.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<3>{what_is}
+
+\begin{frame}
+\frametitle{\only<2>{Space Invaders (1978)}}
+\begin{figure}
+\slideimage{space-invaders.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Doom (1993)}}
+\begin{figure}
+\slideimage{doom.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Grand Theft Auto: Vice City (2002)}}
+\begin{figure}
+\slideimage{vice-city.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Civilization V (2010)}}
+\begin{figure}
+\slideimage{civ-5.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{The Witcher 3: Wild Hunt (2015)}}
+\begin{figure}
+\slideimage{witcher.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Cyberpunk 2077 (2020)}}
+\begin{figure}
+\slideimage{cyberpunk.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<4>{what_is}
+
+\begin{frame}
+\begin{figure}
+\slideimage{night.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}
+\slideimage{tunnel.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}
+\slideimage{forest.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<5>{what_is}
+
+\begin{frame}
+\frametitle{\only<2>{Mac OS Catalina}}
+\begin{figure}
+\slideimage{macos.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Windows 10}}
+\begin{figure}
+\slideimage{windows.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Europa Universalis 4}}
+\begin{figure}
+\slideimage{eu4.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Dear ImGui}}
+\begin{figure}
+\slideimage{imgui.png}
+\end{figure}
+\end{frame}
+
+\againframe<6>{what_is}
+
+\begin{frame}
+\frametitle{Популярность браузеров в 2002-2009}
+\begin{figure}
+\slideimage{browsers.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Карта землетресений}}
+\begin{figure}
+\slideimage{earthquakes.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{\only<2>{Количество случаев заражения COVID-19}}
+\begin{figure}
+\slideimage{covid.png}
+\end{figure}
+\end{frame}
+
+\againframe<7>{what_is}
+
+\begin{frame}
+\frametitle{Неустойчивость Рэлея — Тейлора}
+\begin{figure}
+\slideimage{fluids.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Молекулярные орбитали бензола}
+\begin{figure}
+\slideimage{benzene.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Симуляция напряжений в стенте методом конечных элементов}
+\begin{figure}
+\slideimage{stent.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<8>{what_is}
+
+\begin{frame}
+\frametitle{Схематическая карта}
+\begin{figure}
+\slideimage{map.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Спутниковая карта}
+\begin{figure}
+\slideimage{satellite.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Карта погоды}
+\begin{figure}
+\slideimage{weather.png}
+\end{figure}
+\end{frame}
+
+\againframe<9>{what_is}
+
+\end{document}
