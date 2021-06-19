@@ -292,7 +292,7 @@ GPU - Graphics Processing Unit
 \pause
 \item {\only<10->{\color{red}}Metal (Apple, 2014)}
 \pause
-\item {\only<10->{\color{red}}Vulkan (Khronos Group, 2016)}
+\item {\only<10->{\color{red}}Vulkan (Khronos Group, 2018)}
 \end{itemize}
 \end{frame}
 
@@ -332,7 +332,187 @@ GPGPU - General-Purpose Graphics Processing Unit
 \end{itemize}
 \end{frame}
 
-% TODO: GPU API history (OpenGL 1.0, OpenGL 3.2, Vulkan)
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.0}
+\begin{verbatim}
+for o in scene.objects:
+    glBegin(GL_TRIANGLES)
+    for t in o.triangles:
+        for v in t.vertices:
+            glColor3f(v.color)
+            glNormal3f(v.normal)
+            glVertex3f(v.position)
+    glEnd(GL_TRIANGLES)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item Данные хранятся в памяти CPU
+\pause
+\item Несколько OpenGL-вызовов на каждую вершину
+\pause
+\begin{itemize}
+\item GPU становятся быстрее $\Longrightarrow$ основное время тратится не на рисование, а на накладные расходы самих OpenGL-вызовов
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.0 (1992)}
+\begin{itemize}
+\item Предварительно записать список команд в отдельную сущность - display list
+\begin{itemize}
+\item Выполнить все команды из списка одной командой \begin{verbatim}glCallList\end{verbatim}
+\item Не любой OpenGL-вызов может быть частью display list'а
+\item Предок command queues в Vulkan и подобных API
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.0 (1992)}
+\begin{itemize}
+\item Вершины задаются OpenGL-вызовами
+\item Display lists
+\item Матрицы преобразований вершин: позиционирование объектов и камеры
+\item Fixed-function pipeline: настраиваемая, но не расширяемая последовательность операций
+\item Асинхронный API: команды выполнятся на GPU когда-нибудь
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.1 (1997)}
+\begin{itemize}
+\item Vertex array - спецификация формата и расположения вершин
+\begin{itemize}
+\item Нарисовать все вершины одной командой \begin{verbatim}glDrawArrays\end{verbatim}
+\item Вершины всё ещё хранятся на CPU
+\end{itemize}
+\pause
+\item Текстуры - изображения в памяти GPU, натягиваемые на полигоны
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.2 - 1.4 (1998 - 2002)}
+\begin{itemize}
+\item В текстурах можно записать очень много интересного: normal map, material map, bump map
+\item Хочется выполнять сложные вычисления на каждый пиксель
+\item $\Longrightarrow$ Texture environments - зачатки программируемости GPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.5 (2003)}
+\begin{itemize}
+\item Vertex buffer - возможность хранить вершины в памяти GPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 2.0 (2004)}
+\begin{itemize}
+\item Шейдеры: программы на C-подобном языке GLSL, компилируемые под конкретную GPU
+\item Заменяют fixed-function pipeline
+\begin{itemize}
+\item Необходимые части fixed-function pipeline остаются
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 2.0 (2004)}
+\begin{verbatim}
+// на старте
+for o in scene.objects:
+    o.createShader()
+    o.uploadVertices()
+
+// при рендеринге
+for o in scene.objects:
+    glUseProgram(o.shader)
+    glBindVertexArray(o.vertexArray)
+    glDrawArrays(o.vertexCount)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 3.0 (2008)}
+\begin{itemize}
+\item Огромная часть API объявлена deprecated
+\pause
+\item Transform feedback - возможность записать результат работы шейдеров обратно в вершинный буфер
+\begin{itemize}
+\item Зачатки GPGPU
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 3.1 (2009)}
+\begin{itemize}
+\item Объявленные deprecated возможности удалены
+\pause
+\item Instanced rendering - нарисовать много копий одного объекта в разных местах одной командой
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 3.2 (2009)}
+\begin{itemize}
+\item Механизм профилей
+\begin{itemize}
+\item Core profile
+\begin{itemize}
+\item Обязан поддерживаться
+\item Только функционал конкретной версии OpenGL
+\end{itemize}
+\item Compatibility profile
+\begin{itemize}
+\item Не обязан поддерживаться
+\item Функционал этой и всех предыдущих версий OpenGL
+\end{itemize}
+\end{itemize}
+\pause
+\item Геометрические шейдеры - возможность менять тип геометрии и количество вершин на лету
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 4.0 (2010)}
+\begin{itemize}
+\item Шейдеры тесселяции - увеличивают детализацию геометрии на лету
+\begin{itemize}
+\item Гораздо меньше возможностей, чем у геометрических шейдеров, зато быстрее
+\end{itemize}
+\pause
+\item Indirect drawing - можно вычислять количество вершин и их расположение в памяти на лету на GPU, и использовать вычисленные значения для команд рисования
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 4.1 - 4.7 (2010 - 2017)}
+\begin{itemize}
+\item Compute shaders - настоящее GPGPU внутри OpenGL
+\item Проработка и детализация API
+\item Атомарные операции в шейдерах
+\item Вливание расширений в стандарт OpenGL
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: Vulkan 1.1 (2018)}
+\begin{itemize}
+\item 700 строк кода, чтобы нарисовать один треугольник
+\pause
+\item Крайне низкоуровневый API
+\item Последовательности команд (command queues) в явном виде (display lists done right)
+\begin{itemize}
+\item Можно распараллелить генерацию command queues на несколько CPU
+\end{itemize}
+\pause
+\item Похож на DirectX 12, Metal
+\end{itemize}
+\end{frame}
 
 % TODO: OpenGL technicalities
 
