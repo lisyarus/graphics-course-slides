@@ -15,6 +15,7 @@
 \usepackage{soul}
 
 \definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -266,6 +267,32 @@
 \item \only<-3>{Realtime}\only<4->{{\color{blue}\underline{Realtime}}} / near real-time / offline
 \item \only<-4>{Фотореалистичная / стилизованная}\only<5->{{\color{blue}\underline{Фотореалистичная / стилизованная}}}
 \item CPU / \only<-5>{GPU}\only<6->{{\color{blue}\underline{GPU}}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label=api]
+\frametitle{Как использовать GPU? \only<2->{Графические API:}}
+GPU - Graphics Processing Unit
+\pause
+\pause
+\begin{itemize}
+\item Вендор-специфичные API (1980е - 1990е)
+\pause
+\item OpenGL (Silicon Graphics, 1992)
+\pause
+\begin{itemize}
+\item \only<-10>{OpenGL 3.3 (Khronos Group, 2010)}\only<11->{\color{blue}\underline{OpenGL 3.3 (Khronos Group, 2010)}}
+\end{itemize}
+\pause
+\item DirectX (Microsoft, 1995)
+\pause
+\begin{itemize}
+\item {\only<10->{\color{red}}DirectX 12 (Microsoft, 2015)}
+\end{itemize}
+\pause
+\item {\only<10->{\color{red}}Metal (Apple, 2014)}
+\pause
+\item {\only<10->{\color{red}}Vulkan (Khronos Group, 2016)}
 \end{itemize}
 \end{frame}
 
