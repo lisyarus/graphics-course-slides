@@ -586,18 +586,15 @@ for o in scene.objects:
 \begin{itemize}
 \item Заголовочный файл
 \begin{itemize}
-\item Linux: \verb|GL/gl.h| - до OpenGL +/- 1.3
-\begin{itemize}
-\item До OpenGL 4.6, если сделать \verb|#define GL_GLEXT_PROTOTYPES|
-\item На самом деле лежат в \verb|GL/glext.h|
-\end{itemize}
+\item Linux: \verb|GL/gl.h| - до OpenGL 1.3
 \pause
 \item Windows: \verb|GL/gl.h| - до OpenGL 1.1
-\begin{itemize}
-\item \verb|GL/glext.h| вместе с \verb|#define GL_GLEXT_PROTOTYPES| - до OpenGL 4.6
-\end{itemize}
 \pause
-\item MacOS: \verb|OpenGL/gl.h| - TODO
+\item MacOS: \verb|OpenGL/gl.h| - до OpenGL 2.1
+\begin{itemize}
+\item {\color{red}Не} \verb|OpenGL/OpenGL.h|
+\end{itemize}
+\item Все платформы: \verb|GL/glext.h| вместе с \verb|#define GL_GLEXT_PROTOTYPES| - до OpenGL 4.6
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -609,7 +606,7 @@ for o in scene.objects:
 \begin{itemize}
 \item Linux: \verb|libGL.so|
 \item Windows: \verb|opengl32.dll|
-\item MacOS: \verb|TODO|
+\item MacOS: \verb|OpenGL framework|
 \end{itemize}
 \pause
 \item Может не содержать функции всех версий OpenGL
