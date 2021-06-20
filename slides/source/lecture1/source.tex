@@ -361,7 +361,7 @@ for o in scene.objects:
 \begin{itemize}
 \item Предварительно записать список команд в отдельную сущность - display list
 \begin{itemize}
-\item Выполнить все команды из списка одной командой \begin{verbatim}glCallList\end{verbatim}
+\item Выполнить все команды из списка одной командой \verb|glCallList|
 \item Не любой OpenGL-вызов может быть частью display list'а
 \item Предок command queues в Vulkan и подобных API
 \end{itemize}
@@ -384,7 +384,7 @@ for o in scene.objects:
 \begin{itemize}
 \item Vertex array - спецификация формата и расположения вершин
 \begin{itemize}
-\item Нарисовать все вершины одной командой \begin{verbatim}glDrawArrays\end{verbatim}
+\item Нарисовать все вершины одной командой \verb|glDrawArrays|
 \item Вершины всё ещё хранятся на CPU
 \end{itemize}
 \pause
