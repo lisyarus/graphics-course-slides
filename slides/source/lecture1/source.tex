@@ -543,8 +543,90 @@ for o in scene.objects:
 \end{itemize}
 \end{frame}
 
-% TODO: OpenGL technicalities
+\begin{frame}
+\frametitle{Что такое OpenGL?}
+\begin{itemize}
+\item {\color{red}Не} библиотека
+\item Спецификация API (документ) на языке C
+\begin{itemize}
+\item Описание констант-перечислений (тэгов)
+\item Описание сигнатур функций и их семантики
+\end{itemize}
+\end{itemize}
+\end{frame}
 
-% TODO: Helper libraries
+\begin{frame}[fragile]
+\frametitle{Что такое реализация OpenGL?}
+\begin{itemize}
+\item Заголовочный файл, поставляемый системой или драйвером
+\begin{itemize}
+\item Определение типов, e.g. \verb|typedef unsigned int GLenum;|
+\item Определение констант, e.g. \verb|#define GL_TEXTURE_2D 0x0DE1|
+\item Объявление функций, e.g. \verb|void glBindTexture(GLenum target, GLuint texture);|
+\end{itemize}
+\pause
+\item Бинарная реализация объявленных функций (обычно - динамическая библиотека, исключение - Mesa GL), поставляемая системой или драйвером
+\begin{itemize}
+\item Может содержать непосредственную реализацию OpenGL как часть драйвера и общаться с GPU
+\item Может быть промежуточным звеном, маршрутизирующим вызов до драйвера
+\item Может быть заглушкой
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Что такое реализация OpenGL?}
+\begin{itemize}
+\item Заголовочный файл
+\begin{itemize}
+\item Linux: \verb|GL/gl.h| - до OpenGL ~1.3
+\begin{itemize}
+\item До OpenGL 4.6, если сделать \verb|#define GL_GLEXT_PROTOTYPES|
+\item На самом деле лежат в \verb|GL/glext.h|
+\end{itemize}
+\pause
+\item Windows: \verb|GL/gl.h| - до OpenGL ~1.1
+\begin{itemize}
+\item \verb|GL/glext.h| вместе с \verb|#define GL_GLEXT_PROTOTYPES| - до OpenGL 4.6
+\end{itemize}
+\pause
+\item MacOS: \verb|OpenGL/gl.h| - TODO
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Что такое реализация OpenGL?}
+\begin{itemize}
+\item Динамическая библиотека
+\begin{itemize}
+\item Linux: \verb|libGL.so|
+\item Windows: \verb|opengl32.dll|
+\item MacOS: \verb|TODO|
+\end{itemize}
+\pause
+\item Может не содержать функции всех версий OpenGL
+\begin{itemize}
+\item Под Linux обычно содержит
+\end{itemize}
+\item Остальные функции OpenGL нужно динамически загружать специальными платформенными средствами
+\item $\Longrightarrow$ Библиотеки-загрузчики OpenGL
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Загрузчики OpenGL}
+\begin{itemize}
+\item С и C++ specific, для других языков обычно встроено в обёртку над OpenGL
+\item \url{www.khronos.org/opengl/wiki/OpenGL_Loading_Library}
+\item Обычно содержат код, автоматически сгенерированный по XML-спецификации OpenGL
+\item Мы будем использовать GLEW
+\begin{itemize}
+\item Но вы можете использовать что угодно!
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+% TODO: Context & context-creation libraries
 
 \end{document}
