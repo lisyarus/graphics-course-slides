@@ -1,0 +1,205 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 1: Рисуем треугольник}
+\date{2021}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+\begin{itemize}
+\item Пишем вспомогательную функцию для создания шейдера
+\begin{verbatim}
+GLuint create_shader(GLenum shader_type,
+    const char * shader_source)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item \verb|glCreateShader|
+\item \verb|glShaderSource|
+\item \verb|glCompileShader|
+\end{itemize}
+\pause
+\item Функция должна бросать исключение (например, \verb|std::runtime_error|), если компиляция шейдера провалилась
+\begin{itemize}
+\item \verb|glGetShaderiv|
+\end{itemize}
+\pause
+\item Заведите строковую константу с любым значением, создайте фрагментный шейдер (\verb|GL_FRAGMENT_SHADER|) с помощью вашей функции и убедитесь, что бросается исключение
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+\begin{itemize}
+\item Бросаемое исключение должно содержать текст ошибки компиляции шейдера
+\pause
+\begin{itemize}
+\item \verb|glGetShaderiv|
+\item \verb|glGetShaderInfoLog|
+\item \verb|std::string info_log(info_log_length, '\0')|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+\begin{itemize}
+\item Пишем настоящий фрагментный (пиксельный) шейдер
+\pause
+\begin{verbatim}
+R"(#version 330 core
+
+layout (location = 0) out vec4 out_color;
+
+void main()
+{
+    out_color = vec4(1.0, 0.0, 0.0, 1.0);
+}
+)";
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+\begin{itemize}
+\item Пишем вершинный шейдер
+\pause
+\begin{verbatim}
+R"(#version 330 core
+
+const vec2 VERTICES[3] = vec2[3](
+    vec2(0.0, 0.0),
+    vec2(1.0, 0.0),
+    vec2(0.0, 1.0)
+);
+
+void main()
+{
+    gl_Position = vec4(VERTICES[gl_VertexID], 0.0, 1.0);
+}
+)";
+\end{verbatim}
+\pause
+\item Создаём вершинный шейдер (\verb|GL_VERTEX_SHADER|) с этим кодом
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+\begin{itemize}
+\item Пишем функцию создания шейдерной программы
+\item Программа = несколько скомпилированных шейдеров, слинкованных вместе
+\begin{verbatim}
+GLuint create_program(GLuint vertex_shader,
+    GLuint fragment_shader)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item \verb|glCreateProgram|
+\item \verb|glAttachShader|
+\item \verb|glLinkProgram|
+\item \verb|glGetProgramiv| (2 раза)
+\item \verb|glGetProgramInfoLog|
+\end{itemize}
+\pause
+\item Создаём программу, используя два созданных ранее шейдера
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+\begin{itemize}
+\item Создаём Vertex Array Object
+\item VAO содержит информацию о входных данных - расположение данных о вершинах, типы атттрибутов
+\item В нашем случае нужен только номинально
+\pause
+\begin{itemize}
+\item \verb|glGenVertexArrays|
+\end{itemize}
+\pause
+\item Рисуем треугольник (\verb|GL_TRIANGLES|), используя созданные программу и VAO
+\pause
+\begin{itemize}
+\item \verb|glUseProgram|
+\item \verb|glBindVertexArray|
+\item \verb|glDrawTriangles|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 7}
+\begin{itemize}
+\item Добавляем градиентное закрашивание
+\item Из вершинного шейдера во фрагментный можно передавать данные: они будут интерполироваться между вершинами
+\end{itemize}
+\pause
+\begin{verbatim}
+В вершинном шейдере:
+out vec3 color;
+void main()
+{
+    gl_Position = ...
+    color = ...
+}
+
+Во фрагментном шейдере:
+in vec3 color;
+void main()
+{
+    out_color = vec4(color, 1.0);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 8}
+\begin{itemize}
+\item Запрещаем интерполяцию переменных
+\pause
+\begin{verbatim}
+flat out vec3 color;
+
+flat in vec3 color;
+\end{verbatim}
+\pause
+\item Будет использоваться значение в последней вершине
+\item Можно настроить с помощью \verb|glProvokingVertex|
+\end{itemize}
+\end{frame}
+
+\end{document}
