@@ -1,0 +1,218 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 2: Графический конвейер, проекции, аффинные преобразования}
+\date{2021}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Растеризация}
+\begin{itemize}
+\item Растеризация -- превращение геометрического примитива (точки, линии, треугольника, прямоугольника, круга, и т.д.) в набор соответствующих ему пикселей на экране/изображении
+\item Превращение векторных данных в растровые
+\pause
+\item За нас её делает OpenGL!
+\pause
+\item Некоторые современные графические движки GPU (Unreal 5 Nanite) делают растеризацию сами с помощью compute шейдеров
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Растеризация: точка}
+\begin{itemize}
+\item Как растеризовать точку \begin{math}(x, y)\end{math}?
+\pause
+\begin{verbatim}
+set_pixel(round(x), round(y), color);
+\end{verbatim}
+\pause
+\item В OpenGL: \verb|GL_POINTS|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Растеризация: линия}
+\begin{itemize}
+\item Как растеризовать линию \begin{math}(x_1, y_1) \dots (x_2, y_2)\end{math}?
+\pause
+\item Алгоритм Брезенхэма
+\pause
+\item Есть вариация алгоритма для рисования окружностей
+\pause
+\item В OpenGL: \verb|GL_LINES|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Растеризация: прямоугольник}
+\begin{itemize}
+\item Как растеризовать прямоугольник \begin{math}[x_1\dots x_2]\times[y_1\dots y_2]\end{math}?
+\end{itemize}
+\pause
+\begin{verbatim}
+for (int x = round(x_1); x <= round(x_2); ++x) {
+    for (int y = round(y_1); y <= round(y_2); ++y) {
+        set_pixel(x, y, color);
+    }
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Растеризация: треугольник}
+\begin{itemize}
+\item Как растеризовать треугольник с вершинами \begin{math}(x_1, y_1), (x_2, y_2), (x_3, y_3)\end{math}?
+\pause
+\item Растеризуем ограничивающий прямоугольник, проверяя пиксели на вхождение в треугольник
+\pause
+\begin{verbatim}
+int xmin = min(round(x_1), round(x_2), round(x_3));
+int xmax = max(round(x_1), round(x_2), round(x_3));
+
+int ymin = min(round(y_1), round(y_2), round(y_3));
+int ymax = max(round(y_1), round(y_2), round(y_3));
+
+for (int x = xmin; x <= xmax; ++x) {
+    for (int y = ymin; y <= ymax; ++y) {
+        if (inside_triangle(x, y, ...))
+            set_pixel(x, y, color);
+    }
+}
+\end{verbatim}
+\pause
+\item В OpenGL: \verb|GL_TRIANGLES|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Растеризация: круг}
+\begin{itemize}
+\item Как растеризовать круг с центром \begin{math}(x_0, y_0)\end{math} и радиусом \begin{math}R\end{math}?
+\pause
+\item Растеризуем ограничивающий прямоугольник, проверяя пиксели на вхождение в круг
+\end{itemize}
+\pause
+\begin{verbatim}
+int xmin = round(x_0 - R);
+int xmax = round(x_0 + R);
+
+int ymin = round(y_0 - R);
+int ymax = round(y_0 + R);
+
+for (int x = xmin; x <= xmax; ++x) {
+    for (int y = ymin; y <= ymax; ++y) {
+        if (sqr(x - x_0) + sqr(y - y_0) <= sqr(R))
+            set_pixel(x, y, color);
+    }
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Растеризация: OpenGL}
+\begin{itemize}
+\item В современном OpenGL есть только три примитива для растеризации:
+\pause
+\item Точки: \verb|GL_POINTS|
+\pause
+\item Линии: \verb|GL_LINE_STRIP|, \verb|GL_LINE_LOOP|, \verb|GL_LINES|
+\pause
+\item Треугольники: \verb|GL_TRIANGLE_STRIP|, \verb|GL_TRIANGLE_FAN|, \verb|GL_TRIANGLES|
+\pause
+\item Для геометрических шейдеров: \verb|GL_LINE_STRIP_ADJACENCY|, \verb|GL_LINES_ADJACENCY|, \verb|GL_TRIANGLE_STRIP_ADJACENCY|, \verb|GL_TRIANGLES_ADJACENCY|
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1>[fragile,label=back_face_culling]
+\frametitle{Back-face culling}
+\begin{itemize}
+\item По умолчанию в OpenGL треугольники, вершины которых оказываются на экране в порядке обхода \textbf{по часовой стрелке}, {\color{red}не рисуются}
+\pause
+\begin{itemize}
+\item Чтобы не рисовать треугольники, которые всё равно будут скрыты другими треугольниками спереди
+\end{itemize}
+\pause
+\item Включить/выключить это поведение: \verb|glEnable(GL_CULL_FACE)| или \verb|glDisable(GL_CULL_FACE)|
+\pause
+\item Настроить, какие треугольники будут скрываться: \verb|glCullFace(GL_BACK)|, \verb|glCullFace(GL_FRONT)|, \verb|glCullFace(GL_FRONT_AND_BACK)|
+\pause
+\item Настроить, какие треугольники считаются \verb|FRONT|, а какие - \verb|BACK|: \verb|glFrontFace(GL_CCW)|, \verb|glFrontFace(GL_CW)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Back-face culling}
+\slideimage{back-face-culling.png}
+\end{frame}
+
+\againframe<2->{back_face_culling}
+
+\begin{frame}
+\frametitle{Группировка вершин по примитивам (primitive assembly)}
+\slideimage{primitives.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Графический конвейер (graphics pipeline)}
+\begin{itemize}
+\pause
+\item Входной поток вершин (vertex stream)
+\pause
+\item Вершинный шейдер: обрабатывает вершины по одной
+\begin{itemize}
+\item Должен записать \verb|vec4 gl_Position|
+\end{itemize}
+\pause
+\item Сборка примитивов (primitive assembly)
+\pause
+\item Преобразование в оконную систему координат (viewport transform)
+\begin{itemize}
+\item \begin{math}X: [-1, 1] \rightarrow [0, width]\end{math}
+\item \begin{math}Y: [-1, 1] \rightarrow [height, 0]\end{math} (-1 внизу, 1 вверху)
+\item Остальные две координаты пока пропустим
+\end{itemize}
+\pause
+\item Back-face culling
+\pause
+\item Растеризация примитивов: примитив превращается в набор пикселей
+\begin{itemize}
+\item Линейная интерполяция значений, переданных из вершинного шейдера во фрагментный
+\end{itemize}
+\pause
+\item Пиксельный (фрагментный) шейдер: обрабатывает пиксели по одному
+\end{itemize}
+\end{frame}
+
+\end{document}
