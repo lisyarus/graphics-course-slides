@@ -30,7 +30,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 2: Графический конвейер, проекции, аффинные преобразования}
+\subtitle{Лекция 2: Графический конвейер, шейдеры, аффинные преобразования}
 \date{2021}
 
 \begin{document}
@@ -140,6 +140,47 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{verbatim}
 \end{frame}
 
+\begin{frame}<1>[fragile,label=rasterization]
+\frametitle{Растеризация: OpenGL}
+\begin{itemize}
+\item Пиксель растеризуется, если центр пикселя содержится в треугольнике
+\pause
+\item Если у двух треугольников есть общее ребро (и они не пересекаются внутренностями), то
+\begin{itemize}
+\item Каждый пиксель будет принадлежать ровно одному треугольнику, т.е. не будет наложения
+\item Ни один пиксель не будет пропущен, т.е. не будет "дырок"
+\end{itemize}
+\pause
+\item Подробнее: \href{https://en.wikibooks.org/wiki/GLSL_Programming/Rasterization}{en.wikibooks.org/wiki/GLSL\_Programming/Rasterization}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Растеризация: OpenGL}
+\slideimage{pixel-covered.png}
+\end{frame}
+
+\againframe<2>{rasterization}
+
+\begin{frame}
+\frametitle{Растеризация: OpenGL}
+\slideimage{triangle-rasterization.png}
+\end{frame}
+
+\begin{frame}
+\frametitle{Растеризация: OpenGL}
+Не будет "дырок":
+\slideimage{triangle-rasterization-hole.png}
+\end{frame}
+
+\begin{frame}
+\frametitle{Растеризация: OpenGL}
+Не будет наложения пикселей:
+\slideimage{triangle-rasterization-overlap.png}
+\end{frame}
+
+\againframe<3>{rasterization}
+
 \begin{frame}[fragile]
 \frametitle{Растеризация: OpenGL}
 \begin{itemize}
@@ -201,7 +242,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \begin{itemize}
 \item \begin{math}X: [-1, 1] \rightarrow [0, width]\end{math}
 \item \begin{math}Y: [-1, 1] \rightarrow [height, 0]\end{math} (-1 внизу, 1 вверху)
-\item Остальные две координаты пока пропустим
+\item \verb|glViewport(0, 0, width, height)|
 \end{itemize}
 \pause
 \item Back-face culling
@@ -212,6 +253,58 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{itemize}
 \pause
 \item Пиксельный (фрагментный) шейдер: обрабатывает пиксели по одному
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Графический конвейер (graphics pipeline)}
+\begin{itemize}
+\item Мы пропустили много важных частей конвейера
+\item Будем их по чуть-чуть добавлять в течение курса
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Вершинный (vertex) шейдер}
+\begin{itemize}
+\pause
+\item Входные данные:
+\pause
+\begin{itemize}
+\item Аттрибуты вершин (мы позже узнаем, как их задавать) - свои для каждой вершины
+\pause
+\item Uniform-переменные - глобальные значения, не меняющиеся в течение одного вызова команды рисования (\verb|glDrawArrays|)
+\end{itemize}
+\pause
+\item Выходные данные:
+\begin{itemize}
+\item \verb|vec4 gl_Position|
+\pause
+\item Переменные, интерполированное значение которых попадёт во фрагментный (пиксельный) шейдер: \verb|out vec3 color|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Флагментный (пиксельный, fragment) шейдер}
+\begin{itemize}
+\pause
+\item Входные данные:
+\pause
+\begin{itemize}
+\item Проинтерполированные \verb|out|-переменные вершинного шейдера: \verb|in vec3 color|
+\pause
+\item \verb|gl_FragCoord| - координаты пикселя (\begin{math}-1 \dots 1\end{math})
+\pause
+\item И много других: \href{https://www.khronos.org/opengl/wiki/Fragment_Shader/Defined_Inputs}{khronos.org/opengl/wiki/Fragment\_Shader/Defined\_Inputs}
+\end{itemize}
+\pause
+\item Выходные данные:
+\begin{itemize}
+\item \verb|layout (location = 0) out vec4 out_color;| - выходной цвет в формате RGBA
+\pause
+\item Может быть несколько, об этом поговорим позже
+\end{itemize}
 \end{itemize}
 \end{frame}
 
