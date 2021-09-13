@@ -413,4 +413,371 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Четырёхмерные векторы?}
+\begin{itemize}
+\item GLSL поддерживает операции с матрицами и векторами размерностей вплоть до 4
+\item \verb|gl_Position| имеет 4 компоненты
+\pause
+\item Мы хотим рисовать двухмерные и трёхмерные объекты, зачем четвёртая координата?
+\pause
+\item Две причины:
+\pause
+\begin{itemize}
+\item Для перспективной проекции (следующая лекция)
+\pause
+\item Для аффинных преобразований
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинное пространство}
+\begin{itemize}
+\item Векторные (линейные) пространства - круто: большая теория, эффективные операции
+\pause
+\item Не очень подходит для того, чтобы моделировать пространство
+\pause
+\begin{itemize}
+\item Где в пространстве точка, соответствующая нулевому вектору?
+\pause
+\item Что такое сумма двух точек?
+\end{itemize}
+\pause
+\item Мысль: точки \begin{math}\neq\end{math} векторы
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинное пространство}
+\begin{itemize}
+\item Аффинное пространство: векторное пространство, в котором "забыли" нулевой вектор
+\pause
+\item Формальнее: аффинное пространство \begin{math}\mathbb A\end{math} над векторным пространством \begin{math}\mathbb V\end{math} - это:
+\pause
+\begin{itemize}
+\item Множество точек \begin{math}\mathbb A\end{math}
+\pause
+\item Операция "точка + вектор": \begin{math}\oplus: \mathbb A \times \mathbb V \rightarrow \mathbb A\end{math}
+\pause
+\item Операция "точка - точка": \begin{math}\ominus: \mathbb A \times \mathbb A \rightarrow \mathbb V\end{math}
+\pause
+\item Аксиомы, связывающие эти аксиомы с операциями векторного пространства
+
+\begin{math}(p\oplus v_1)\oplus v_2 = p\oplus(v_1+v_2)\end{math}
+\end{itemize}
+\pause
+\item Любую точку \begin{math}p_0\in \mathbb A\end{math} можно принять за начало координат
+\item Это даёт биекцию \begin{math}\mathbb A \rightarrow \mathbb V\end{math} по формуле \begin{math}p \mapsto p - p_0\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинное пространство}
+\begin{itemize}
+\item Множество решений уравнения \begin{math}Lx=0\end{math} в векторном пространстве - векторное подпространство \begin{math}\ker L\end{math}
+\pause
+\item Множество решений уравнения \begin{math}Lx=y\end{math} в векторном пространстве - \textbf{не} векторное подпространство
+\pause
+\item Множество решений уравнения \begin{math}Lx=y\end{math} в векторном пространстве - аффинное пространство над \begin{math}\ker L\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинные комбинации}
+\begin{itemize}
+\item Пусть есть набор точек \begin{math}p_1, \dots, p_N\end{math} и набор коэффициентов \begin{math}\lambda_1, \dots, \lambda_N\end{math}
+\pause
+\item Выберем начало координат \begin{math}p_0\end{math} и определим
+
+\begin{math}\sum \lambda_i p_i = p_0 + \sum \lambda_i (p_i - p_0) \end{math}
+\pause
+\item Теорема: если \begin{math}\sum \lambda_i = 1\end{math}, то результат не зависит от выбора \begin{math}p_0\end{math}
+\pause
+\item В этом случае \begin{math}q = \sum \lambda_i p_i\end{math} называется аффинной комбинацией точек \begin{math}p_i\end{math} с коэффициентами \begin{math}\lambda_i\end{math}
+\pause
+\item Коэффициенты \begin{math}\lambda_i\end{math} называются барицентрическими координатами точки \begin{math}q\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Линейная интерполяция}
+\begin{itemize}
+\item Линейная интерполяция = интерполяция, использующая барицентрические координаты как коэффициенты
+\pause
+\item Пусть есть точки \begin{math}p_i\end{math} и точка \begin{math}q = \sum \lambda_i p_i\end{math}
+\pause
+\item Пусть в точках \begin{math}p_i\end{math} задано значение некоторой величины \begin{math}f_i\end{math}
+\pause
+\item Линейная интерполяция величины \begin{math}f\end{math} в точке \begin{math}q\end{math} - значение \begin{math}\sum \lambda_i f_i\end{math}
+\pause
+\item Ровно это происходит при интерполяции значений, переданных из вершинного шейдера во фрагментный
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Выпуклые оболочки}
+\begin{itemize}
+\item Выпуклая комбинация: аффинная комбинация, в которой все коэффициенты неотрицательны \begin{math}\lambda_i \geq 0\end{math}
+\pause
+\item Множество всех выпуклых комбинаций набора точек = выпуклая оболочка
+\pause
+\item Выпуклая оболочка двух точек - отрезок между этими точками
+\pause
+\item Выпуклая оболочка трёх точек - треугольник с этими точками в качестве вершин
+\pause
+\item Выпуклая оболочка четырёх точек - тетраэдр с этими точками в качестве вершин
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинные преобразования}
+\begin{itemize}
+\item Линейные преобразования - сохраняют линейные комбинации векторов: \begin{math}S \left(\sum \lambda_i v_i\right) = \sum \lambda_i S v_i\end{math}
+\pause
+\item Аффинные преобразования - сохраняют аффинные комбинации точек: \begin{math}S \left(\sum \lambda_i p_i\right) = \sum \lambda_i S p_i\end{math}
+\pause
+\item При выборе начала координат \begin{math}p_0\end{math} преобразование \begin{math}S: \mathbb A \rightarrow \mathbb A\end{math} можно понимать как преобразование соответствующего векторного пространства
+\begin{math}S: \mathbb V \rightarrow \mathbb V\end{math} по формуле \begin{math}S(v) = S(p_0 + v) - p_0\end{math}
+\pause
+\item Можно показать, что в таком виде любое аффинное преобразование это линейное преобразование + сдвиг на фиксированный вектор:
+
+\begin{math}S(v) = Av + b\end{math}
+где
+\begin{itemize}
+\item \begin{math}A\end{math} - линейное преобразование пространства \begin{math}\mathbb V\end{math}
+\item \begin{math}b\end{math} - вектор из пространства \begin{math}\mathbb V\end{math}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинные преобразования}
+\begin{itemize}
+\item В коде аффинное преобразование пространства размерности \begin{math}N\end{math} можно представлять как пару \begin{math}(A,b)\end{math} из матрицы \begin{math}N\times N\end{math} и вектора размерности \begin{math}N\end{math}
+\pause
+\item Пара \begin{math}(A,b)\end{math} действует на точку/вектор \begin{math}v\end{math} по формуле
+
+\begin{math}(A, b) \cdot v = Av + b\end{math}
+\pause
+\item Композиция преобразований:
+
+\begin{math}(A_1, b_1) \cdot (A_2, b_2) \cdot v = (A_1, b_1) \cdot (A_2 v + b_2) = A_1 (A_2 v + b_2) + b_1 = (A_1 A_2) v + (A_1 b_2 + b_1) = (A_1 A_2, A_1 b_2 + b_1) \cdot v\end{math}
+\pause
+\item Тождественное преобразование:
+\begin{math}(\mathbb I, 0)\end{math}
+\pause
+\item Обратное преобразование:
+
+\begin{math}(A, b)^{-1} = (A^{-1}, -A^{-1}b)\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинные преобразования}
+\begin{itemize}
+\item Повсеместно используются для задания положения, ориентации и размера объектов
+\pause
+\item Векторная часть преобразования: положение 3D-объекта
+\pause
+\item Матричная часть преобразования: вращение и размер объекта
+\pause
+\item При чём тут четвёртая координата?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Однородные координаты}
+\begin{itemize}
+\item Трюк: можно вложить вектор размерности \begin{math}N\end{math} в пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}0\end{math} в качестве последней координаты
+\pause
+\item Трюк: можно вложить точку размерности \begin{math}N\end{math} в пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}1\end{math} в качестве последней координаты
+\pause
+\item Согласуется с операциями на векторах и точках
+\pause
+\item Согласуется с аффинными комбинациями
+\pause
+\item Позволяет представить аффинное преобразование \begin{math}N\end{math}-мерного пространства как матрицу \begin{math}(N+1)\times (N+1)\end{math}:
+
+\begin{math}
+\begin{pmatrix}
+A & b \\
+0 & 1
+\end{pmatrix}
+\end{math}
+\pause
+\item Можно применять как к точкам, так и к векторам (векторы игнорируют сдвиг на \begin{math}b\end{math})
+\pause
+\item Композиция преобразований = умножение матриц
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Точка в однородных координатах}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+p_1 \\
+p_2 \\
+p_3 \\
+1
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Вектор в однородных координатах}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+v_1 \\
+v_2 \\
+v_3 \\
+0
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аффинное преобразование в однородных координатах}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+A_{1,1} & A_{1,2} & A_{1,3} & b_1 \\
+A_{2,1} & A_{2,2} & A_{2,3} & b_2 \\
+A_{3,1} & A_{3,2} & A_{3,3} & b_3 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Матрица сдвига на фиксированный вектор}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+1 & 0 & 0 & t_x \\
+0 & 1 & 0 & t_y \\
+0 & 0 & 1 & t_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+p_x \\
+p_y \\
+p_z \\
+1
+\end{pmatrix}
+=
+\begin{pmatrix}
+p_x + t_x \\
+p_y + t_y\\
+p_z + t_z\\
+1
+\end{pmatrix}
+\end{math}
+
+\begin{math}
+\begin{pmatrix}
+1 & 0 & 0 & t_x \\
+0 & 1 & 0 & t_y \\
+0 & 0 & 1 & t_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+v_x \\
+v_y \\
+v_z \\
+0
+\end{pmatrix}
+=
+\begin{pmatrix}
+v_x\\
+v_y\\
+v_z\\
+0
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Матрица масштабирования на константу}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+s & 0 & 0 & 0 \\
+0 & s & 0 & 0 \\
+0 & 0 & s & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+p_x \\
+p_y \\
+p_z \\
+1
+\end{pmatrix}
+=
+\begin{pmatrix}
+s p_x\\
+s p_y\\
+s p_z\\
+1
+\end{pmatrix}
+\end{math}
+
+\begin{math}
+\begin{pmatrix}
+s & 0 & 0 & 0 \\
+0 & s & 0 & 0 \\
+0 & 0 & s & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+v_x \\
+v_y \\
+v_z \\
+0
+\end{pmatrix}
+=
+\begin{pmatrix}
+s v_x\\
+s v_y\\
+s v_z\\
+0
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Матрица поворота на угол в плоскости XY}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+\cos \theta & - \sin \theta & 0 & 0 \\
+\sin \theta & \cos \theta & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Аффинные преобразования: ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/Getting-started/Transformations}{learnopengl.com/Getting-started/Transformations}
+\item \href{https://open.gl/transformations}{open.gl/transformations}
+\item \href{https://en.wikipedia.org/wiki/Affine_space}{en.wikipedia.org/wiki/Affine\_space}
+\item \href{https://en.wikipedia.org/wiki/Affine_transformation}{en.wikipedia.org/wiki/Affine\_transformation}
+\end{itemize}
+\end{frame}
+
 \end{document}
