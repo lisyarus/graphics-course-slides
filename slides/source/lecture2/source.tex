@@ -273,7 +273,9 @@ for (int x = xmin; x <= xmax; ++x) {
 \begin{itemize}
 \item Аттрибуты вершин (мы позже узнаем, как их задавать) - свои для каждой вершины
 \pause
-\item Uniform-переменные - глобальные значения, не меняющиеся в течение одного вызова команды рисования (\verb|glDrawArrays|)
+\item Uniform-переменные - глобальные значения, не меняющиеся в течение одного вызова команды рисования (\verb|glDrawArrays|):
+
+\verb|uniform float scale|
 \end{itemize}
 \pause
 \item Выходные данные:
@@ -292,6 +294,8 @@ for (int x = xmin; x <= xmax; ++x) {
 \item Входные данные:
 \pause
 \begin{itemize}
+\item Uniform-переменные
+\pause
 \item Проинтерполированные \verb|out|-переменные вершинного шейдера: \verb|in vec3 color|
 \pause
 \item \verb|gl_FragCoord| - координаты пикселя (\begin{math}-1 \dots 1\end{math})
@@ -305,6 +309,107 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Может быть несколько, об этом поговорим позже
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Языки описания шейдеров}
+\begin{itemize}
+\item OpenGL - GLSL (GL Shading Language)
+\pause
+\item DirectX - HLSL (High-Level Shading Language)
+\pause
+\item DurectX (до 2012) - Cg (C for Graphics), deprecated
+\pause
+\item \href{https://en.wikipedia.org/wiki/Shading_language}{en.wikipedia.org/wiki/Shading\_language}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\begin{itemize}
+\item Похож на C
+\pause
+\item Типы данных:
+\pause
+\begin{itemize}
+\item Скалярные: \verb|bool|, \verb|int|, \verb|uint|, \verb|float|
+\pause
+\item Векторные: \verb|bvec2|, \verb|bvec3|, \verb|bvec4|, \verb|ivec2|, ..., \verb|uvec2|, ..., \verb|vec2|, ...
+\pause
+\item Матричные: \verb|mat2|, \verb|mat3|, \verb|mat4|, \verb|mat2x4|, ...
+\pause
+\item В GLSL 400 или с расширением \verb|GL_ARB_gpu_shader_fp64| есть \verb|double|, \verb|dvec2|, ..., \verb|dmat2|, ...
+\end{itemize}
+\pause
+\item Программа должна начинаться с \verb|#version <версия> [ <профиль> ]|
+\pause
+\item Программа должна содержать функцию \verb|void main()|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\begin{itemize}
+\item Есть стандартные операции: \verb|+|, \verb|-|, \verb|*|, \verb|/|, \verb|<|, \verb|==|, ...
+\pause
+\item Доступ к координатам векторов: \verb|a.x = b.y|
+\pause
+\item Доступ к элементам матриц: \verb|m[column][row]|
+\pause
+\item Есть полезные математические функции: \verb|pow|, \verb|sin|, \verb|cos|, \verb|dot|, \verb|cross|, \verb|length|, \verb|normalize|, ...
+\pause
+\item Можно умножать матрицу на вектор: \verb|matrix * vector|
+\pause
+\item Можно умножать матрицу на матрицу: \verb|matrix1 * matrix2|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\begin{itemize}
+\item Есть массивы: \verb|float array[5];|
+\pause
+\begin{itemize}
+\item Инициализация: \verb|float array[5] = float[5](0.0, 1.0, 2.0, 3.0, 4.0);|
+\end{itemize}
+\pause
+\item Константы (известные на момент компиляции): \verb|const float PI = 3.141592;|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\begin{itemize}
+\item Ветвление: \verb|if (condition) { ... } else { ... }|
+\pause
+\item Циклы: \verb|for (int i = 0; i < 10; ++i) { ... }|
+\begin{itemize}
+\item Число итераций цикла должно быть константой, известной на момент компиляции шейдера
+\item Не может зависеть от uniform-переменных, аттрибутов вершин, и т.д.
+\end{itemize}
+\pause
+\item Функции: \begin{verbatim}vec3 reflect(vec3 v, vec3 n) {
+    return v - 2.0 * n * dot(v, n);
+}\end{verbatim}
+\pause
+\begin{itemize}
+\item Могут вызывать другие функции
+\pause
+\item Рекурсия запрещена
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Полезные ресурсы о шейдерах}
+\begin{itemize}
+\item Туториал: \href{https://learnopengl.com/Getting-started/Shaders}{learnopengl.com/Getting-started/Shaders}
+\item Туториал: \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial}{lighthouse3d.com/tutorials/glsl-tutorial}
+\pause
+\item Книжка-учебник с большим количеством примеров сложных шейдеров: \href{https://thebookofshaders.com/00/}{The Book of Shaders}
+\pause
+\item Онлайн-редактор шейдеров: \href{https://shadertoy.com/}{shadertoy.com}
 \end{itemize}
 \end{frame}
 
