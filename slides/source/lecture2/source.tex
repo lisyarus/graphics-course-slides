@@ -30,7 +30,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 2: Графический конвейер, шейдеры, аффинные преобразования}
+\subtitle{Лекция 2: Растеризация, графический конвейер, шейдеры, аффинные преобразования}
 \date{2021}
 
 \setbeamertemplate{footline}[frame number]
@@ -290,7 +290,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Флагментный (пиксельный, fragment) шейдер}
+\frametitle{Фрагментный (пиксельный, fragment) шейдер}
 \begin{itemize}
 \pause
 \item Входные данные:
@@ -423,9 +423,11 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Мы хотим рисовать двухмерные и трёхмерные объекты, зачем четвёртая координата?
 \pause
-\item Две причины:
+\item Три причины:
 \pause
 \begin{itemize}
+\item Для некоторых типов данных: кватернионы, цвета (rgba)
+\pause
 \item Для перспективной проекции (следующая лекция)
 \pause
 \item Для аффинных преобразований
@@ -591,9 +593,9 @@ for (int x = xmin; x <= xmax; ++x) {
 \begin{frame}[fragile]
 \frametitle{Однородные координаты}
 \begin{itemize}
-\item Трюк: можно вложить вектор размерности \begin{math}N\end{math} в пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}0\end{math} в качестве последней координаты
+\item Трюк: можно вложить вектор размерности \begin{math}N\end{math} в векторное пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}0\end{math} в качестве последней координаты
 \pause
-\item Трюк: можно вложить точку размерности \begin{math}N\end{math} в пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}1\end{math} в качестве последней координаты
+\item Трюк: можно вложить точку размерности \begin{math}N\end{math} в векторное пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}1\end{math} в качестве последней координаты
 \pause
 \item Согласуется с операциями на векторах и точках
 \pause
