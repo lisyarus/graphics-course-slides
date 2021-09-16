@@ -318,6 +318,22 @@ glBufferData(GL_ARRAY_BUFFER,
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: шейдер}
+\begin{verbatim}
+#version 330 core
+
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec4 color;
+layout (location = 3) in int materialID;
+
+void main() {
+    ...
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Аттрибуты вершин}
 У каждого вершинного аттрибута есть
 \begin{itemize}
