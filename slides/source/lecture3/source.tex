@@ -1,0 +1,320 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 3: Объекты OpenGL, буферы, аттрибуты вершин, перспективная проекция}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Объекты OpenGL}
+\begin{itemize}
+\item Шейдеры, шейдерные программы - программируемая часть конвейера
+\pause
+\item Буферы - хранят данные на GPU
+\pause
+\item Vertex Array - описывают аттрибуты вершин
+\pause
+\item Текстуры - изображения, которые можно читать из шейдера, и в которые можно рисовать
+\pause
+\item Renderbuffer - буферы, в которые можно рисовать
+\pause
+\item Framebuffer - содержат настройки рисования в текстуры и renderbuffer'ы
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Создание/удаление объектов OpenGL}
+\begin{itemize}
+\item Объект представляется идентификатором типа \verb|GLuint|
+\begin{itemize}
+\item Id уникален среди объектов одного типа (шейдеры, программы, ...)
+\end{itemize}
+\pause
+\item Шейдеры и программы:
+\begin{itemize}
+\item \verb|glCreateShader()|/\verb|glDeleteShader(shader)|
+\item \verb|glCreateProgram()|/\verb|glDeleteProgram(program)|
+\end{itemize}
+\pause
+\item Остальные объекты:
+\begin{verbatim}
+glGenBuffers(count, ptr)/glDeleteBuffers(count, ptr)
+glGenVertexArrays/glDeleteVertexArrays
+glGenTextures/glDeleteTextures
+glGenRenderbuffers/glDeleteRenderbuffers
+glGenFramebuffers/glDeleteFramebuffers
+\end{verbatim}
+\pause
+\begin{itemize}
+\item Можно создать/удалить один объект:
+\begin{verbatim}
+GLuint texture;
+glGenTextures(1, &texture);
+...
+glDeleteTexture(1, &texture);
+\end{verbatim}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Объекты OpenGL}
+\begin{itemize}
+\item Подразумевается, что объекты переиспользуются по максимуму
+\item Не нужно создавать новую текстуру каждый кадр - создайте один раз и переиспользуйте её
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Объекты OpenGL с нулевым id}
+\begin{itemize}
+\item Как правило, объект с нулевым id считается несуществующим (как нулевой указатель)
+\pause
+\item Исключения:
+\begin{itemize}
+\item Framebuffer с нулевым id - default framebuffer, рисует в окно, привязанное к контексту OpenGL
+\pause
+\item В OpenGL ES: Vertex Array с нулевым id - ничем не отличается от других vertex array'ев, но существует (создан) по умолчанию
+\end{itemize}
+\pause
+\item Функции создания объектов никогда не возвращают нулевой id
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Работа с объектами OpenGL}
+\begin{itemize}
+\item Почти всегда чтобы работать с объектом, нужно сделать его "текущим"
+\begin{itemize}
+\item Текущий объект запоминается в контексте OpenGL
+\item Если вы работаете с одним контекстом, можно считать, что id текущего объекта - глобальная константа
+\end{itemize}
+\pause
+\item Некоторые функции не требуют выставления объекта текущим: \verb|glShaderSource|, \verb|glCompileShader|, \verb|glLinkProgram|, ...
+\pause
+\item Некоторые объекты нельзя сделать текущими - шейдеры
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Работа с объектами OpenGL}
+\begin{itemize}
+\item Сделать программу текущей: \verb|glUseProgram(program)|
+\begin{itemize}
+\item Функции \verb|glGetUniformLocation|, \verb|glUniform1f|, ... работают с текущей программой
+\end{itemize}
+\pause
+\item Сделать vertex array текущим: \verb|glBindVertexArray(vao)|
+\begin{itemize}
+\item Функции работы с vertex array используют текущий vertex array
+\end{itemize}
+\pause
+\item Функции рисования (\verb|glDrawArrays|) используют текущую шейдерную программу и текущий vertex array
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Работа с объектами OpenGL}
+\begin{itemize}
+\item Для буферов, текстур, framebuffer'ов и renderbuffer'ов нет одного текущего объекта, но есть текущий объект для конкретного target'а
+\pause
+\item Можно считать, что есть словарь \verb|Target -> Id| текущих объектов
+\pause
+\item Для каждого вида объектов (буферы, текстуры, ...) есть отдельный словарь и отдельный набор возможных значений Target
+\pause
+\item Смысл и особенности разных значений Target зависят от вида объекта
+\pause
+\item \verb|glBindBuffer(target, id)|
+\item \verb|glBindTexture(target, id)|
+\item \verb|glBindRenderbuffer(target, id)|
+\item \verb|glBindFramebuffer(target, id)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы}
+\begin{itemize}
+\item Могут хранить произвольные данные на GPU
+\pause
+\item \verb|glGenBuffers|/\verb|glDeleteBuffers|
+\pause
+\item Возможные значения target для \verb|glBindBuffer|:
+\begin{itemize}
+\item \verb|GL_ARRAY_BUFFER| (VBO) - массив вершин
+\pause
+\item \verb|GL_ELEMENT_ARRAY_BUFFER| (EBO) - массив индексов вершин
+\pause
+\item \verb|GL_UNIFORM_BUFFER| (UBO) - массив значений uniform-переменных
+\pause
+\item ...и другие
+\end{itemize}
+\pause
+\item Текущий \verb|GL_ELEMENT_ARRAY_BUFFER| хранится не глобально, а в текущем VAO
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы: запись данных}
+\begin{itemize}
+\item Загрузить данные в буфер:
+\begin{verbatim}
+glBufferData(GLenum target, GLsizeiptr size,
+    const GLvoid * data, GLenum usage)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item \verb|target| - \verb|GL_ARRAY_BUFFER| и т.п.
+\item \verb|size| - размер данных в байтах
+\item \verb|data| - указатель на данные
+\item \verb|usage| - подсказка драйверу о том, как данные будут использоваться
+\end{itemize}
+\pause
+\item Если \verb|data = nullptr|, буфер будет выделен, но данные будут не инициализированы
+\pause
+\item Если буфер уже содержал данные, они заменяются новыми (и происходит реаллокация памяти)
+\pause
+\item После вызова \verb|glBufferData| с данными по указателю \verb|data| можно делать всё, что угодно (в т.ч. удалить)
+\item Копирование данных в память GPU тоже происходит асинхронно
+\pause
+\begin{itemize}
+\item \begin{math}\Rightarrow\end{math} Драйвер, скорее всего, сначала копирует данные в собственную память
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы: параметр usage}
+\begin{table}
+\centering
+\begin{tabular}{ c c c }
+ \verb|GL_STATIC_DRAW| & \verb|GL_STATIC_READ| & \verb|GL_STATIC_COPY| \\ 
+ \verb|GL_DYNAMIC_DRAW| & \verb|GL_DYNAMIC_READ| & \verb|GL_DYNAMIC_COPY| \\
+ \verb|GL_STREAM_DRAW| & \verb|GL_STREAM_READ| & \verb|GL_STREAM_COPY|
+\end{tabular}
+\end{table}
+\pause
+\begin{itemize}
+\item Данные будут обновляться
+\begin{itemize}
+\item \verb|STATIC| - один раз
+\item \verb|DYNAMIC| - иногда
+\item \verb|STREAM| - почти каждый кадр
+\end{itemize}
+\pause
+\item Буфер будет использоваться для:
+\begin{itemize}
+\item \verb|DRAW| - записи данных в него
+\item \verb|READ| - чтения данных из него
+\item \verb|COPY| - и записи, и чтения
+\end{itemize}
+\pause
+\item Это только подсказка драйверу и не влияет на корректность работы
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы: запись и чтение данных}
+\begin{itemize}
+\item Загрузить данные в часть буфера:
+\begin{verbatim}
+glBufferSubData(GLenum target, GLintptr offset,
+    GLsizeiptr size, const GLvoid * data)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item Гарантированно не реаллоцирует память GPU
+\end{itemize}
+\pause
+\item Прочитать данные из буфера:
+\begin{verbatim}
+glGetBufferSubData(GLenum target, GLintptr offset,
+    GLsizeiptr size, GLvoid * data)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item К моменту выхода из этой функции данные уже прочитаны
+\item \begin{math}\Rightarrow\end{math} Синхронная функция, блокирующая исполнение
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Mapped buffer}
+\begin{itemize}
+\item Можно получить виртуальный указатель на буфер или его часть и пользоваться им для чтения/записи
+\pause
+\item \verb|glMapBuffer(target, access)| - возвращает mapped указатель
+\item \verb|access| может принимать значения
+\begin{itemize}
+\item \verb|GL_READ_ONLY| - по указателю можно читать
+\item \verb|GL_WRITE_ONLY| - по указателю можно писать
+\item \verb|GL_READ_WRITE| - по указателю можно читать и писать
+\end{itemize}
+\pause
+\item \verb|glUnmapBuffer(target)|
+\pause
+\item Между \verb|glMapBuffer| и \verb|glUnmapBuffer| работать с буфером (загружать данные другими методами, использовать данные для рисования) нельзя
+\pause
+\item После \verb|glUnmapBuffer| mapped указатель использовать нельзя
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы: типичный пример использования}
+\begin{verbatim}
+GLuint vbo;
+glGenBuffers(1, &vbo);
+
+std::vector<vertex> vertices;
+...
+
+glBindBuffer(GL_ARRAY_BUFFER, vbo);
+glBufferData(GL_ARRAY_BUFFER,
+    vertices.size() * sizeof(vertices[0]),
+    vertices.data(), GL_STATIC_DRAW);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Buffer_Object}{khronos.org/opengl/wiki/Buffer\_Object}
+\item \href{https://www.songho.ca/opengl/gl_vbo.html}{songho.ca/opengl/gl\_vbo.html}
+\end{itemize}
+\end{frame}
+
+\end{document}
