@@ -527,7 +527,7 @@ program = createProgram()
 vertices = generateVertices()
 vbo = createVBO(vertices)
 vao = createVAO()
-setupVAO(vao)
+setupVAO(vao, vbo)
 
 // Рендеринг:
 glUseProgram(program)
@@ -537,6 +537,106 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 \pause
 \begin{itemize}
 \item \href{https://www.khronos.org/opengl/wiki/Vertex_Specification}{khronos.org/opengl/wiki/Vertex\_Specification}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Индексированный рендеринг}
+\slideimage{spheres.png}
+\begin{itemize}
+\item В моделях одна вершина часто входит в несколько треугольников (в среднем, 6)
+\pause
+\item Если использовать \verb|GL_TRIANGLES|, придётся копировать каждую вершину несколько раз
+\pause
+\item \verb|GL_TRIANGLE_STRIP| и т.п. только частично решают проблему
+\pause
+\item \begin{math}\Rightarrow\end{math} Индексированный рендеринг
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Индексированный рендеринг}
+\begin{itemize}
+\item При обычном (не индексированном) рендеринге индексы входных вершин берутся напрямую из параметров \verb|glDrawArrays|: \verb|first|, \verb|first + 1|, \verb|first + 2|, \verb|...|, \verb|first + count - 1|
+\pause
+\item При индексированном рендеринге индексы описываются напрямую
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Индексированный рендеринг: квадрат}
+\slideimage{quad.png}
+\pause
+\begin{itemize}
+\item Без индексов, \verb|GL_TRIANGLES|:
+\begin{itemize}
+\item Вершины: \verb|v0, v1, v2, v1, v2, v3|
+\end{itemize}
+\pause
+\item Без индексов, \verb|GL_TRIANGLE_STRIP|:
+\begin{itemize}
+\item Вершины: \verb|v0, v1, v2, v3|
+\end{itemize}
+\pause
+\item С индексами, \verb|GL_TRIANGLES|:
+\begin{itemize}
+\item Вершины: \verb|v0, v1, v2, v3|
+\item Индексы: \verb|0, 1, 2, 2, 1, 3|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Индексированный рендеринг}
+\begin{itemize}
+\item Индексы хранятся в \verb|GL_ELEMENT_ARRAY_BUFFER|
+\item id текущего \verb|GL_ELEMENT_ARRAY_BUFFER| хранится в текущем VAO
+\pause
+\begin{verbatim}
+glDrawElements(GLenum mode, GLsizei count,
+    GLenum type, const GLvoid * indices)
+\end{verbatim}
+\pause
+\item \verb|mode| - как в \verb|glDrawArrays|: \verb|GL_TRIANGLES|, ...
+\pause
+\item \verb|count| - количество индексов
+\pause
+\item \verb|type| - тип индексов: \verb|GL_UNSIGNED_BYTE|, \verb|GL_UNSIGNED_SHORT|, \verb|GL_UNSIGNED_INT|
+\pause
+\item \verb|indices| - смещение в текущем \verb|GL_ELEMENT_ARRAY_BUFFER| до места, где начинаются индексы
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Индексированный рендеринг: пример}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+// Инициализация:
+program = createProgram()
+vertices, indices = generateMesh()
+vbo = createBuffer(vertices)
+ebo = createBuffer(indices)
+vao = createVAO()
+
+glBindVertexArray(vao)
+glBindBuffer(GL_ARRAY_BUFFER, vbo)
+// настраиваем аттрибуты
+glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
+
+// Рендеринг:
+glUseProgram(program)
+glBindVertexArray(vao)
+glDrawElements(GL_TRIANGLES, count,
+    GL_UNSIGNED_SHORT, (void*)(0))
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Индексированный рендеринг: ссылки}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Vertex_Rendering#Basic_Drawing}{khronos.org/opengl/wiki/Vertex\_Rendering\#Basic\_Drawing}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-9-vbo-indexing}{opengl-tutorial.org/intermediate-tutorials/tutorial-9-vbo-indexing}
 \end{itemize}
 \end{frame}
 
