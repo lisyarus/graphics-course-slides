@@ -317,4 +317,227 @@ glBufferData(GL_ARRAY_BUFFER,
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин}
+У каждого вершинного аттрибута есть
+\begin{itemize}
+\item Индекс - \verb|0, 1, ... GL_MAX_VERTEX_ATTRIBS|
+\pause
+\begin{itemize}
+\item \verb|GL_MAX_VERTEX_ATTRIBS| \begin{math}\geq\end{math} 16
+\end{itemize}
+\pause
+\item Состояние - включен/выключен
+\pause
+\item Формат:
+\begin{itemize}
+\item Количество компонент - 1, 2, 3, 4
+\pause
+\item Тип - \verb|GL_BYTE|, \verb|GL_UNSIGNED_BYTE|, \verb|GL_SHORT|, \verb|GL_UNSIGNED_SHORT|, \verb|GL_INT|, \verb|GL_UNSIGNED_INT|, \verb|GL_HALF_FLOAT|, \verb|GL_FLOAT|, \verb|GL_DOUBLE|
+\pause
+\item Нормированный / не нормированный
+\end{itemize}
+\pause
+\item Расположение данных:
+\begin{itemize}
+\item Адрес начала данных (на GPU)
+\item Расстояние (в байтах) между значениями этого аттрибута, соответствующими соседним вершинам
+\end{itemize}
+\pause
+\item Всё это хранится в vertex array
+\pause
+\item \verb|glEnableVertexAttribArray(index)| - включить аттрибут
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Нормированность аттрибута}
+\begin{itemize}
+\item Как интерпретировать значение аттрибута, который в шейдере объявлен как floating-point (\verb|float|, \verb|vec3|, и т.п.), но в данных он хранится как целочисленный?
+\pause
+\item 2 варианта:
+\begin{itemize}
+\item Передавать, как есть, делая преобразование \verb|int -> float|
+\pause
+\item Преобразовывать диапазон целочисленных значений в \begin{math}[-1, 1]\end{math} (для знаковых) или \begin{math}[0, 1]\end{math} (для беззнаковых)
+\verb|unsigned short: x -> x / 65535|
+\verb|short: x -> (2 x + 1) / 65535|
+\end{itemize}
+\pause
+\item Полезно для передачи цвета: \verb|0 .. 255| превращаются в стандартные для OpenGL \verb|0.0 .. 1.0|
+\pause
+\item Полезно для компактного хранения аттрибутов
+\pause
+\item Имеет смысл только для floating-point аттрибутов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: floating-point}
+\begin{verbatim}
+glVertexAttribPointer(GLuint index, GLint size,
+    GLenum type, GLboolean normalized,
+    GLsizei stride, const GLvoid * pointer)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item \verb|index| - индекс аттрибута
+\pause
+\item \verb|size| - размерность (число компонент)
+\pause
+\item \verb|type| - тип компонент
+\pause
+\item \verb|normalized| - нормированный или нет
+\pause
+\item \verb|stride| - расстояние между соседними значениями
+\pause
+\item \verb|pointer| - указатель на данные
+\pause
+\begin{itemize}
+\item На самом деле, \verb|pointer| - сдвиг относительно начала памяти текущего \verb|GL_ARRAY_BUFFER|
+\item Например, если данные этого аттрибута начинаются на 12ом байте текущего \verb|GL_ARRAY_BUFFER|, нужно передать \verb|(const void *)(12)|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: целочисленные}
+\begin{verbatim}
+glVertexAttribIPointer(GLuint index, GLint size,
+    GLenum type,
+    GLsizei stride, const GLvoid * pointer)
+\end{verbatim}
+\begin{itemize}
+\item Всё то же самое, но нет параметра \verb|normalized|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: stride}
+\begin{itemize}
+\item Пусть \verb|start| - смещение, указанное в параметре \verb|pointer| функции \verb|glVertexAttribPointer|
+\item Тогда соответстующий аттрибут вершины с номером \verb|i| будет взят по смещению \verb|start + stride * i|
+\pause
+\begin{itemize}
+\item Нулевая вершина: \verb|start|
+\item Первая вершина: \verb|start + stride|
+\item Вторая вершина: \verb|start + 2 * stride|
+\item И т.д.
+\end{itemize}
+\pause
+\item Если \verb|stride = 0|, \verb|stride| считается равным размеру аттрибута \verb|stride = size * sizeof(type)|
+\begin{itemize}
+\item Например, для \verb|size = 3| и \verb|type = GL_UNSIGNED_INT|, \verb|stride| будет вычислен как \verb|stride = 3 * sizeof(unsigned int) = 3 * 4 = 12|
+\end{itemize}
+\pause
+\item Нужен для гибкости хранения аттрибутов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: пример array-of-structs, один буфер}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+struct vertex {
+    float position[3];
+    float normal[3];
+    unsigned char color[4];
+};
+vertex vertices[N];
+
+glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+glEnableVertexAttribArray(0);
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+    sizeof(vertex), (void*)(0));
+
+glEnableVertexAttribArray(1);
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+    sizeof(vertex), (void*)(12));
+
+glEnableVertexAttribArray(2);
+glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+    sizeof(vertex), (void*)(24));
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: пример struct-of-arrays, один буфер}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+float positions[3 * N];
+float normal[3 * N];
+unsigned char color[4 * N];
+
+glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+glEnableVertexAttribArray(0);
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+    0, (void*)(0));
+
+glEnableVertexAttribArray(1);
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+    0, (void*)(12 * N));
+    
+glEnableVertexAttribArray(2);
+glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+    0, (void*)(24 * N));
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: пример struct-of-arrays, три буфера}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+float positions[3 * N];
+float normal[3 * N];
+unsigned char color[4 * N];
+
+glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
+glEnableVertexAttribArray(0);
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+    0, (void*)(0));
+
+glBindBuffer(GL_ARRAY_BUFFER, normal_vbo);
+glEnableVertexAttribArray(1);
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+    0, (void*)(0));
+
+glBindBuffer(GL_ARRAY_BUFFER, color_vbo);
+glEnableVertexAttribArray(2);
+glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+    0, (void*)(0));
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: как хранить?}
+\begin{itemize}
+\item Если не можете выбрать, используйте array-of-structs
+\pause
+\item Если часть аттрибутов постоянны, а другую часть нужно иногда обновлять - разделите эти части по двум разным VBO
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: пример полностью}
+\begin{verbatim}
+// Инициализация:
+program = createProgram()
+vertices = generateVertices()
+vbo = createVBO(vertices)
+vao = createVAO()
+setupVAO(vao)
+
+// Рендеринг:
+glUseProgram(program)
+glBindVertexArray(vao)
+glDrawArrays(GL_TRIANGLES, 0, count)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Vertex_Specification}{khronos.org/opengl/wiki/Vertex\_Specification}
+\end{itemize}
+\end{frame}
+
 \end{document}
