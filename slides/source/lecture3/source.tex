@@ -10,6 +10,7 @@
 \graphicspath{ {./images/} }
 
 \usepackage{tikz}
+\usepackage{xifthen}
 
 \usepackage{adjustbox}
 
@@ -661,15 +662,76 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 \begin{frame}[fragile]
 \frametitle{Индексированный рендеринг}
 \begin{itemize}
-\item При обычном (не индексированном) рендеринге индексы входных вершин берутся напрямую из параметров \verb|glDrawArrays|: \verb|first|, \verb|first + 1|, \verb|first + 2|, \verb|...|, \verb|first + count - 1|
+\item \verb|glDrawArrays(mode, 3, 5)|:
+\begin{center}
+\begin{tikzpicture}
+\foreach \x in {0, ..., 9}
+{
+\ifthenelse{\x > 2 \AND \x < 8}
+{\filldraw[fill=red!40!white, draw=black,thick] (\x, 0) rectangle (\x + 1.0, 0.5);}
+{\draw[black,thick] (\x, 0) rectangle (\x + 1.0, 0.5);}
+
+\node[] at (\x + 0.5, 0.25) {v\x};
+}
+\end{tikzpicture}
+\end{center}
 \pause
-\item При индексированном рендеринге индексы описываются напрямую
+
+\vspace{1cm}
+
+\item \verb|glDrawElements(mode, ...)|:
+\begin{center}
+\begin{tikzpicture}
+\foreach \x in {0, ..., 9}
+{
+\ifthenelse{\x = 6 \OR \x = 3 \OR \x = 4 \OR \x = 0 \OR \x = 8}
+{\filldraw[fill=red!40!white, draw=black,thick] (\x, 2) rectangle (\x + 1.0, 2.5);}
+{\draw[black,thick] (\x, 2) rectangle (\x + 1.0, 2.5);}
+\node[] at (\x + 0.5, 2.25) {v\x};
+}
+
+\foreach \x in {0, ..., 9}
+{
+\ifthenelse{\x > 2 \AND \x < 8}
+{\filldraw[fill=red!40!white, draw=black,thick] (\x, 0) rectangle (\x + 1.0, 0.5);}
+{\draw[black,thick] (\x, 0) rectangle (\x + 1.0, 0.5);}
+}
+\node[] at (0.5, 0.25) {3};
+\node[] at (1.5, 0.25) {0};
+\node[] at (2.5, 0.25) {5};
+\node[] at (3.5, 0.25) {6};
+\node[] at (4.5, 0.25) {3};
+\node[] at (5.5, 0.25) {4};
+\node[] at (6.5, 0.25) {0};
+\node[] at (7.5, 0.25) {8};
+\node[] at (8.5, 0.25) {0};
+\node[] at (9.5, 0.25) {1};
+
+\draw[thick,-stealth] (3.5, 0.5) -- (6.5, 1.9);
+\draw[thick,-stealth] (4.5, 0.5) -- (3.5, 1.9);
+\draw[thick,-stealth] (5.5, 0.5) -- (4.5, 1.9);
+\draw[thick,-stealth] (6.5, 0.5) -- (0.5, 1.9);
+\draw[thick,-stealth] (7.5, 0.5) -- (8.5, 1.9);
+
+% 0 1 2 3 4 5 6 7 8 9
+% 3 0 5[6 3 4 0 8]0 1
+\end{tikzpicture}
+\end{center}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Индексированный рендеринг: квадрат}
-\slideimage{quad.png}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0, 0) rectangle (3, 3);
+\draw[black,thick] (0, 3) -- (3, 0);
+\node[] at (-0.25, -0.25) {0};
+\node[] at (3.25, -0.25) {1};
+\node[] at (-0.25, 3.25) {2};
+\node[] at (3.25, 3.25) {3};
+\end{tikzpicture}
+\end{center}
 \pause
 \begin{itemize}
 \item Без индексов, \verb|GL_TRIANGLES|:
