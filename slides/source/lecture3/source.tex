@@ -9,6 +9,8 @@
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
+\usepackage{tikz}
+
 \usepackage{adjustbox}
 
 \usepackage{color}
@@ -469,7 +471,7 @@ glVertexAttribIPointer(GLuint index, GLint size,
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример array-of-structs, один буфер}
-\fontsize{10pt}{10pt}
+\fontsize{8pt}{8pt}
 \begin{verbatim}
 struct vertex {
     float position[3];
@@ -492,11 +494,36 @@ glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
     sizeof(vertex), (void*)(24));
 \end{verbatim}
+\begin{center}
+\begin{tikzpicture}
+\foreach \x
+[evaluate=\x as \ta using int(\x * 28)]
+[evaluate=\x as \tb using int(\x * 28 + 12)]
+[evaluate=\x as \tc using int(\x * 28 + 24)]
+[evaluate=\x as \td using int(\x * 28 + 28)]
+in {0, 1, 2}
+{
+\filldraw[fill=red!40!white, draw=black,thick] (3.0 * \x + 0.0, 0) rectangle (3.0 * \x + 1.0, 0.5);
+\filldraw[fill=green!40!white, draw=black,thick] (3.0 * \x + 1.0, 0) rectangle (3.0 * \x + 2.0, 0.5);
+\filldraw[fill=blue!40!white, draw=black,thick] (3.0 * \x + 2.0, 0) rectangle (3.0 * \x + 3.0, 0.5);
+\node[] at (3.0 * \x + 0.5, 0.25) {P\x};
+\node[] at (3.0 * \x + 1.5, 0.25) {N\x};
+\node[] at (3.0 * \x + 2.5, 0.25) {C\x};
+\node[] at (3.0 * \x + 0.0, 0.75) {\ta};
+\node[] at (3.0 * \x + 1.0, 0.75) {\tb};
+\node[] at (3.0 * \x + 2.0, 0.75) {\tc};
+\node[] at (3.0 * \x + 3.0, 0.75) {\td};
+\draw[black,thick] (3.0 * \x, -0.125) -- (3.0 * \x, -0.5);
+\draw[black,thick] (3.0 * \x + 3.0, -0.125) -- (3.0 * \x + 3.0, -0.5);
+\node[] at (3.0 * \x + 1.5, -0.25) {v\x};
+}
+\end{tikzpicture}
+\end{center}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример struct-of-arrays, один буфер}
-\fontsize{10pt}{10pt}
+\fontsize{8pt}{8pt}
 \begin{verbatim}
 float positions[3 * N];
 float normal[3 * N];
@@ -516,11 +543,32 @@ glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
     0, (void*)(24 * N));
 \end{verbatim}
+\begin{center}
+\begin{tikzpicture}
+\node[] at (0.0, 0.75) {0};
+\foreach \x
+[evaluate=\x as \ta using int(\x * 12 + 12)]
+[evaluate=\x as \tb using int(\x * 12 + 48)]
+[evaluate=\x as \tc using int(\x * 4 + 76)]
+in {0, 1, 2}
+{
+\filldraw[fill=red!40!white, draw=black,thick] (\x + 0.0, 0) rectangle (\x + 1.0, 0.5);
+\filldraw[fill=green!40!white, draw=black,thick] (\x + 3.0, 0) rectangle (\x + 4.0, 0.5);
+\filldraw[fill=blue!40!white, draw=black,thick] (\x + 6.0, 0) rectangle (\x + 7.0, 0.5);
+\node[] at (\x + 0.5, 0.25) {P\x};
+\node[] at (\x + 3.5, 0.25) {N\x};
+\node[] at (\x + 6.5, 0.25) {C\x};
+\node[] at (\x + 1.0, 0.75) {\ta};
+\node[] at (\x + 4.0, 0.75) {\tb};
+\node[] at (\x + 7.0, 0.75) {\tc};
+}
+\end{tikzpicture}
+\end{center}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример struct-of-arrays, три буфера}
-\fontsize{10pt}{10pt}
+\fontsize{8pt}{8pt}
 \begin{verbatim}
 float positions[3 * N];
 float normal[3 * N];
@@ -541,6 +589,29 @@ glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
     0, (void*)(0));
 \end{verbatim}
+\begin{center}
+\begin{tikzpicture}
+\node[] at (0.0, 0.75) {0};
+\node[] at (4.0, 0.75) {0};
+\node[] at (8.0, 0.75) {0};
+\foreach \x
+[evaluate=\x as \ta using int(\x * 12 + 12)]
+[evaluate=\x as \tb using int(\x * 12 + 12)]
+[evaluate=\x as \tc using int(\x * 4 + 4)]
+in {0, 1, 2}
+{
+\filldraw[fill=red!40!white, draw=black,thick] (\x + 0.0, 0) rectangle (\x + 1.0, 0.5);
+\filldraw[fill=green!40!white, draw=black,thick] (\x + 4.0, 0) rectangle (\x + 5.0, 0.5);
+\filldraw[fill=blue!40!white, draw=black,thick] (\x + 8.0, 0) rectangle (\x + 9.0, 0.5);
+\node[] at (\x + 0.5, 0.25) {P\x};
+\node[] at (\x + 4.5, 0.25) {N\x};
+\node[] at (\x + 8.5, 0.25) {C\x};
+\node[] at (\x + 1.0, 0.75) {\ta};
+\node[] at (\x + 5.0, 0.75) {\tb};
+\node[] at (\x + 9.0, 0.75) {\tc};
+}
+\end{tikzpicture}
+\end{center}
 \end{frame}
 
 \begin{frame}[fragile]
