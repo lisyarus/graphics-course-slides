@@ -96,6 +96,7 @@ glDeleteTexture(1, &texture);
 \begin{itemize}
 \item Подразумевается, что объекты переиспользуются по максимуму
 \item Не нужно создавать новую текстуру каждый кадр - создайте один раз и переиспользуйте её
+\item Не нужно создавать новый буфер при каждом обновлении данных - создайте один раз и переиспользуйте его
 \end{itemize}
 \end{frame}
 
@@ -106,12 +107,13 @@ glDeleteTexture(1, &texture);
 \pause
 \item Исключения:
 \begin{itemize}
-\item Framebuffer с нулевым id - default framebuffer, рисует в окно, привязанное к контексту OpenGL
+\item Framebuffer с нулевым id - default framebuffer, рисует в окно, привязанное к контексту OpenGL, его нельзя менять
 \pause
 \item В OpenGL ES: Vertex Array с нулевым id - ничем не отличается от других vertex array'ев, но существует (создан) по умолчанию
 \end{itemize}
 \pause
 \item Функции создания объектов никогда не возвращают нулевой id
+\item Функции удаления объектов игнорируют нулевой id
 \end{itemize}
 \end{frame}
 
