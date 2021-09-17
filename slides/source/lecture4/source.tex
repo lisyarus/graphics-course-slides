@@ -1,0 +1,267 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 4: Камера, проекции, буфер глубины}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Проекции}
+\begin{itemize}
+\item Мир - двухмерный/трёхмерный, произвольного размера, с произвольного ракурса
+\pause
+\item Экран - двухмерный, \begin{math}[-1, 1] \times [-1, 1]\end{math}
+\pause
+\item За преобразование отвечает проекция
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция}
+\begin{itemize}
+\item Самый простой способ: \pause выкинуть третью координату
+\begin{center}\begin{math}(x, y, z) \mapsto (x, y)\end{math}\end{center}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\begin{itemize}
+\item X и Y всё ещё \begin{math}[-1, 1]\end{math}
+\end{itemize}
+\pause
+\item Как сделать \begin{math}X \in [-W, W]\end{math} и \begin{math}Y \in [-H, H]\end{math}?
+\pause
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+\frac{1}{W} & 0 & 0 & 0 \\
+0 & \frac{1}{H} & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция}
+\begin{itemize}
+\item Как сделать \begin{math}X \in [X_0 - W, X_0 + W]\end{math} и \begin{math}Y \in [Y_c - H, Y_c + H]\end{math}?
+\pause
+\begin{itemize}
+\item Сдвинуть на \begin{math}(-X_0, -Y_0)\end{math}, а затем применить матрицу с предыдущего слайда:
+\end{itemize}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+\frac{1}{W} & 0 & 0 & 0 \\
+0 & \frac{1}{H} & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+1 & 0 & 0 & -X_0 \\
+0 & 1 & 0 & -Y_0 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\item Если размер области \begin{math}W\end{math}, нужно разделить на \begin{math}W\end{math}
+\item Если центр в \begin{math}X_0\end{math}, нужно сдвинуть на \begin{math}-X_0\end{math}
+\pause
+\item Общая идея: если камера получена каким-то преобразованием, нужно применить обратное преобразование
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: общий случай}
+\begin{itemize}
+\item В общем случае ортографическую камеру можно задать
+\pause
+\begin{itemize}
+\item Положением камеры \begin{math}C = (C_x, C_y, C_z)\end{math}
+\pause
+\item Осями координат камеры \begin{math}X = (X_x, X_y, X_z), Y = (Y_x, Y_y, Y_z), Z = (Z_x, Z_y, Z_z)\end{math}
+\end{itemize}
+\pause
+\item Делает проекцию параллельно вектору \begin{math}Z\end{math} на параллелограмм \begin{math}C \pm X \pm Y\end{math}
+\item Параллелограмм отождествляется с экраном
+\pause
+\item Обычно \begin{math}X, Y, Z\end{math} взаимно ортогональны
+\pause
+\item Как выразить эту проекцию матрицей?
+\pause
+\item Преобразование из стандартной системы координат OpenGL \begin{math}[-1, 1]^3\end{math} в координаты области, видимой через эту камеру: смена системы координат + параллельный перенос
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+X_x & Y_x & Z_x & C_x \\
+X_y & Y_y & Z_y & C_y \\
+X_z & Y_z & Z_z & C_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\item Обратное преобразование (проекция) - обратная матрица
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: общий случай}
+\begin{itemize}
+\item Можно представить \begin{math}X, Y, Z\end{math} как произведение длины и нормированного вектора:
+\begin{center}
+\begin{math}X = W \cdot \hat X \quad Y = H \cdot \hat Y \quad Z = D \cdot \hat Z\end{math}
+\end{center}
+\pause
+\item Матрицу можно разбить на перенос, масштабирование и поворот
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+X_x & Y_x & Z_x & C_x \\
+X_y & Y_y & Z_y & C_y \\
+X_z & Y_z & Z_z & C_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+=
+\begin{pmatrix}
+1 & 0 & 0 & C_x \\
+0 & 1 & 0 & C_y \\
+0 & 0 & 1 & C_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+\hat X_x & \hat Y_x & \hat Z_x & 0 \\
+\hat X_y & \hat Y_y & \hat Z_y & 0 \\
+\hat X_z & \hat Y_z & \hat Z_z & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+W & 0 & 0 & 0 \\
+0 & H & 0 & 0 \\
+0 & 0 & D & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: общий случай}
+\begin{itemize}
+\item Тогда обратная матрица (матрица проекции):
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+X_x & Y_x & Z_x & C_x \\
+X_y & Y_y & Z_y & C_y \\
+X_z & Y_z & Z_z & C_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}^{-1}
+=
+\begin{pmatrix}
+\frac{1}{W} & 0 & 0 & 0 \\
+0 & \frac{1}{H} & 0 & 0 \\
+0 & 0 & \frac{1}{D} & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+\hat X_x & \hat Y_x & \hat Z_x & 0 \\
+\hat X_y & \hat Y_y & \hat Z_y & 0 \\
+\hat X_z & \hat Y_z & \hat Z_z & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}^{-1}
+\cdot
+\begin{pmatrix}
+1 & 0 & 0 & -C_x \\
+0 & 1 & 0 & -C_y \\
+0 & 0 & 1 & -C_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: ортогональный случай}
+\begin{itemize}
+\item Если \begin{math}X, Y, Z\end{math} ортогональны, то 
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+\hat X_x & \hat Y_x & \hat Z_x & 0 \\
+\hat X_y & \hat Y_y & \hat Z_y & 0 \\
+\hat X_z & \hat Y_z & \hat Z_z & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}^{-1}
+=
+\begin{pmatrix}
+\hat X_x & \hat Y_x & \hat Z_x & 0 \\
+\hat X_y & \hat Y_y & \hat Z_y & 0 \\
+\hat X_z & \hat Y_z & \hat Z_z & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}^T
+=
+\begin{pmatrix}
+\hat X_x & \hat X_y & \hat X_z & 0 \\
+\hat Y_x & \hat Y_y & \hat Y_z & 0 \\
+\hat Z_x & \hat Z_y & \hat Z_z & 0 \\
+0 & 0 & 0 & 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\end{document}
