@@ -338,21 +338,31 @@ void main() {
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин}
-У каждого вершинного аттрибута есть
 \begin{itemize}
-\item Индекс - \verb|0, 1, ... glGet(GL_MAX_VERTEX_ATTRIBS)|
-\pause
+\item Индекс: \verb|0, 1, ... glGet(GL_MAX_VERTEX_ATTRIBS)|
 \begin{itemize}
 \item \verb|glGet(GL_MAX_VERTEX_ATTRIBS)| \begin{math}\geq\end{math} 16
 \end{itemize}
 \pause
-\item Состояние - включен/выключен
+\item Включен/выключен
+\begin{itemize}
+\item \verb|glEnableVertexAttribArray(index)| - включить аттрибут
+\item Выключены по умолчанию
+\item Хранится в vertex array
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аттрибуты вершин: хранение}
+Параметры хранения данных аттрибута:
+\begin{itemize}
 \pause
 \item Формат:
 \begin{itemize}
 \item Количество компонент - 1, 2, 3, 4
 \pause
-\item Тип - \verb|GL_BYTE|, \verb|GL_UNSIGNED_BYTE|, \verb|GL_SHORT|, \verb|GL_UNSIGNED_SHORT|, \verb|GL_INT|, \verb|GL_UNSIGNED_INT|, \verb|GL_HALF_FLOAT|, \verb|GL_FLOAT|, \verb|GL_DOUBLE|
+\item Тип - \verb|GL_BYTE|, \verb|GL_UNSIGNED_BYTE|, \verb|GL_SHORT|, \verb|GL_UNSIGNED_SHORT|, \verb|GL_INT|, \verb|GL_UNSIGNED_INT|, \verb|GL_HALF_FLOAT|, \verb|GL_FLOAT|, \verb|GL_DOUBLE|, \verb|GL_INT_2_10_10_10_REV|, \verb|GL_UNSIGNED_INT_2_10_10_10_REV|
 \pause
 \item Нормированный / не нормированный
 \end{itemize}
@@ -363,22 +373,20 @@ void main() {
 \item Расстояние (в байтах) между значениями этого аттрибута, соответствующими соседним вершинам
 \end{itemize}
 \pause
-\item Всё это хранится в vertex array
-\pause
-\item \verb|glEnableVertexAttribArray(index)| - включить аттрибут
+\item Всё это запоминается в vertex array
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Нормированность аттрибута}
+\frametitle{Аттрибуты вершин: нормированность}
 \begin{itemize}
 \item Как интерпретировать значение аттрибута, который в шейдере объявлен как floating-point (\verb|float|, \verb|vec3|, и т.п.), но в данных он хранится как целочисленный?
 \pause
 \item 2 варианта:
 \begin{itemize}
-\item Передавать, как есть, делая преобразование \verb|int -> float|
+\item Не нормированный: передавать, как есть, делая преобразование \verb|int -> float|
 \pause
-\item Преобразовывать диапазон целочисленных значений в \begin{math}[-1, 1]\end{math} (для знаковых) или \begin{math}[0, 1]\end{math} (для беззнаковых)
+\item Нормированный: преобразовывать диапазон целочисленных значений в \begin{math}[-1, 1]\end{math} (для знаковых) или \begin{math}[0, 1]\end{math} (для беззнаковых)
 \verb|unsigned short: x -> x / 65535|
 \verb|short: x -> (2 x + 1) / 65535|
 \end{itemize}
@@ -415,6 +423,8 @@ glVertexAttribPointer(GLuint index, GLint size,
 \begin{itemize}
 \item На самом деле, \verb|pointer| - сдвиг относительно начала памяти текущего \verb|GL_ARRAY_BUFFER|
 \item Например, если данные этого аттрибута начинаются на 12ом байте текущего \verb|GL_ARRAY_BUFFER|, нужно передать \verb|(const void *)(12)|
+\pause
+\item Разные аттрибуты могут лежать в разных буферах
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -427,7 +437,11 @@ glVertexAttribIPointer(GLuint index, GLint size,
     GLsizei stride, const GLvoid * pointer)
 \end{verbatim}
 \begin{itemize}
-\item Всё то же самое, но нет параметра \verb|normalized|
+\item Всё то же самое, но 
+\begin{itemize}
+\item Нет параметра \verb|normalized|
+\item \verb|type| может быть только целочисленным
+\end{itemize}
 \end{itemize}
 \end{frame}
 
