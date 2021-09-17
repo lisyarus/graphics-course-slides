@@ -340,10 +340,10 @@ void main() {
 \frametitle{Аттрибуты вершин}
 У каждого вершинного аттрибута есть
 \begin{itemize}
-\item Индекс - \verb|0, 1, ... GL_MAX_VERTEX_ATTRIBS|
+\item Индекс - \verb|0, 1, ... glGet(GL_MAX_VERTEX_ATTRIBS)|
 \pause
 \begin{itemize}
-\item \verb|GL_MAX_VERTEX_ATTRIBS| \begin{math}\geq\end{math} 16
+\item \verb|glGet(GL_MAX_VERTEX_ATTRIBS)| \begin{math}\geq\end{math} 16
 \end{itemize}
 \pause
 \item Состояние - включен/выключен
