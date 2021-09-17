@@ -192,7 +192,7 @@ glDeleteTexture(1, &texture);
 \begin{frame}[fragile]
 \frametitle{Буферы: запись данных}
 \begin{itemize}
-\item Загрузить данные в буфер:
+\item Выделить память на GPU и загрузить данные:
 \begin{verbatim}
 glBufferData(GLenum target, GLsizeiptr size,
     const GLvoid * data, GLenum usage)
@@ -259,6 +259,7 @@ glBufferSubData(GLenum target, GLintptr offset,
 \pause
 \begin{itemize}
 \item Гарантированно не реаллоцирует память GPU
+\item Память уже должна быть выделена (\verb|glBufferData|)
 \end{itemize}
 \pause
 \item Прочитать данные из буфера:
