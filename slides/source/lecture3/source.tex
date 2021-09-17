@@ -648,6 +648,28 @@ glDrawElements(GL_TRIANGLES, count,
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Primitive restart}
+\begin{itemize}
+\item При использовании \verb|GL_LINE_STRIP|, \verb|GL_LINE_LOOP|, \verb|GL_TRIANGLE_STRIP|, \verb|GL_TRIANGLE_FAN| все входные вершины образуют один line strip, line loop, triangle strip, triangle fan соответственно
+\pause
+\item Что, если мы хотим одну последовательность вершин разбить на несколько примитивов?
+\pause
+\item Специальное значение индекса вершины означает что со следующей вершины нужно начать новый примитив:
+\begin{verbatim}
+GL_TRIANGLE_STRIP:
+[0, 1, 2, 3, -1, 4, 5, 6, 7]
+
+
+[0, 1, 2, 3], [4, 5, 6, 7]
+\end{verbatim}
+\pause
+\item \verb|glEnable(GL_PRIMITIVE_RESTART)|
+\pause
+\item \verb|glPrimitiveRestartIndex(index)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Индексированный рендеринг: ссылки}
 \fontsize{10pt}{10pt}
 \begin{itemize}
