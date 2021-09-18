@@ -129,7 +129,7 @@ glDeleteTexture(1, &texture);
 \item Если вы работаете с одним контекстом, можно считать, что id текущего объекта - глобальная константа
 \end{itemize}
 \pause
-\item Некоторые функции не требуют выставления объекта текущим: \verb|glShaderSource|, \verb|glCompileShader|, \verb|glLinkProgram|, ...
+\item Некоторые функции не требуют выставления объекта текущим: \verb|glShaderSource|, \verb|glCompileShader|, \verb|glLinkProgram|, \verb|glGetUniformLocation|, ...
 \pause
 \item Некоторые объекты нельзя сделать текущими - шейдеры
 \end{itemize}
@@ -140,7 +140,7 @@ glDeleteTexture(1, &texture);
 \begin{itemize}
 \item Сделать программу текущей: \verb|glUseProgram(program)|
 \begin{itemize}
-\item Функции \verb|glGetUniformLocation|, \verb|glUniform1f|, ... работают с текущей программой
+\item Функции \verb|glUniform1f|, ... работают с текущей программой
 \end{itemize}
 \pause
 \item Сделать vertex array текущим: \verb|glBindVertexArray(vao)|
