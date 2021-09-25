@@ -16,8 +16,15 @@
 
 \usepackage{hyperref}
 
-\definecolor{blue}{rgb}{0,0,1}
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -46,6 +53,11 @@
 \pause
 \item Экран - двухмерный, \begin{math}[-1, 1] \times [-1, 1]\end{math}
 \pause
+\begin{itemize}
+\item Координата Z тоже \begin{math}[-1, 1]\end{math}
+\item Про неё поговорим подробнее чуть позже
+\end{itemize}
+\pause
 \item За преобразование отвечает проекция
 \end{itemize}
 \end{frame}
@@ -53,8 +65,8 @@
 \begin{frame}[fragile]
 \frametitle{Ортографическая проекция}
 \begin{itemize}
-\item Самый простой способ: \pause выкинуть третью координату
-\begin{center}\begin{math}(x, y, z) \mapsto (x, y)\end{math}\end{center}
+\item Самый простой способ: \pause игнорировать третью координату
+\begin{center}Концептуально: \begin{math}(x, y, z) \mapsto (x, y)\end{math}\end{center}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
@@ -66,9 +78,9 @@
 \end{math}
 \end{center}
 \pause
-\begin{itemize}
+\item Именно это делает OpenGL (если \verb|gl_Position.w = 1|)
+\pause
 \item X и Y всё ещё \begin{math}[-1, 1]\end{math}
-\end{itemize}
 \pause
 \item Как сделать \begin{math}X \in [-W, W]\end{math} и \begin{math}Y \in [-H, H]\end{math}?
 \pause
@@ -88,10 +100,10 @@
 \begin{frame}[fragile]
 \frametitle{Ортографическая проекция}
 \begin{itemize}
-\item Как сделать \begin{math}X \in [X_0 - W, X_0 + W]\end{math} и \begin{math}Y \in [Y_c - H, Y_c + H]\end{math}?
+\item Как сделать \begin{math}X \in [X_0 - W, X_0 + W]\end{math} и \begin{math}Y \in [Y_0 - H, Y_0 + H]\end{math}?
 \pause
 \begin{itemize}
-\item Сдвинуть на \begin{math}(-X_0, -Y_0)\end{math}, а затем применить матрицу с предыдущего слайда:
+\item Сдвинуть на \begin{math}(-X_0, -Y_0)\end{math}, а затем применить масштабирование:
 \end{itemize}
 \begin{center}
 \begin{math}
@@ -116,6 +128,23 @@
 \pause
 \item Общая идея: если камера получена каким-то преобразованием, нужно применить обратное преобразование
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: обратное преобразование}
+\begin{itemize}
+\item Можно считать, что по умолчанию OpenGL делает ортографическую проекцию на квадрат \begin{math}[-1, 1]^2\end{math} в плоскости XY параллельно оси Z
+\item Камера находится в начале координат
+\pause
+\item Если ко всему виртуальному миру (включая камеру!) применить аффинное преобразование, изображение не изменится
+\pause
+\item \begin{math}\Rightarrow\end{math} Если наша камера получена аффинным преобразованием из стандартной камеры OpenGL, к объектам мира нужно применить обратное преобразование
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция}
+\slideimage{orthographic.png}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -261,6 +290,150 @@ X_z & Y_z & Z_z & C_z \\
 \end{pmatrix}
 \end{math}
 \end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: применение}
+\begin{itemize}
+\pause
+\item 2D рендеринг: 2D игры, UI, карты
+\pause
+\item Проектировние моделей, зданий, деталей (вид сверху, вид сбоку, вид спереди)
+\pause
+\item Стилизация: 3D мир с ортографической проекцией
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: проблемы}
+\begin{itemize}
+\pause
+\item Объекты на разном расстоянии от камеры выглядят одинаково
+\pause
+\item Нельзя оценить расстояние до объекта по его изображению
+\pause
+\item Реальные камеры и глаза работают не так
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\slideimage{perspective.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\begin{itemize}
+\item Есть {\color{blue}центр проекции} и {\color{blue}плоскость проекции}
+\item {\color{red}Проекция} {\color{green}точки} - пересечение {\color{magenta}прямой}, проходящей через эту {\color{green}точку} и {\color{blue}центр проекции}, с {\color{blue}плоскостью проекции}
+\end{itemize}
+\pause
+\begin{center}
+\begin{tikzpicture}
+\draw[blue,thick] (2.0, -2.0) -- (2.0, 2.0);
+\draw[magenta,thick,dashed] (0.0, 0.0) -- (6.0, 1.5);
+\node at (0.0, 0.0) {\color{blue}\textbullet};
+\node at (2.0, 0.5) {\color{red}\textbullet};
+\node at (6.0, 1.5) {\color{green}\textbullet};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\begin{center}
+\begin{tikzpicture}
+\draw[blue,thick] (2.0, -2.0) -- (2.0, 2.0);
+\draw[magenta,thick,dashed] (0.0, 0.0) -- (6.0, 1.5);
+\draw[black,dashed,-stealth] (-2.0, 0.0) -- (8.0, 0.0);
+\draw[black,dashed,-stealth] (0.0, -3.0) -- (0.0, 3.0);
+\draw[black,dashed] (6.0, 1.5) -- (6.0, -1.0);
+\node at (0.0, 0.0) {\color{blue}\textbullet};
+\node at (2.0, 0.5) {\color{red}\textbullet};
+\node at (6.0, 1.5) {\color{green}\textbullet};
+
+\node at (8.0, -0.25) {Z};
+\node at (-0.25, 3.0) {Y};
+
+\draw[thick,decorate,decoration={brace,amplitude=10pt,mirror}] (0.125, -0.125) -- (1.875, -0.125);
+\draw[thick,decorate,decoration={brace,amplitude=10pt,mirror}] (0.125, -1.125) -- (5.875, -1.125);
+
+\node at (1.0, -0.75) {\begin{math}z_P\end{math}};
+\node at (3.0, -1.75) {\begin{math}z\end{math}};
+
+\draw[thick,decorate,decoration={brace,amplitude=5pt,mirror}] (6.125, 0.125) -- (6.125, 1.375);
+\draw[thick,decorate,decoration={brace,amplitude=2pt,mirror}] (2.125, 0.125) -- (2.125, 0.375);
+
+\node at (2.5, 0.25) {\begin{math}y_P\end{math}};
+\node at (6.5, 0.75) {\begin{math}y\end{math}};
+
+\node at (3.0, 3.0) {\begin{math}y_P = y\frac{z_P}{z} = z_P\frac{y}{z}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\begin{itemize}
+\item Чтобы вычислить перспективную проекцию с центром в начале координат и плоскостью проеции \begin{math}Z=z_P\end{math}, нужно разделить на Z-координату:
+\begin{center}
+\begin{math}
+(x,y,z) \mapsto \left(z_P\frac{x}{z}, z_P\frac{y}{z}\right)
+\end{math}
+\end{center}
+\pause
+\item Как выразить эту проекцию матрицей? \pause Никак: матрицы не умеют делить одни координаты на другие
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Perspective divide}
+\begin{itemize}
+\item Чтобы поддержать перспективную проекцию, в графическом конвейере (после вершинного шейдера, перед переводом в экранные координаты) есть специальный обязательный шаг: perspective divide
+\pause
+\item \verb|gl_Position| делится на последнюю координату \verb|gl_Position.w|
+\begin{center}
+\begin{math}
+(x, y, z, w) \mapsto \left(\frac{x}{w}, \frac{y}{w}, \frac{z}{w}\right)
+\end{math}
+\end{center}
+\pause
+\item Если \begin{math}w=1\end{math}, ничего не меняется (ортографическая проекция)
+\pause
+\item Если \begin{math}w=\end{math} расстояние до камеры, получается перспективная проекция
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\begin{itemize}
+\item Как выразить перспективную проекцию матрицей с последующим perspective divide?
+\pause
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+0 & 0 & 1 & 0 \\
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+x \\ y \\ z \\ 1
+\end{pmatrix}
+=
+\begin{pmatrix}
+x \\ y \\ z \\ z
+\end{pmatrix}
+\mapsto
+\begin{pmatrix}
+x/z \\ y/z \\ 1
+\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\item Обычно матрица перспективной проекции выглядит сложнее
 \end{itemize}
 \end{frame}
 
