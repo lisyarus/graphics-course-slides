@@ -49,7 +49,7 @@
 \begin{frame}[fragile]
 \frametitle{Проекции}
 \begin{itemize}
-\item Мир - двухмерный/трёхмерный, произвольного размера, с произвольного ракурса
+\item Мир - двухмерный/трёхмерный, произвольного размера, смотрим с произвольного ракурса
 \pause
 \item Экран - двухмерный, \begin{math}[-1, 1] \times [-1, 1]\end{math}
 \pause
@@ -133,7 +133,7 @@
 \begin{frame}[fragile]
 \frametitle{Ортографическая проекция: обратное преобразование}
 \begin{itemize}
-\item Можно считать, что по умолчанию OpenGL делает ортографическую проекцию на квадрат \begin{math}[-1, 1]^2\end{math} в плоскости XY параллельно оси Z
+\item Можно считать, что по умолчанию (если \verb|gl_Position.w = 1|) OpenGL делает ортографическую проекцию на квадрат \begin{math}[-1, 1]^2\end{math} в плоскости XY параллельно оси Z
 \item Камера находится в начале координат
 \pause
 \item Если ко всему виртуальному миру (включая камеру!) применить аффинное преобразование, изображение не изменится
@@ -433,7 +433,437 @@ x/z \\ y/z \\ 1
 \end{math}
 \end{center}
 \pause
-\item Обычно матрица перспективной проекции выглядит сложнее
+\item Обычно матрица перспективной проекции выглядит не так
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Наложение объектов}
+\begin{itemize}
+\item По умолчанию примитивы, рисующиеся позже, накладываются поверх уже нарисованных
+\pause
+\item Обычно не проблема в 2D рендеринге: рисуем слои в нужном порядке
+\pause
+\begin{itemize}
+\item 2D игра-платформер: фон, потом ландшафт, потом персонажи, потом эффекты
+\pause
+\item Карта: ландшафт, потом дороги и здания, потом иконки заведений
+\pause
+\item UI: фон виджета, потом рисунок кнопки, потом текст кнопки
+\end{itemize}
+\pause
+\item В 3D можно сортировать треугольники в порядке убывания расстояния до камеры (painter's algorithm), но это очень медленно:
+\pause
+\begin{itemize}
+\item Нужно отсортировать миллионы треугольников каждый кадр
+\pause
+\item Нужно загрузить их на GPU
+\pause
+\item Треугольники одного объекта не идут непрерывно \begin{math}\Rightarrow\end{math} больше изменений состояния (переключений шейдеров, etc) при рендеринге
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Z-буфер}
+\begin{itemize}
+\item Решение: буфер глубины (z-buffer)
+\pause
+\item Хранит для каждого пикселя экрана расстояние до камеры
+\pause
+\item Тест глубины: при рисовании очередного пикселя (после фрагментного шейдера) проверим: если уже нарисованный пиксель ближе к камере, то новый рисовать не будем
+\pause
+\item Включить: \verb|glEnable(GL_DEPTH_TEST)|
+\pause
+\item Настроить поведение теста глубины: \verb|glDepthFunc(GL_LEQUAL)|
+\begin{itemize}
+\item \verb|LEQUAL| = less or equal: пиксель рисуется, если его расстояние до камеры меньше или равно расстояния, записанного в z-буфер
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Z-буфер}
+\begin{itemize}
+\item К координате Z после perspective divide применяется преобразование \begin{math}[-1, 1] \mapsto [0, 1]\end{math} (т.е. \begin{math}z \mapsto \frac{z+1}{2}\end{math}), и это значение записывается в z-буфер
+\pause
+\begin{itemize}
+\item Доступно во фрагментном шейдере: \verb|gl_FragDepth|
+\pause
+\item Преобразование можно настроить с помощью \verb|glDepthRange|
+\end{itemize}
+\pause
+\item Z-буфер хранит или в формате unsigned normalized (16/24/32-bit), или floating-point (32-bit)
+\begin{itemize}
+\item Обычно unsigned normalized 24-bit
+\end{itemize}
+\pause
+\item Default framebufer (тот, что используется по умолчанию, для рисования в окно) может иметь свой z-буфер - это нужно настраивать перед созданием контекста
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Depth clipping/clamping}
+\begin{itemize}
+\item Z-координата (после perspective divide) должна быть в диапазоне \begin{math}[-1, 1]\end{math}
+\pause
+\item Что делать в вершинами, выпадающими за диапазон? Два варианта:
+\pause
+\begin{itemize}
+\item Depth clipping (отсечение по глубине): примитив (точка/линия/треугольник) обрезается по плоскостям \begin{math}Z = \pm 1\end{math} (как будто вне области \begin{math}|Z|\leq 1\end{math} ничего нет)
+\pause
+\item Depth clamping: отсечения не происходит, но после растеризации глубина всех пикселей сжимается до диапазона \begin{math}[-1, 1]\end{math}
+\pause
+\item По умолчанию - depth clipping
+\item Включить depth clamping: \verb|glEnable(GL_DEPTH_CLAMP)|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Clipping}
+\begin{itemize}
+\item На самом деле, с координатами X и Y тоже происходит отсечение
+\pause
+\item Как будто пиксели, не попадающие на экран, просто игнорируются
+\pause
+\item Не настраивается
+\pause
+
+\begin{center}
+\begin{math}
+\begin{matrix}
+-1 \leq X \leq 1 \\
+-1 \leq Y \leq 1 \\
+-1 \leq Z \leq 1
+\end{matrix}
+\end{math}
+\end{center}
+
+\pause
+\item С учётом perspective divide (если \begin{math}W>0\end{math}):
+
+\begin{center}
+\begin{math}
+\begin{matrix}
+-1 \leq X/W \leq 1 \\
+-1 \leq Y/W \leq 1 \\
+-1 \leq Z/W \leq 1
+\end{matrix}
+\Leftrightarrow
+\color{red}
+\begin{matrix}
+-W \leq X \leq W \\
+-W \leq Y \leq W \\
+-W \leq Z \leq W
+\end{matrix}
+\end{math}
+\end{center}
+
+\pause
+\item Если \begin{math}W<0\end{math}, точка не попадает на экран
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Полный путь координат}
+\begin{itemize}
+\item Входные данные: точка \begin{math}q_{object}\end{math} в системе координат объекта (object space)
+\pause
+\item Позиционируем объект: \begin{math}q_{world} = \operatorname{Transform} \cdot q_{object}\end{math} в мировых координатах (world space)
+\pause
+\item Учитываем расположение камеры: \begin{math}q_{camera} = \operatorname{View} \cdot q_{world}\end{math} в координатах камеры (view/camera space)
+\pause
+\item Проекция камеры: \verb|gl_Position = |\begin{math}q_{clip} = \operatorname{Projection} \cdot q_{camera}\end{math} в clip space
+\pause
+\item Perspective divide: \begin{math}q_{ndc} = xyz_{clip} / w_{clip}\end{math} в normalized device coordinates
+\pause
+\begin{itemize}
+\item \begin{math}x_{ndc}\end{math} и \begin{math}y_{ndc}\end{math} определяют координату на экране
+\item \begin{math}z_{ndc}\end{math} определяет глубину
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: near \& far clip planes}
+\begin{itemize}
+\item Если записывать в w координату z, то после perspective divide z=1, т.е. у всех точек одинаковая глубина \begin{math}\Rightarrow\end{math} нам нужна другая формула проекции!
+\pause
+\item Итоговый диапазон глубин ограничен \begin{math}\Rightarrow\end{math} нужно как-то ограничить диапазон возможных расстояний до камеры
+\pause
+\item \begin{math}0 < near < far < \infty\end{math}
+\pause
+\item Хотим, чтобы диапазон \begin{math}z\in [near,far]\end{math} после применения матрицы проекции и perspective divide превратился в \begin{math}[-1,1]\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: near \& far clip planes}
+\begin{itemize}
+\item Хотим, чтобы диапазон \begin{math}z\in [near,far]\end{math} после применения матрицы проекции и perspective divide превратился в \begin{math}[-1,1]\end{math}
+\pause
+\begin{center}
+\begin{math}
+\begin{matrix}
+z \mapsto \frac{Az + B}{z} \\ \\
+near \mapsto \frac{A\cdot near + B}{near} = -1 \\ \\
+far \mapsto \frac{A\cdot far + B}{far} = 1
+\end{matrix}
+\end{math}
+\end{center}
+\pause
+\item Линейная система на A и B:
+\begin{center}
+\begin{math}
+\begin{matrix}
+A \cdot near + B = -near \\ \\
+A \cdot far + B = far
+\end{matrix}
+\Rightarrow
+\begin{matrix}
+A = \frac{far + near}{far - near} \\ \\
+B = \frac{-2 far \cdot near}{far - near}
+\end{matrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: матрица проекции}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & A & B \\
+0 & 0 & 1 & 0
+\end{pmatrix}
+=
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+0 & 0 & 1 & 0
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: правая система координат}
+\begin{itemize}
+\item Обычно направление вгзляда камеры выбирают не в сторону положительной оси Z, а в сторону отрицательной оси Z, чтобы получилась правая система координат
+\pause
+\item \begin{math}0 < -near < -far < \infty\end{math}
+\pause
+\item Расстояние до камеры - не Z, а -Z
+\end{itemize}
+\pause
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & A & B \\
+0 & 0 & -1 & 0
+\end{pmatrix}
+=
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+0 & 0 & -1 & 0
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: view frustum}
+Область, видимая перспективной камерой - усечённая пирамида (frustum)
+\slideimage{frustum.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: view frustum}
+Как управлять шириной и высотой видимой области?
+\pause
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+\only<2>{1}\only<3->{C} & 0 & 0 & \only<2>{0}\only<3->{D} \\
+0 & \only<2>{1}\only<3->{E} & 0 & \only<2>{0}\only<3->{F} \\
+0 & 0 & A & B \\
+0 & 0 & -1 & 0
+\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: view frustum}
+Как управлять шириной и высотой видимой области?
+\begin{tikzpicture}
+\draw[black,dashed,-stealth] (-2.0, 0.0) -- (8.0, 0.0);
+\draw[black,dashed,stealth-] (0.0, -3.0) -- (0.0, 3.0);
+\draw[blue,thick] (3.0, -2.0) -- (3.0, 2.0);
+\draw[black,thick] (0.0, 0.0) -- (4.5, -3.0);
+\draw[black,thick] (0.0, 0.0) -- (4.5, 3.0);
+\draw[black,dashed] (0.0, 2.0) -- (4.0, 2.0);
+\draw[black,dashed] (0.0, -2.0) -- (4.0, -2.0);
+\node at (0.0, 0.0) {\textbullet};
+
+\node at (8.0, -0.25) {Z};
+\node at (-0.25, -3.0) {X};
+\node at (3.0, -2.5) {\color{blue}z=near};
+\node at (4.5, 2.0) {x=left};
+\node at (4.5, -2.0) {x=right};
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: view frustum}
+Как управлять шириной и высотой видимой области?
+\begin{itemize}
+\item Обычно left=-right
+\pause
+\item \begin{math}\frac{-left}{near}\end{math} - тангенс угла между осью (Z) проекции и левой границей видимой области
+\item \begin{math}\frac{right}{near}\end{math} - тангенс угла между осью (Z) проекции и правой границей видимой области
+\pause
+\item Аналогично top и bottom для Y
+\pause
+\item Хотим, чтобы точка с координатами X=left и Z=near перешла (после применения матрица проекции и perspective divide) в точку с X=-1 и Z=-1
+\item Хотим, чтобы точка с координатами X=right и Z=near перешла (после применения матрица проекции и perspective divide) в точку с X=1 и Z=-1
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: view frustum}
+\begin{center}
+\begin{math}
+\begin{matrix}
+\frac{C\cdot left + D}{-near} = -1 \\ \\
+\frac{C\cdot right + D}{-near} = 1
+\end{matrix}
+\Rightarrow
+\begin{matrix}
+C = \frac{-2\cdot near}{right - left} \\ \\
+D = near \cdot \frac{right + left}{right - left}
+\end{matrix}
+\end{math}
+\end{center}
+\pause
+Аналогично для Y
+\begin{center}
+\begin{math}
+\begin{matrix}
+\frac{E\cdot bottom + F}{-near} = -1 \\ \\
+\frac{E\cdot top + F}{-near} = 1
+\end{matrix}
+\Rightarrow
+\begin{matrix}
+E = \frac{-2\cdot near}{top - bottom} \\ \\
+F = near \cdot \frac{top + bottom}{top - bottom}
+\end{matrix}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: матрица проекции}
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+\frac{-2\cdot near}{right - left} & 0 & 0 & near \cdot \frac{right + left}{right - left} \\
+0 & \frac{-2\cdot near}{top - bottom} & 0 & near \cdot \frac{top + bottom}{top - bottom} \\
+0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+0 & 0 & -1 & 0
+\end{pmatrix}
+\end{math}
+\end{center}
+
+\pause
+Часто left=-right и bottom=-top, тогда
+
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+\frac{-near}{right} & 0 & 0 & 0 \\
+0 & \frac{-near}{top} & 0 & 0 \\
+0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+0 & 0 & -1 & 0
+\end{pmatrix}
+\end{math}
+\end{center}
+Это самый часто встречающийся вид матрицы перспективной проекции
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\begin{itemize}
+\item Как выбирать параметры камеры?
+\pause
+\item Пусть хотим камеру с шириной обзора по X равной \begin{math}\theta\end{math} радиан, и с aspect ratio (отношение ширины к высоте) равным \begin{math}R\end{math}
+\pause
+\item \begin{math}-left=right=near \cdot \tan\left(\frac{\theta}{2}\right)\end{math}
+\item \begin{math}-bottom=top=\frac{1}{R} \cdot right = \frac{near}{R} \cdot \tan\left(\frac{\theta}{2}\right)\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\begin{itemize}
+\item Как выбирать параметры near и far?
+\pause
+\item Всё ближе near или дальше far обрезается - почему не взять near\begin{math}\approx 0\end{math} и far=\begin{math}\infty\end{math}?
+\pause
+\item Ответ: ограниченная точность z-буфера
+\item Чем больше отношение \begin{math}\frac{far}{near}\end{math}, тем меньше точности приходится на единицу расстояния
+\pause
+\item near: максимально возможный, при котором не обрезается что-то существенное
+\begin{itemize}
+\item При этом камера искуственно держится на некотором расстоянии от любых объектов
+\end{itemize}
+\pause
+\item far: максимально возможный, при котором не возникает Z-fighting'а
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Z-fighting}
+Ситуация, когда две очень близких почти (или полностью) параллельных плоскости рисуются с артефактом из-за недостаточной точности Z-буфера:
+\slideimage{z-fighting.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: матрица проекции}
+\begin{itemize}
+\item Что, если мы хотим переместить и повернуть камеру?
+\pause
+\item Так же, как с ортографической проекцией: сначала применим обратное преобразование, а потом матрицу проекции
+\pause
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+C & 0 & 0 & D \\
+0 & E & 0 & F \\
+0 & 0 & A & B \\
+0 & 0 & -1 & 0
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+X_x & Y_x & Z_x & C_x \\
+X_y & Y_y & Z_y & C_y \\
+X_z & Y_z & Z_z & C_z \\
+0 & 0 & 0 & 1
+\end{pmatrix}^{-1}
+\end{math}
+\end{center}
+\pause
+\item Обычно именно эту матрицу передают в шейдер
 \end{itemize}
 \end{frame}
 
