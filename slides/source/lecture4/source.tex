@@ -498,6 +498,8 @@ x/z \\ y/z \\ 1
 \item Обычно unsigned normalized 24-bit
 \end{itemize}
 \pause
+\item Нужно очищать перед каждым кадром: \verb|glClear(GL_DEPTH_BUFFER_BIT)|
+\pause
 \item Default framebufer (тот, что используется по умолчанию, для рисования в окно) может иметь свой z-буфер - это нужно настраивать перед созданием контекста
 \end{itemize}
 \end{frame}
