@@ -1,0 +1,160 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 4: Индексы, перспективная проекция, буфер глубины}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Напоминание про VBO и VAO}
+\begin{itemize}
+\item VBO - хранит данные, ничего не знает о формате
+\item VAO - описывает формат и расположение атрибутов вершин
+\item Концептуально, расположение = id буфера + сдвиг
+\item VAO также хранит id текущего EBO (\verb|GL_ELEMENT_ARRAY_BUFFER|) - оттуда берутся индексы
+\item Для рендеринга нужен только VAO
+\item Чтобы обновить данные, нужен только VBO
+\item Чтобы обновить индексы, нужен только EBO (можно использовать \verb|target = GL_ARRAY_BUFFER|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Рисуем куб
+\begin{itemize}
+\item Создаём VAO, VBO, EBO
+\pause
+\item Загружаем данные в VBO и EBO
+\pause
+\item Настраиваем атрибуты для VAO
+\pause
+\item Рисуем с помощью \verb|glDrawElements|, \verb|mode = GL_TRIANGLES|, обращаем внимание на тип индексов (\verb|GL_UNSIGNED_INT|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Вращаем куб
+\begin{itemize}
+\item Меняем матрицу \verb|transform| чтобы куб крутился в плоскости XZ
+\pause
+\item В качестве угла можно взять что-нибудь зависящее от времени, например \verb|float angle = time;|
+\pause
+\item Куб будет обрезаться по \begin{math}z \in [-1, 1]\end{math}
+\pause
+\item Отмасштабируем его по всем осям \verb|float scale = 0.5f|, тоже с помощью матрицы \verb|transform|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Добавляем перспективу
+\begin{itemize}
+\item Выбираем значения \verb|near|, \verb|far|, \verb|top|, \verb|right|
+\begin{itemize}
+\item \verb|near| - маленький, но не слишком, в духе \begin{math}0.001 \dots 0.1\end{math}
+\item \verb|far| - большой, но не слишком, в духе \begin{math}10.0 \dots 1000.0\end{math}
+\item Отношение \verb|right/near| - тангенс угла обзора, например \verb|right = near| это \begin{math}45^\circ\end{math}
+\item Отношение \verb|right/top| - aspect ratio экрана (\verb|width/height|)
+\end{itemize}
+\pause
+\item В матрицу \verb|view| записываем матрицу проекции с использованием выбранных значений
+\pause
+\item Куб будет виден изнутри
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+Включаем тест глубины
+\begin{itemize}
+\item Сдвигаем куб по оси Z на какое-то расстояние (например, на 5 единиц)
+\begin{itemize}
+\item N.B: Камера смотрит в сторону -Z, т.е. сдвиг должен быть отрицательным
+\end{itemize}
+\pause
+\item Куб будет рисоваться неправильно: задние грани перекрывают передние
+\pause
+\item Включим тест глубины: \verb|glEnable(GL_DEPTH_TEST)|
+\pause
+\item Не забываем очищать буфер глубины в начале каждого кадра: \verb|glClear(GL_DEPTH_BUFFER_BIT)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+Двигаем куб
+\begin{itemize}
+\item Заведём переменные \verb|cube_x| и \verb|cube_y| с координатами центра куба по X и Y
+\pause
+\item Изменим матрицу \verb|transform|, добавив соответствующие сдвиги по X и Y
+\pause
+\item Перед рисованием каждого кадра обновим положение куба:
+\begin{itemize}
+\item Если нажата \verb|SDLK_LEFT|, сдвинем куб влево: \verb|cube_x -= speed * dt|
+\item Аналогично \verb|SDLK_RIGHT|, \verb|SDLK_DOWN|, \verb|SDLK_UP|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+Играем с face culling
+\begin{itemize}
+\item Включим back-face culling: \verb|glEnable(GL_CULL_FACE)|
+\pause
+\item Ничего не изменится: куб сделан так, чтобы все треугольники были CCW
+\pause
+\item Изменим режим: \verb|glCullFace(GL_FRONT)|
+\pause
+\item Должны быть видны задние грани куба и не видны передние
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 7}
+Три вращающихся куба
+\begin{itemize}
+\item Рисуем три куба в разных местах, вращающихся в плоскостях XY, XZ, YZ соответственно
+\pause
+\item Три раза \verb|glUniformMatrix| + \verb|glDrawElements|
+\pause
+\item Всё ещё можно двигать стрелочками, т.е. должны учитываться \verb|cube_x| и \verb|cube_y|
+\end{itemize}
+\end{frame}
+
+\end{document}
