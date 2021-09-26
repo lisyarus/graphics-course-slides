@@ -645,7 +645,7 @@ B = \frac{-2 far \cdot near}{far - near}
 \begin{pmatrix}
 1 & 0 & 0 & 0 \\
 0 & 1 & 0 & 0 \\
-0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+0 & 0 & \frac{far + near}{far - near} & -\frac{2 far \cdot near}{far - near} \\
 0 & 0 & 1 & 0
 \end{pmatrix}
 \end{math}
@@ -657,10 +657,19 @@ B = \frac{-2 far \cdot near}{far - near}
 \begin{itemize}
 \item Обычно направление вгзляда камеры выбирают не в сторону положительной оси Z, а в сторону отрицательной оси Z, чтобы получилась правая система координат
 \pause
-\item \begin{math}0 < -near < -far < \infty\end{math}
+\item Отсечение по \begin{math}z=-near\end{math} и \begin{math}z=-far\end{math}
 \pause
 \item Расстояние до камеры - не Z, а -Z
 \end{itemize}
+\pause
+\begin{center}
+\begin{math}
+\begin{matrix}
+\frac{A(-near)+B}{near} = -1 \\ \\
+\frac{A(-far)+B}{far} = 1
+\end{matrix}
+\end{math}
+\end{center}
 \pause
 \begin{center}
 \begin{math}
@@ -674,7 +683,7 @@ B = \frac{-2 far \cdot near}{far - near}
 \begin{pmatrix}
 1 & 0 & 0 & 0 \\
 0 & 1 & 0 & 0 \\
-0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+0 & 0 & -\frac{far + near}{far - near} & -\frac{2 far \cdot near}{far - near} \\
 0 & 0 & -1 & 0
 \end{pmatrix}
 \end{math}
@@ -694,8 +703,8 @@ B = \frac{-2 far \cdot near}{far - near}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
-\only<2>{1}\only<3->{C} & 0 & 0 & \only<2>{0}\only<3->{D} \\
-0 & \only<2>{1}\only<3->{E} & 0 & \only<2>{0}\only<3->{F} \\
+\only<2>{1}\only<3->{C} & 0 & \only<2>{0}\only<3->{D} & 0 \\
+0 & \only<2>{1}\only<3->{E} & \only<2>{0}\only<3->{F} & 0 \\
 0 & 0 & A & B \\
 0 & 0 & -1 & 0
 \end{pmatrix}
@@ -735,8 +744,8 @@ B = \frac{-2 far \cdot near}{far - near}
 \pause
 \item Аналогично top и bottom для Y
 \pause
-\item Хотим, чтобы точка с координатами X=left и Z=near перешла (после применения матрица проекции и perspective divide) в точку с X=-1 и Z=-1
-\item Хотим, чтобы точка с координатами X=right и Z=near перешла (после применения матрица проекции и perspective divide) в точку с X=1 и Z=-1
+\item Хотим, чтобы точка с координатами X=left и Z=-near перешла (после применения матрица проекции и perspective divide) в точку с X=-1 и Z=-1
+\item Хотим, чтобы точка с координатами X=right и Z=-near перешла (после применения матрица проекции и perspective divide) в точку с X=1 и Z=-1
 \end{itemize}
 \end{frame}
 
@@ -745,13 +754,13 @@ B = \frac{-2 far \cdot near}{far - near}
 \begin{center}
 \begin{math}
 \begin{matrix}
-\frac{C\cdot left + D}{-near} = -1 \\ \\
-\frac{C\cdot right + D}{-near} = 1
+\frac{C\cdot left + D(-near)}{near} = -1 \\ \\
+\frac{C\cdot right + D(-near)}{near} = 1
 \end{matrix}
 \Rightarrow
 \begin{matrix}
-C = \frac{-2\cdot near}{right - left} \\ \\
-D = near \cdot \frac{right + left}{right - left}
+C = \frac{2\cdot near}{right - left} \\ \\
+D = \frac{right + left}{right - left}
 \end{matrix}
 \end{math}
 \end{center}
@@ -760,13 +769,13 @@ D = near \cdot \frac{right + left}{right - left}
 \begin{center}
 \begin{math}
 \begin{matrix}
-\frac{E\cdot bottom + F}{-near} = -1 \\ \\
-\frac{E\cdot top + F}{-near} = 1
+\frac{E\cdot bottom + F(-near)}{near} = -1 \\ \\
+\frac{E\cdot top + F(-near)}{near} = 1
 \end{matrix}
 \Rightarrow
 \begin{matrix}
-E = \frac{-2\cdot near}{top - bottom} \\ \\
-F = near \cdot \frac{top + bottom}{top - bottom}
+E = \frac{2\cdot near}{top - bottom} \\ \\
+F = \frac{top + bottom}{top - bottom}
 \end{matrix}
 \end{math}
 \end{center}
@@ -777,9 +786,9 @@ F = near \cdot \frac{top + bottom}{top - bottom}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
-\frac{-2\cdot near}{right - left} & 0 & 0 & near \cdot \frac{right + left}{right - left} \\
-0 & \frac{-2\cdot near}{top - bottom} & 0 & near \cdot \frac{top + bottom}{top - bottom} \\
-0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+\frac{2\cdot near}{right - left} & 0 & \frac{right + left}{right - left} & 0 \\
+0 & \frac{2\cdot near}{top - bottom} & \frac{top + bottom}{top - bottom} & 0 \\
+0 & 0 & -\frac{far + near}{far - near} & -\frac{2 far \cdot near}{far - near} \\
 0 & 0 & -1 & 0
 \end{pmatrix}
 \end{math}
@@ -791,9 +800,9 @@ F = near \cdot \frac{top + bottom}{top - bottom}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
-\frac{-near}{right} & 0 & 0 & 0 \\
-0 & \frac{-near}{top} & 0 & 0 \\
-0 & 0 & \frac{far + near}{far - near} & \frac{-2 far \cdot near}{far - near} \\
+\frac{near}{right} & 0 & 0 & 0 \\
+0 & \frac{near}{top} & 0 & 0 \\
+0 & 0 & -\frac{far + near}{far - near} & -\frac{2 far \cdot near}{far - near} \\
 0 & 0 & -1 & 0
 \end{pmatrix}
 \end{math}
@@ -848,8 +857,8 @@ F = near \cdot \frac{top + bottom}{top - bottom}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
-C & 0 & 0 & D \\
-0 & E & 0 & F \\
+C & 0 & D & 0 \\
+0 & E & F & 0 \\
 0 & 0 & A & B \\
 0 & 0 & -1 & 0
 \end{pmatrix}
