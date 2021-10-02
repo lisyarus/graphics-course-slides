@@ -898,4 +898,80 @@ X_z & Y_z & Z_z & C_z \\
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\begin{itemize}
+\item Есть пиксель на экране с координатами \begin{math}(P_X, P_Y) \in [-1, 1]^2\end{math} (например, координаты указателя мыши) и матрица \begin{math}T\end{math} камеры (view + projection)
+\pause
+\item В пространстве ему соответствует луч из камеры - как его найти?
+\pause
+\item Найдём две точки, пересекающие этот луч, на near и far плоскостях
+\pause
+\item Пусть \begin{math}\operatorname{Proj}\end{math} - оператор, выполняющий perspective divide:
+\begin{center}
+\begin{math}
+\operatorname{Proj}\begin{pmatrix}x \\ y \\ z \\ w\end{pmatrix} = \begin{pmatrix}x/w \\ y/w \\ z/w\end{pmatrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\begin{itemize}
+\item Мы хотим решить уравнение
+\begin{center}
+\begin{math}
+\operatorname{Proj}\cdot T \begin{pmatrix}x \\ y \\ z \\ 1\end{pmatrix} = \begin{pmatrix}M_X \\ M_Y \\ \pm 1\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\item Как выглядит множество \begin{math}\operatorname{Proj}^{-1} \begin{pmatrix}x \\ y \\ z\end{pmatrix}\end{math}\only<2>{?} \pause \begin{math}=\begin{pmatrix}\lambda x \\ \lambda y \\ \lambda z \\ \lambda \end{pmatrix} \forall \lambda  \neq 0\end{math}
+\pause
+\begin{center}
+\begin{math}
+\Rightarrow T \begin{pmatrix}x \\ y \\ z \\ 1\end{pmatrix} = \begin{pmatrix}\lambda M_X \\ \lambda M_Y \\ \pm \lambda \\ \lambda\end{pmatrix}
+\end{math}
+, но мы не знаем \begin{math}\lambda\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\begin{center}
+\begin{math}
+\begin{pmatrix}x \\ y \\ z \\ 1\end{pmatrix} = T^{-1} \begin{pmatrix}\lambda M_X \\ \lambda M_Y \\ \pm \lambda \\ \lambda\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\begin{itemize}
+\item С чего мы взяли, что последняя координата будет равна 1? \pause Воспользуемся \begin{math}\lambda\end{math}:
+\begin{center}
+\begin{math}
+\begin{pmatrix}x/\lambda \\ y/\lambda \\ z/\lambda \\ 1/\lambda \end{pmatrix} =
+T^{-1} \begin{pmatrix}M_X \\ M_Y \\ \pm 1 \\ 1\end{pmatrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\begin{center}
+\begin{math}
+\begin{pmatrix}x/\lambda \\ y/\lambda \\ z/\lambda \\ 1/\lambda \end{pmatrix} =
+T^{-1} \begin{pmatrix}M_X \\ M_Y \\ \pm 1 \\ 1\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\begin{center}
+\begin{math}
+\begin{pmatrix}x \\ y \\ z\end{pmatrix} =
+\operatorname{Proj} \begin{pmatrix}x/\lambda \\ y/\lambda \\ z/\lambda \\ 1/\lambda \end{pmatrix} =
+\operatorname{Proj} T^{-1} \begin{pmatrix}M_X \\ M_Y \\ \pm 1 \\ 1\end{pmatrix}
+\end{math}
+\end{center}
+\end{frame}
+
 \end{document}
