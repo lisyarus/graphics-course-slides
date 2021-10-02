@@ -73,6 +73,8 @@
 \item Как загрузить данные в текстуру
 \pause
 \item Как привязать текстуру к шейдеру
+\pause
+\item Как использовать текстуру для 3D моделей
 \end{itemize}
 \end{frame}
 
@@ -154,6 +156,8 @@
 \pause
 \item Для cubemap текстур \verb|vec3|: вектор направления из центра куба, возвращается значение из пересечения луча с поверхностью куба
 \end{itemize}
+\pause
+\item Частое название в случае 2D текстур: UV-координаты
 \end{itemize}
 \end{frame}
 
@@ -374,6 +378,97 @@ glTexImage2D(GLenum target, GLint level,
 \frametitle{Генерация mipmap}
 \begin{itemize}
 \item После загрузки нулевого mipmap-уровня, можно сгенерировать все остальные с помощью \verb|glGenerateMipmap(target)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как связать текстуру и sampler в шейдере?}
+\begin{itemize}
+\item ID текущей текстуры для каждого target хранится в т.н. texture unit'е
+\item Texture unit'ы - \textbf{не объекты OpenGL}, их нельзя создавать/удалять
+\item Их фиксированное число - \verb|glGet(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS)|, как минимум 48
+\item Есть текущий texture unit (по умолчанию - 0)
+\item \verb|glActiveTexture(GL_TEXTURE0 + i)| - сделать текущим texture unit с номером \verb|i|
+\item \verb|glBindTexture(...)| делает текстуру текущей для данного \verb|target| в текущем \verb|texture unit|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как связать текстуру и sampler в шейдере?}
+\begin{itemize}
+\item В качестве значения uniform-переменной типа \verb|sampler2D| (и т.п.) указывается \textit{номер texture unit'а}
+\pause
+\item Если для \verb|sampler2D| установлено значение \verb|i|, то в качестве текстуры будет взята \verb|GL_TEXTURE_2D| из texture unit'а номер \verb|i|
+\pause
+\item \verb|glUniform1i(color_texture_location, i)|
+\pause
+\item Если нужны несколько текстур одновременно в одном шейдере, нужно их сделать текущими для разных texture unit'ов, и передать их номера в uniform-переменные шейдера
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как использовать текстуру для 3D-модели?}
+\begin{itemize}
+\item Обычно каждая вершина хранит пару (нормированных) текстурных координат (UV-развёртка)
+\pause
+\item Они передаются из вершинного шейдера во фрагментный и интерполируются
+\pause
+\item Интерполированные значения текстурных координат используются во фрагментном шейдере для чтения из текстуры
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как использовать текстуру для 3D-модели?}
+\slideimage{uv.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Форматы изображений}
+\begin{itemize}
+\item \verb|glTexImage2D| ожидает на вход массив готовых пикселей
+\pause
+\item Обычно изображения хранятся в более сложных форматах: PNG, JPG, и т.д.
+\pause
+\item Есть формат Netpbm, хранящий сырые пиксели и простой для чтения/записи
+\pause
+\item Есть библиотеки для чтения разных форматов - libpng, libjpeg
+\pause
+\item \verb|stb_image.h| - single-header библиотека для чтения разных форматов
+\pause
+\item Boost GIL (Generic Image Library)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Псевдокод типичного использования текстуры}
+\begin{verbatim}
+// инициализация
+image = loadImage('image.png')
+texture = createTexture()
+texture.setMinFilter(GL_LINEAR_MIPMAP_NEAREST)
+texture.setMagFilter(GL_NEAREST)
+texture.load(image)
+texture.generateMipmap()
+
+// рендеринг
+program.use()
+vao.bind()
+program.uniform("color_texture") = 0;
+glActiveTexture(GL_TEXTURE0);
+texture.bind()
+glDrawArrays(...)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Texture}{khronos.org/opengl/wiki/Texture}
+\item \href{https://www.khronos.org/opengl/wiki/Sampler_Object}{khronos.org/opengl/wiki/Sampler\_Object}
+\item \href{https://www.khronos.org/opengl/wiki/Image_Format}{khronos.org/opengl/wiki/Image\_Format}
+\item \href{https://learnopengl.com/Getting-started/Textures}{learnopengl.com/Getting-started/Textures}
+\item \href{http://www.opengl-tutorial.org/beginners-tutorials/tutorial-5-a-textured-cube}{opengl-tutorial.org/beginners-tutorials/tutorial-5-a-textured-cube}
+\item \href{https://open.gl/textures}{open.gl/textures}
 \end{itemize}
 \end{frame}
 
