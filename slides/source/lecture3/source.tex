@@ -827,4 +827,81 @@ GL_TRIANGLE_STRIP:
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{VAO, VBO, EBO: схема}
+\begin{center}
+\begin{tikzpicture}
+% \filldraw[fill=red!40!white, draw=black,thick] (3.0 * \x + 0.0, 0) rectangle (3.0 * \x + 1.0, 0.5);
+% \filldraw[fill=green!40!white, draw=black,thick] (3.0 * \x + 1.0, 0) rectangle (3.0 * \x + 2.0, 0.5);
+% \filldraw[fill=blue!40!white, draw=black,thick] (3.0 * \x + 2.0, 0) rectangle (3.0 * \x + 3.0, 0.5);
+% \node[] at (3.0 * \x + 0.5, 0.25) {P\x};
+% \node[] at (3.0 * \x + 1.5, 0.25) {N\x};
+% \node[] at (3.0 * \x + 2.5, 0.25) {C\x};
+% \node[] at (3.0 * \x + 0.0, 0.75) {\ta};
+% \node[] at (3.0 * \x + 1.0, 0.75) {\tb};
+% \node[] at (3.0 * \x + 2.0, 0.75) {\tc};
+% \node[] at (3.0 * \x + 3.0, 0.75) {\td};
+% \draw[black,thick] (3.0 * \x, -0.125) -- (3.0 * \x, -0.5);
+% \draw[black,thick] (3.0 * \x + 3.0, -0.125) -- (3.0 * \x + 3.0, -0.5);
+% \node[] at (3.0 * \x + 1.5, -0.25) {v\x};
+
+\filldraw[fill=red!40!white, draw=black,thick] (3.0, 0) rectangle (4.0, 0.5);
+\filldraw[fill=green!40!white, draw=black,thick] (4.0, 0) rectangle (5.0, 0.5);
+\filldraw[fill=red!40!white, draw=black,thick] (5.0, 0) rectangle (6.0, 0.5);
+\filldraw[fill=green!40!white, draw=black,thick] (6.0, 0) rectangle (7.0, 0.5);
+
+\node[] at (1.5, 0.25) {VBO1:};
+\node[] at (3.5, 0.25) {P0};
+\node[] at (4.5, 0.25) {N0};
+\node[] at (5.5, 0.25) {P1};
+\node[] at (6.5, 0.25) {N1};
+\node[] at (7.5, 0.25) {\begin{math}\cdots\end{math}};
+
+\filldraw[fill=blue!40!white, draw=black,thick] (3.0, -1.0) rectangle (4.0, -0.5);
+\filldraw[fill=blue!40!white, draw=black,thick] (4.0, -1.0) rectangle (5.0, -0.5);
+
+\node[] at (1.5, -0.75) {VBO2:};
+\node[] at (3.5, -0.75) {C0};
+\node[] at (4.5, -0.75) {C1};
+\node[] at (5.5, -0.75) {\begin{math}\cdots\end{math}};
+
+\draw[draw=black,thick] (3.0, -2.0) rectangle (3.5, -1.5);
+\draw[draw=black,thick] (3.5, -2.0) rectangle (4.0, -1.5);
+\draw[draw=black,thick] (4.0, -2.0) rectangle (4.5, -1.5);
+\draw[draw=black,thick] (4.5, -2.0) rectangle (5.0, -1.5);
+\draw[draw=black,thick] (5.0, -2.0) rectangle (5.5, -1.5);
+\draw[draw=black,thick] (5.5, -2.0) rectangle (6.0, -1.5);
+
+\node[] at (1.5, -1.75) {EBO:};
+\node[] at (3.25, -1.75) {0};
+\node[] at (3.75, -1.75) {1};
+\node[] at (4.25, -1.75) {2};
+\node[] at (4.75, -1.75) {2};
+\node[] at (5.25, -1.75) {1};
+\node[] at (5.75, -1.75) {3};
+\node[] at (6.5, -1.75) {\begin{math}\cdots\end{math}};
+
+\draw[draw=black,thick] (3.0, -3.0) rectangle (5.0, -2.5);
+\draw[draw=black,thick] (5.0, -3.0) rectangle (9.0, -2.5);
+\filldraw[fill=red!40!white, draw=black,thick] (3.0, -3.5) rectangle (5.0, -3.0);
+\draw[draw=black,thick] (5.0, -3.5) rectangle (9.0, -3.0);
+\filldraw[fill=green!40!white, draw=black,thick] (3.0, -4.0) rectangle (5.0, -3.5);
+\draw[draw=black,thick] (5.0, -4.0) rectangle (9.0, -3.5);
+\filldraw[fill=blue!40!white, draw=black,thick] (3.0, -4.5) rectangle (5.0, -4.0);
+\draw[draw=black,thick] (5.0, -4.5) rectangle (9.0, -4.0);
+
+\node[] at (1.5, -2.75) {VAO:};
+\node[] at (4.0, -2.75) {Indices:};
+\node[] at (7.0, -2.75) {EBO};
+\node[] at (4.0, -3.25) {Attrib 0:};
+\node[] at (7.0, -3.25) {VBO1, offset, stride};
+\node[] at (4.0, -3.75) {Attrib 1:};
+\node[] at (7.0, -3.75) {VBO1, offset, stride};
+\node[] at (4.0, -4.25) {Attrib 2:};
+\node[] at (7.0, -4.25) {VBO2, offset, stride};
+
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
 \end{document}
