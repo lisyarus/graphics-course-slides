@@ -831,20 +831,6 @@ GL_TRIANGLE_STRIP:
 \frametitle{VAO, VBO, EBO: схема}
 \begin{center}
 \begin{tikzpicture}
-% \filldraw[fill=red!40!white, draw=black,thick] (3.0 * \x + 0.0, 0) rectangle (3.0 * \x + 1.0, 0.5);
-% \filldraw[fill=green!40!white, draw=black,thick] (3.0 * \x + 1.0, 0) rectangle (3.0 * \x + 2.0, 0.5);
-% \filldraw[fill=blue!40!white, draw=black,thick] (3.0 * \x + 2.0, 0) rectangle (3.0 * \x + 3.0, 0.5);
-% \node[] at (3.0 * \x + 0.5, 0.25) {P\x};
-% \node[] at (3.0 * \x + 1.5, 0.25) {N\x};
-% \node[] at (3.0 * \x + 2.5, 0.25) {C\x};
-% \node[] at (3.0 * \x + 0.0, 0.75) {\ta};
-% \node[] at (3.0 * \x + 1.0, 0.75) {\tb};
-% \node[] at (3.0 * \x + 2.0, 0.75) {\tc};
-% \node[] at (3.0 * \x + 3.0, 0.75) {\td};
-% \draw[black,thick] (3.0 * \x, -0.125) -- (3.0 * \x, -0.5);
-% \draw[black,thick] (3.0 * \x + 3.0, -0.125) -- (3.0 * \x + 3.0, -0.5);
-% \node[] at (3.0 * \x + 1.5, -0.25) {v\x};
-
 \filldraw[fill=red!40!white, draw=black,thick] (3.0, 0) rectangle (4.0, 0.5);
 \filldraw[fill=green!40!white, draw=black,thick] (4.0, 0) rectangle (5.0, 0.5);
 \filldraw[fill=red!40!white, draw=black,thick] (5.0, 0) rectangle (6.0, 0.5);
@@ -899,9 +885,66 @@ GL_TRIANGLE_STRIP:
 \node[] at (7.0, -3.75) {VBO1, offset, stride};
 \node[] at (4.0, -4.25) {Attrib 2:};
 \node[] at (7.0, -4.25) {VBO2, offset, stride};
-
 \end{tikzpicture}
 \end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг нескольких объектов}
+\begin{itemize}
+\item Обычно: для каждого объекта свой набор VAO+VBO(+EBO)
+\item Для обновления данных нужны только VBO (и, возможно, EBO)
+\item Для рисования нужен только VAO
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг нескольких объектов}
+Инициализация:
+\begin{verbatim}
+for (o in objects) {
+    glGenVertexArrays(1, &o.vao)
+    glGenBuffers(1, &o.vbo)
+    glGenBuffers(1, &o.ebo)
+
+    glBindVertexArray(o.vao)
+    glBindBuffer(GL_ARRAY_BUFFER, o.vbo)
+    for (i in attribs) {
+        glEnableVertexAttribArray(i)
+        glVertexAttribPointer(i, ...)
+    }
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
+        o.ebo) // хранится в o.vao
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг нескольких объектов}
+Загрузка данных:
+\begin{verbatim}
+for (o in objects) {
+    glBindBuffer(GL_ARRAY_BUFFER, o.vbo)
+    glBufferData(GL_ARRAY_BUFFER, o.vertices)
+
+    glBindBuffer(GL_ARRAY_BUFFER, o.ebo)
+    glBufferData(GL_ARRAY_BUFFER, o.indices)
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг нескольких объектов}
+Рендеринг:
+\begin{verbatim}
+glUseProgram(program)
+glUniform(...)
+for (o in objects) {
+    glBindVertexArray(o.vao)
+    glDrawElements(o.indexCount)
+}
+\end{verbatim}
 \end{frame}
 
 \end{document}
