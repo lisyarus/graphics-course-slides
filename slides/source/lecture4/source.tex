@@ -831,8 +831,20 @@ F = \frac{top + bottom}{top - bottom}
 \pause
 \item Всё ближе near или дальше far обрезается - почему не взять near\begin{math}\approx 0\end{math} и far=\begin{math}\infty\end{math}?
 \pause
-\item Ответ: ограниченная точность z-буфера
+\item Если near = 0, третья строка матрицы проекции вырождается в \begin{math}\begin{pmatrix}0 & 0 & -1 & 0\end{pmatrix}\end{math}, и у всех точек будет одинаковая глубина, т.е. не получится использовать z-буфер
+\pause
+\item Если far \begin{math}\rightarrow\infty\end{math}, третья строка стремится к \begin{math}\begin{pmatrix}0 & 0 & -1 & -2near\end{pmatrix}\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция}
+\begin{itemize}
+\item Z-буфер имеет ограниченную точность
+\pause
 \item Чем больше отношение \begin{math}\frac{far}{near}\end{math}, тем меньше точности приходится на единицу расстояния
+\pause
+\item Как выбирать параметры near и far?
 \pause
 \item near: максимально возможный, при котором не обрезается что-то существенное
 \begin{itemize}
