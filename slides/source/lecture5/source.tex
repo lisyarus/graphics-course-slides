@@ -307,4 +307,74 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Формат текстуры}
+\begin{itemize}
+\item Текстура - набор (1D/2D/3D массив или 6 2D массивов) пикселей
+\pause
+\item Пиксель - 1, 2, 3 или 4 компоненты в определённом формате
+\pause
+\item Форматов очень много, вот часто встречающиеся:
+\begin{itemize}
+\item \verb|GL_RGB8| - 3 нормированных 8-битных канала
+\item \verb|GL_RGBA8| - 4 нормированных 8-битных канала
+\item \verb|GL_RGBA32F| - 4 32-битных floating-point канала
+\item \verb|GL_DEPTH_COMPONENT24| - специальный формат для z-буфера
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Загрузить данные в текстуру}
+\begin{itemize}
+\item 1D: \verb|glTexImage1D|
+\pause
+\item 2D, 1D array или грань cubemap: \verb|glTexImage2D|
+\pause
+\item 3D или 2D array: \verb|glTexImage3D|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Загрузить данные в текстуру}
+\begin{verbatim}
+glTexImage2D(GLenum target, GLint level,
+  GLint internalFormat,
+  GLsizei width, GLsizei height, GLint border,
+  GLenum format, GLenum type, const GLvoid * data);
+\end{verbatim}
+\begin{itemize}
+\item \verb|target| - тип текстуры (например, \verb|GL_TEXTURE_2D|)
+\item \verb|level| - mipmap level, который мы хотим загрузить (0 для основной текстуры)
+\item \verb|internalFormat| - формат хранения пикселей (например, \verb|GL_RGBA8|)
+\item \verb|width|, \verb|height| - размер в пикселях
+\item \verb|border| - легаси, должно быть 0
+\item \verb|format| - какие компоненты есть в массиве \verb|data| (например, \verb|GL_RGB|)
+\item \verb|type| - какого типа компоненты в массиве \verb|data| (например, \verb|GL_UNSIGNED_BYTE|)
+\item \verb|data| - указатель на массив пикселей (сначала первая строка пикселей, потом вторая, и т.д.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Загрузить данные в текстуру}
+\begin{itemize}
+\item Если \verb|data = nullptr|, под текстуру выделится память, но данные не будут записаны
+\pause
+\item Есть ограничения на возможные пары \verb|format| и \verb|type| (например, \verb|type = GL_UNSIGNED_SHORT_5_6_5| требует \verb|format = GL_RGB|)
+\pause
+\item \verb|format + type| может не совпадать с \verb|internalFormat|, тогда происходит преобразование в \verb|internalFormat|
+\pause
+\item По умолчанию ожидается, что начало каждой строки пикселей в массиве \verb|data| выровнено на 4 байта
+\item Это может нарушиться, например, с \verb|format = GL_RGB| и \verb|type = GL_UNSIGNED_BYTE| с нечётной шириной текстуры
+\item Настраивается с помощью \verb|glPixelStorei(GL_UNPACK_ALIGNMENT, 1)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Генерация mipmap}
+\begin{itemize}
+\item После загрузки нулевого mipmap-уровня, можно сгенерировать все остальные с помощью \verb|glGenerateMipmap(target)|
+\end{itemize}
+\end{frame}
+
 \end{document}
