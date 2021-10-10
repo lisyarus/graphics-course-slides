@@ -123,10 +123,93 @@ while (glGetError() != GL_NO_ERROR);
 \begin{frame}[fragile]
 \frametitle{Ошибки OpenGL}
 \begin{itemize}
-\item OpenGL 4.3+: более удобный механизм, \verb|glDebugMessageCallback|
+\item OpenGL 4.3+ (или расширение \verb|GL_ARB_debug_output|): более удобный механизм, \verb|glDebugMessageCallback|
 \pause
 \item \href{https://www.khronos.org/opengl/wiki/OpenGL_Error}{khronos.org/opengl/wiki/OpenGL\_Error}
 \item \href{https://docs.gl/gl3/glGetError}{docs.gl/gl3/glGetError}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Предоставляют дополнительную функциональность за рамками возможностей конкретной версии OpenGL\only<2->{, например}
+\pause
+\begin{itemize}
+\item Конкретный производитель выпустил новую функциональность
+\pause
+\item Фунцкиональность доступна на большинстве реализаций OpenGL, но ещё не успела войти в новую версию OpenGL
+\pause
+\item Функциональность доступна в новой версии OpenGL, но крайне распространена и хочется ей пользоваться из старой версии
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Делятся на
+\begin{itemize}
+\item ARB (\textit{Architectural Review Board}) - функциональность, которая (скорее всего) войдёт в следующий стандарт
+\item EXT - широко распространённая функциональность
+\item NV - расширение от Nvidia (возможно, доступно и на других видеокартах)
+\item AMD - расширение от AMD (возможно, доступно и на других видеокартах)
+\item APPLE - расширение от APPLE (возможно, доступно и на других видеокартах)
+\item И т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Расширение - набор констант и функций (как и конкретная версия OpenGL)
+\pause
+\item Функции нужно загружать, так же, как и функции самого OpenGL
+\pause
+\item Константы и перечисления заканчиваются на суффикс в зависимости от типа расширения:
+\begin{itemize}
+\item \verb|ARB_debug_output|: \verb|glDebugMessageCallbackARB|, \verb|GL_DEBUG_SEVERITY_HIGH_ARB|
+\item \verb|EXT_texture_filter_anisotropic|: \verb|GL_TEXTURE_MAX_ANISOTROPY_EXT|
+\item \verb|NV_texture_barrier|: \verb|glTextureBarrierNV|
+\end{itemize}
+\pause
+\item Исключение: core extensions - предоставляют функциональность новых версий OpenGL в старых версиях OpenGL
+\begin{itemize}
+\item Имеют тип \verb|ARB|
+\item Не имеют суффиксов в названиях функций и констант
+\end{itemize}  
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Получить список поддерживаемых расширений:
+\end{itemize}
+\begin{verbatim}
+GLint numExtensions;
+glGetIntegerv(GL_NUM_EXTENSIONS, numExtensions);
+for (GLint i = 0; i < numExtensions; ++i) {
+    std::cout << glGetStringi(GL_EXTENSIONS, i) << '\n';
+}
+\end{verbatim}
+\pause
+\begin{itemize}
+\item GLEW загружает их автоматически:
+\end{itemize}
+\begin{verbatim}
+if (GLEW_EXT_texture_filter_anisotropic) {
+    std::cout << "Anisotropic filtering is supported\n";
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Extension}{khronos.org/opengl/wiki/OpenGL\_Extension}
+\item \href{https://www.khronos.org/registry/OpenGL/index_gl.php}{khronos.org/registry/OpenGL/index\_gl.php} - список всех зарегистрированных расширений
 \end{itemize}
 \end{frame}
 
