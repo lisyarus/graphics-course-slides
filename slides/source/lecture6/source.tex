@@ -1,0 +1,133 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 6: Ошибки OpenGL, расширения OpenGL, blending, освещение}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item Часто драйвер может понять, что в определённом OpenGL-вызове содержится ошибка
+\pause
+\begin{itemize}
+\item \verb|glTexImage2D| с параметром \verb|target|, не являющимся одним из типов текстур
+\pause
+\item \verb|glTexParameteri| устанавливающая mag filter в что-то отличное от \verb|GL_LINEAR| или \verb|GL_NEAREST|
+\pause
+\item \verb|glBindBuffer| с ID буффера, который не был получен через \verb|glGenBuffers|
+\pause
+\item etc.
+\end{itemize}
+\pause
+\item В таких случаях генерируется ошибка как особое значение типа \verb|GLenum|
+\pause
+\item Как правило, вызвавшая ошибку операция не выполняется
+\pause
+\item \verb|glGetError()| - получить значение ошибки, если она была
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+Возможные значения ошибок:
+\begin{itemize}
+\item \verb|GL_NO_ERROR| - ошибки нет
+\pause
+\item \verb|GL_INVALID_ENUM| - недопустимое значения перечисления (например, \verb|GL_TEXTURE_2D| как первый параметр \verb|glBindBuffer|)
+\pause
+\item \verb|GL_INVALID_VALUE| - недопустимое значение числового аргумента (например, отрицательная ширина текстуры в \verb|glTexImage2D|)
+\pause
+\item \verb|GL_INVALID_OPERATION| - недопустимая операция (например, \verb|glUniform1i| при отсутствии текущей шейдерной программы)
+\pause
+\item \verb|GL_INVALID_FRAMEBUFFER_OPERATION| - операция рисования/чтения пикселей с невалидным framebuffer'ом (о них мы поговорим позже)
+\pause
+\item \verb|GL_OUT_OF_MEMORY| - закончилась память на GPU (может быть вызвана любой OpenGL-командой, обычно не обрабатывается)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item Документация к каждой функции описывает все возможные ошибки, которые эта функция может вызвать, и в каких случаях
+\pause
+\begin{itemize}
+\item N.B. \verb|GL_OUT_OF_MEMORY| нигде не указан, потому что может появиться где угодно
+\end{itemize}
+\pause
+\item Не все ошибки покрываются этим механизмом (например: \verb|glDrawArrays| с правильно настроенным VAO но с пустым VBO с вершинами)
+\pause
+\item Нет информации о том, какая именно функция вызвала ошибку (любая из тех, что были вызваны до \verb|glGetError|)
+\pause
+\begin{itemize}
+\item \begin{math}\Rightarrow\end{math} Придётся расставлять проверку после каждого OpenGL-вызова
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item Драйвер может хранить один флаг ошибки, и пропускать все последующие ошибки до вызова \verb|glGetError|
+\pause
+\item Драйвер может хранить несколько флагов, и \verb|glGetError| возвращает и очищает любой из них
+\pause
+\item \begin{math}\Rightarrow\end{math} Чтобы очистить ошибки, нужно вызывать \verb|glGetError| в цикле:
+\end{itemize}
+\begin{verbatim}
+while (glGetError() != GL_NO_ERROR);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item OpenGL 4.3+: более удобный механизм, \verb|glDebugMessageCallback|
+\pause
+\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Error}{khronos.org/opengl/wiki/OpenGL\_Error}
+\item \href{https://docs.gl/gl3/glGetError}{docs.gl/gl3/glGetError}
+\end{itemize}
+\end{frame}
+
+\end{document}
