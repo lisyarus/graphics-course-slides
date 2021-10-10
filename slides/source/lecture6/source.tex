@@ -191,7 +191,7 @@ while (glGetError() != GL_NO_ERROR);
 GLint numExtensions;
 glGetIntegerv(GL_NUM_EXTENSIONS, numExtensions);
 for (GLint i = 0; i < numExtensions; ++i) {
-    std::cout << glGetStringi(GL_EXTENSIONS, i) << '\n';
+    std::cout << glGetStringi(GL_EXTENSIONS, i) << "\n";
 }
 \end{verbatim}
 \pause
@@ -210,6 +210,133 @@ if (GLEW_EXT_texture_filter_anisotropic) {
 \begin{itemize}
 \item \href{https://www.khronos.org/opengl/wiki/OpenGL_Extension}{khronos.org/opengl/wiki/OpenGL\_Extension}
 \item \href{https://www.khronos.org/registry/OpenGL/index_gl.php}{khronos.org/registry/OpenGL/index\_gl.php} - список всех зарегистрированных расширений
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1-5>[fragile,label=blending]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Результат фрагментного шейдера (\verb|layout (location = 0) vec4 out_color;|) записывается в пиксель экрана, стирая то, что было в нём до этого
+\pause
+\item Иногда мы хотим "смешать" результат и пиксель экрана, и записать результат смешивания
+\pause
+\begin{itemize}
+\item Полупрозрачные объекты
+\pause
+\item Алгоритмы освещения и теней
+\pause
+\item Heatmaps
+\pause
+\item Ручное сглаживание
+\pause
+\item И т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Heatmap}
+\begin{figure}
+\slideimage{heatmap.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<5-6>{blending}
+
+\begin{frame}
+\frametitle{Yandex maps}
+\begin{figure}
+\slideimage{yandex-maps.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<6->{blending}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Включается/выключается: \verb|glEnable(GL_BLEND)|
+\pause
+\item \begin{math}src\end{math} - результат фрагментного шейдера
+\item \begin{math}dst\end{math} - пиксель на экране
+\item Уравнение blending'а:
+\begin{center}
+\begin{math}
+dst \leftarrow f(C_{src} \cdot src, C_{dst} \cdot dst)
+\end{math}
+\end{center}
+\pause
+\item \begin{math}f\end{math} - настраиваемая функция
+\item \begin{math}C_{src}\end{math} и \begin{math}C_{dst}\end{math} - настраиваемые веса
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Настройка функции \begin{math}f\end{math}: \verb|glBlendEquation(GLenum equation)|:
+\pause
+\begin{itemize}
+\item \verb|GL_FUNC_ADD|: \begin{math}f(src, dst) = src + dst\end{math}
+\item \verb|GL_FUNC_SUBTRACT|: \begin{math}f(src, dst) = src - dst\end{math}
+\item \verb|GL_FUNC_REVERSE_SUBTRACT|: \begin{math}f(src, dst) = dst - src\end{math}
+\item \verb|GL_MIN|: \begin{math}f(src, dst) = \min(src, dst)\end{math}
+\item \verb|GL_MAX|: \begin{math}f(src, dst) = \max(src, dst)\end{math}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Настройка весов \begin{math}C_{src}\end{math} и \begin{math}C_{dst}\end{math}: \verb|glBlendFunc(GLenum src, GLenum dst)|:
+\pause
+\begin{itemize}
+\item \verb|GL_ZERO|: \begin{math}C = 0\end{math}
+\item \verb|GL_ONE|: \begin{math}C = 1\end{math}
+\item \verb|GL_SRC_COLOR|: \begin{math}C = src\end{math}
+\item \verb|GL_ONE_MINUS_SRC_COLOR|: \begin{math}C = 1 - src\end{math}
+\item \verb|GL_SRC_ALPHA|: \begin{math}C = src_A\end{math}
+\item \verb|GL_ONE_MINUS_SRC_ALPHA|: \begin{math}C = 1 - src_A\end{math}
+\item И т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Обычно \begin{math}src=(R,G,B,A)\end{math} означает, что цвет имеет полупрозрачность \begin{math}A\end{math}
+\begin{itemize}
+\item \begin{math}A=0\end{math} - полностью прозрачный цвет
+\item \begin{math}A=1\end{math} - полностью непрозрачный цвет
+\end{itemize}
+\pause
+\item Для этого нужна такая формула смешивания:
+\begin{center}
+\begin{math}
+dst \leftarrow src_A \cdot src + (1 - src_A) \cdot dst
+\end{math}
+\end{center}
+\pause
+\item Этому соответстует настройка
+\begin{verbatim}
+glBlendEquation(GL_FUNC_ADD);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+\end{verbatim}
+\pause
+\item Это самый типичный способ использовать blending
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Blending}{khronos.org/opengl/wiki/Blending}
+\item \href{http://docs.gl/gl3/glBlendFunc}{docs.gl/gl3/glBlendFunc}
+\item \href{http://docs.gl/gl3/glBlendEquation}{docs.gl/gl3/glBlendEquation}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency/}{opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Blending}{learnopengl.com/Advanced-OpenGL/Blending}
 \end{itemize}
 \end{frame}
 
