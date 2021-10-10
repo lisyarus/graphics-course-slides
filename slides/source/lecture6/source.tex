@@ -213,7 +213,7 @@ if (GLEW_EXT_texture_filter_anisotropic) {
 \end{itemize}
 \end{frame}
 
-\begin{frame}<1-5>[fragile,label=blending]
+\begin{frame}<1-3>[fragile,label=blending]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
 \item Результат фрагментного шейдера (\verb|layout (location = 0) vec4 out_color;|) записывается в пиксель экрана, стирая то, что было в нём до этого
@@ -222,6 +222,8 @@ if (GLEW_EXT_texture_filter_anisotropic) {
 \pause
 \begin{itemize}
 \item Полупрозрачные объекты
+\pause
+\item Растительность
 \pause
 \item Алгоритмы освещения и теней
 \pause
@@ -235,13 +237,38 @@ if (GLEW_EXT_texture_filter_anisotropic) {
 \end{frame}
 
 \begin{frame}
+\frametitle{Полупрозрачность}
+\begin{figure}
+\slideimage{window.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Полупрозрачность}
+\begin{figure}
+\slideimage{macos-ui.png}
+\end{figure}
+\end{frame}
+
+\againframe<3-4>{blending}
+
+\begin{frame}
+\frametitle{Деревья}
+\begin{figure}
+\slideimage{birch.png}
+\end{figure}
+\end{frame}
+
+\againframe<4-6>{blending}
+
+\begin{frame}
 \frametitle{Heatmap}
 \begin{figure}
 \slideimage{heatmap.jpg}
 \end{figure}
 \end{frame}
 
-\againframe<5-6>{blending}
+\againframe<6-7>{blending}
 
 \begin{frame}
 \frametitle{Yandex maps}
@@ -250,7 +277,7 @@ if (GLEW_EXT_texture_filter_anisotropic) {
 \end{figure}
 \end{frame}
 
-\againframe<6->{blending}
+\againframe<7->{blending}
 
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
@@ -327,6 +354,35 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \pause
 \item Это самый типичный способ использовать blending
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Такое смешивание некоммутативно, т.е. результат зависит от порядка рисования
+\end{itemize}
+\slideimage{two-squares.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Смешивание некорректно работает с тестом глубины
+\end{itemize}
+\slideimage{blending_incorrect_order.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item В общем случае нужно сортировать полупрозрачные объекты и рисовать в порядке уменьшения расстояния до камеры
+\item Order-independent transparency (OIT) - активная тема исследований
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\slideimage{blending_sorted.png}
 \end{frame}
 
 \begin{frame}[fragile]
