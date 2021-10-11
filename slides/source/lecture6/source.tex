@@ -16,6 +16,8 @@
 
 \usepackage{hyperref}
 
+\usepackage{amsmath}
+
 \usepackage{tikz}
 \usetikzlibrary{decorations}
 \usetikzlibrary{decorations.pathreplacing}
@@ -393,6 +395,522 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \item \href{http://docs.gl/gl3/glBlendEquation}{docs.gl/gl3/glBlendEquation}
 \item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency/}{opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency}
 \item \href{https://learnopengl.com/Advanced-OpenGL/Blending}{learnopengl.com/Advanced-OpenGL/Blending}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Освещение}
+Зачем нужно освещение?
+\begin{itemize}
+\item Реалистичный рендеринг: всё, что мы видим, это свет
+\pause
+\item Нереалистичный рендеринг:
+\begin{itemize}
+\item Помогает понять форму объектов
+\item Помогает понять соотношение между объектами в пространстве
+\item Создаёт атмосферу
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Освещение}
+\slideimage{suzanne.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Освещение}
+\slideimage{suzanne-lit.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Освещение}
+\slideimage{suzanne-box.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Освещение}
+\slideimage{suzanne-box-lit.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Освещение}
+\slideimage{zelda.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Свет}
+\begin{itemize}
+\item Свет - электромагнитная волна
+\item Пара векторных полей (электрическое \begin{math}\mathbf{E}\end{math} и магнитное \begin{math}\mathbf{B}\end{math}), описываемых уравнениями Максвелла
+\begin{center}
+\begin{math}
+\begin{matrix}
+\nabla \cdot \mathbf{E} = 4 \pi \rho \\
+\nabla \cdot \mathbf{B} = 0 \\
+\nabla \times \mathbf{E} = -\frac{1}{c} \frac{\partial \mathbf B}{\partial t} \\
+\nabla \times \mathbf{B} = \frac{1}{c} \left(4 \pi \mathbf J + \frac{\partial \mathbf E}{\partial t} \right)
+\end{matrix}
+\end{math}
+\end{center}
+\pause
+\item Раскладывается в сумму волн фиксированной длины волны \begin{math}\lambda\end{math} (монохроматические волны)
+\item Интерференция, дифракция, поляризация, взаимодействие с веществом
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Свет}
+\begin{itemize}
+\item В реднеринге обычно достаточно геометрической оптики - предела при \begin{math}\lambda\rightarrow 0\end{math}
+\pause
+\item Свет распространяется прямыми лучами (исключение - граница раздела сред или неоднородные среды)
+\item Свет распространяется бесконечно быстро (\begin{math}c \rightarrow \infty\end{math})
+\item Луч света разбивается в сумму монохроматических лучей, каждая имеет свою амплитуду (количество света)
+\pause
+\item Луч света - распределение амплитуд по длинам волн
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Свет}
+\slideimage{blue-red-spectrum.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Видимый спектр}
+\slideimage{visible-spectrum.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Косинус угла падения}
+\begin{itemize}
+\item На поверхность площадью \begin{math}A\end{math} падает световой поток с площадью поперечного сечения \begin{math}{\color{blue} \Phi}\end{math}
+\item Тогда \begin{math}{\color{blue} \Phi} = A \cdot {\color{red} \cos \theta}\end{math}
+\item \only<2->{\begin{math}\Rightarrow\end{math} На единицу площади приходится \begin{math}{\color{red} \cos \theta}\end{math} от общей плотности потока}
+\end{itemize}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[black,thick] (4.5, 0.0) -- (8.5, 4.0);
+\draw[black,thick] (5.5, 0.0) -- (9.0, 3.5);
+\draw[black,thick] (4.5, -0.25) -- (4.5, 0.25);
+\draw[black,thick] (5.5, -0.25) -- (5.5, 0.25);
+\draw[blue,thick] (7.5, 3.0) -- (8.0, 2.5);
+\draw[red,thick] (6.0, 0.0) arc (0:45:0.5);
+
+\node[black] at (5.0, -0.5) {A};
+\node[blue] at (8.0, 3.0) {\begin{math}\Phi\end{math}};
+\node[red] at (6.5, 0.5) {\begin{math}\theta\end{math}};
+
+\only<3->{
+  \draw[black,thick,-stealth] (5.0, 3.0) -- (5.0, 3.5);
+  \draw[blue,thick,-stealth] (5.0, 3.0) -- (5.35, 3.35);
+
+  \node[black] at (5.0, 4.0) {\begin{math}\vec{n}\end{math}};
+  \node[blue] at (5.7, 3.7) {\begin{math}\vec{\omega}\end{math}};
+
+  \node[] at (2.0, 2.0) {\begin{math}{\color{red} \cos\theta} = \vec{n} \cdot {\color{blue} \vec{\omega}}\end{math}};
+}
+\end{tikzpicture}
+\end{center}
+\pause
+\pause
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Столкновение света с поверхностью}
+\begin{itemize}
+\item Что происходит, когда луч света сталкивается с некой поверхностью?
+\pause
+\item Зависит от её \textit{материала}:
+\pause
+\begin{itemize}
+\item Абсолютно чёрное тело: поглощает свет
+\pause
+\item Зеркало: отражает свет в строго определённом направлении
+\pause
+\item Старое, плохо отполированное зеркало / лакированная поверхность: отражает свет примерно в определённом направлении
+\pause
+\item Диффузная (ламбертова) поверхность: отражает свет во все стороны равномерно
+\pause
+\item Стекло: преломляет свет
+\pause
+\item Вода: частично отражает, частично преломляет (закон Френеля)
+\end{itemize}
+\pause
+\item \begin{math}\Rightarrow\end{math} Свет, выходящий в каком-то направлении, может зависеть от света, пришедшего из \textit{любого} направления
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Абсолютно чёрное тело}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Зеркало}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.5, 0.5) -- (2.0, 3.0);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (1.5, 3.5) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Старое зеркало / лакированная поверхность}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.5, 0.5) -- (2.0, 3.0);
+\draw[magenta,thick,-stealth] (4.64, 0.6) -- (3.5, 2.5);
+\draw[magenta,thick,-stealth] (4.78, 0.67) -- (4.5, 1.5);
+\draw[magenta,thick,-stealth] (4.4, 0.36) -- (2.5, 1.5);
+\draw[magenta,thick,-stealth] (4.33, 0.22) -- (3.5, 0.5);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (1.5, 3.5) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Диффузная поверхность}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.387627564304205, 0.35355339059327373) -- (1.3257653858252327, 2.121320343559642);
+\draw[magenta,thick,-stealth] (4.646446609406726, 0.6123724356957946) -- (2.878679656440357, 3.674234614174767);
+\draw[magenta,thick,-stealth] (5.0, 0.7071067811865476) -- (5.0, 4.242640687119285);
+\draw[magenta,thick,-stealth] (5.353553390593274, 0.6123724356957946) -- (7.121320343559642, 3.6742346141747673);
+\draw[magenta,thick,-stealth] (5.612372435695795, 0.35355339059327373) -- (8.674234614174768, 2.121320343559642);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (1.5, 3.5) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Стекло}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.646446609406726, -0.6123724356957944) -- (2.878679656440356, -3.6742346141747655);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (2.5251262658470814, -4.28660704987056) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга}
+\begin{center}
+\begin{equation}
+{\color{magenta}I_{out}}(p, {\color{magenta}\vec\omega_{out}}, \lambda) = I_{e}(p, {\color{magenta}\vec\omega_{out}})+\int\limits_{\mathbb S^2} {\color{blue}I_{in}}(p, {\color{blue}\vec\omega_{in}}, \lambda) \cdot {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) \cdot ({\color{blue}\vec\omega_{in}} \cdot \vec{n}) d{\color{blue}\vec\omega_{in}}
+\end{equation}
+\end{center}
+\pause
+\begin{itemize}
+\item Уравнение для конкретной точки \begin{math}p\end{math}
+\pause
+\item \begin{math}{\color{magenta}I_{out}}\end{math} - количество света, выходящего из точки \begin{math}p\end{math} в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math} с длиной волны \begin{math}\lambda\end{math}
+\pause
+\item \begin{math}I_{e}\end{math} - количество света, испускаемого поверхностью из точки \begin{math}p\end{math} в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math} с длиной волны \begin{math}\lambda\end{math}
+\pause
+\item \begin{math}{\color{blue}I_{in}}\end{math} - количество света, приходящего в точку \begin{math}p\end{math} из направления \begin{math}{\color{blue}\vec\omega_{in}}\end{math} с длиной волны \begin{math}\lambda\end{math}
+\pause
+\item \begin{math}{\color{green}f}\end{math} - функция, определяющая, сколько света с длиной волны \begin{math}\lambda\end{math}, пришедшего из направления \begin{math}{\color{blue}\vec\omega_{in}}\end{math}, отразится в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга}
+\begin{itemize}
+\item Абсолютно чёрное тело: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = 0\end{math}
+\pause
+\item Старое зеркало: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \left(R_{\vec n}({\color{blue}\vec\omega_{in}})\cdot{\color{magenta}\vec\omega_{out}}\right)^7\end{math}
+\begin{itemize}
+\item \begin{math}R\end{math} - отраженный вектор: \begin{math}R_{\vec n}(\vec \omega) = 2\vec n \cdot (\vec n \cdot \vec \omega) - \vec \omega\end{math}
+\end{itemize}
+\pause
+\item Диффузная поверхность: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = 1\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Цвет}
+\begin{itemize}
+\item Зависимость \begin{math}{\color{green}f}\end{math} от \begin{math}\lambda\end{math} обеспечивает цвет объектов
+\pause
+\item Мы видим свет, отражённый объектом
+\item Объект синего цвета не отражает красный цвет (кажется чёрным при освещении красным светом)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Материал = BSDF}
+\begin{itemize}
+\item \begin{math}{\color{green}f}\end{math} определяет \textit{материал} объекта
+\pause 
+\item Если \begin{math}{\color{green}f}\end{math} только отражает свет, её называют BRDF: Bidirectional Reflectance Distribution Function
+\pause 
+\item Если \begin{math}{\color{green}f}\end{math} только преломляет свет, её называют BRTF: Bidirectional Transmittance Distribution Function
+\pause 
+\item В общем случае её называют BSTF: Bidirectional Scattering Distribution Function
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{BSDF}
+\begin{itemize}
+\item Обычно BSTF предполагается нормированной:
+\end{itemize}
+\begin{equation}
+\int\limits_{\mathbb S^2} {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) d{\color{blue}\vec\omega_{in}} = 1
+\end{equation}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга}
+\begin{itemize}
+\item Откуда взять \begin{math}{\color{blue}I_{in}}\end{math}? \pause Ответ: это чей-то \begin{math}{\color{magenta}I_{out}}\end{math} 
+\end{itemize}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[black,thick] (0.0, 0.0) -- (0.0, 6.0);
+
+\node[] at (0.0, 3.0) {\begin{math}{\color{magenta}\bullet}\end{math}};
+\node[] at (6.0, 0.0) {\begin{math}{\color{blue}\bullet}\end{math}};
+
+\node[] at (-0.5, 3.0) {\begin{math}{\color{magenta}I_{out}}\end{math}};
+\node[] at (0.5, 3.5) {\begin{math}{\color{magenta}\vec\omega_{out}}\end{math}};
+\node[] at (6.0, -0.5) {\begin{math}{\color{blue}I_{in}}\end{math}};
+\node[] at (6.5, 0.5) {\begin{math}{\color{blue}\vec\omega_{in}}\end{math}};
+
+\draw[magenta,thick,-stealth] (0.5, 2.75) -- (2.0, 2.0);
+\draw[blue,thick,-stealth] (4.0, 1.0) -- (5.5, 0.25);
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга}
+\begin{itemize}
+\item Интегральное уравнение для каждой точки каждой поверхности сцены
+\pause
+\item Геометрия сцены связывает уравнения для разных точек
+\pause
+\item Обычно вместо всех возможных значений \begin{math}\lambda\end{math} берут дискретный набор ({\color{red}красный},{\color{green}зелёный},{\color{blue}синий})
+\pause
+\item Задача называется GI: Global Illumination
+\pause
+\item Решать \textbf{очень} сложно, есть бесчисленное количество методов
+\pause
+\item Реалистичный offline рендеринг: медленно, но очень хорошая картинка
+\pause
+\item Real-time рендеринг: нужны грубые аппроксимации
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Только источник света}
+\slideimage{two_balls_only_emissive.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Только прямое освещение}
+\slideimage{two_balls_no_shadow.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Прямое освещение и тени}
+\slideimage{two_balls_no_diffuse.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Прямое и непрямое освещение, тени}
+\slideimage{two_balls_full.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Прозрачность и отражение}
+\slideimage{two_balls_ref.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient освещение}
+\begin{itemize}
+\item Свет, приходящий "отовсюду"
+\item На улице: небо
+\item В помещении: диффузное отражение от стен, пола, потолка, других объектов
+\item Определяется своим цветом
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient освещение: фрагментный шейдер}
+\begin{verbatim}
+uniform vec3 ambient_color;
+
+in vec3 color;
+
+layout (location = 0) out vec4 out_color;
+
+void main() {
+  vec3 result_color = color * ambient_color;
+  out_color = vec4(result_color, 1.0);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Источники света}
+\begin{itemize}
+\item Два самых часто используемых типа: направленные и точечные
+\pause
+\item Направленные:
+\begin{itemize}
+\item Задаются направлением и яркостью
+\item Моделируют удалённые источники - солнце, луна
+\end{itemize}
+\pause
+\item Точечные:
+\begin{itemize}
+\item Задаются расположением и функцией зависимости яркости от расстояния
+\item Моделируют (относительно) близкие источники - костёр, свеча, лампа
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Прямое освещение}
+\begin{itemize}
+\item Нужно найти скалярное произведение между направлением на источник света и нормалью к поверхности
+\pause
+\item N.B. отрицательный результат означает, что поверхность обращена не по направлению к свету
+\pause
+\item Нужно найти яркость источника света в данной точке
+\pause
+\item Результат = произведение яркости, цвета объекта и коэффициента освещённости
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Направленный источник света: фрагментный шейдер}
+\begin{verbatim}
+uniform vec3 light_direction;
+uniform vec3 light_color;
+
+in vec3 normal;
+in vec3 color;
+
+layout (location = 0) out vec4 out_color;
+
+void main() {
+  float cosine = dot(normal, light_direction);
+  float light_factor = max(0.0, cosine);
+  vec3 result_color = light_factor * color * light_color;
+  out_color = vec4(result_color, 1.0);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Точечный источник света}
+\begin{itemize}
+\item Обычно яркость убывает с расстоянием
+\pause
+\item Часто берут такую функцию затухания (attenuation):
+\end{itemize}
+\begin{equation}
+f(r) = \frac{1}{C_0 + C_1 r + C_2 r^2}
+\end{equation}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Точечный источник света: фрагментный шейдер}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform vec3 light_position;
+uniform vec3 light_attenuation; // c0, c1, c2
+uniform vec3 light_color;
+
+in vec3 position;
+in vec3 normal;
+in vec3 color;
+
+layout (location = 0) out vec4 out_color;
+
+void main() {
+  vec3 light_vector = light_position - position;
+  vec3 light_direction = normalize(light_vector);
+  float cosine = dot(normal, light_direction);
+  float light_factor = max(0.0, cosine);
+
+  float light_distance = length(light_vector);
+  float light_intensity = dot(light_attenuation, 
+    vec3(1.0, light_distance, light_distance * light_distance));
+
+  vec3 result_color = light_factor * light_intensity * color
+    * light_color;
+  out_color = vec4(result_color, 1.0);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Фонга}
+\begin{itemize}
+\item Можно добавить отражённый свет (specular), имитируя гладкую поверхность
+\pause
+\item Ambient + direct (diffuse) + specular = модель Фонга
+\end{itemize}
+\slideimage{phong.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Гуро}
+\begin{itemize}
+\item То же самое, но в вершинном шейдере, и интерполировать результат
+\item Выглядит плохо, в современности не используется
+\end{itemize}
+\slideimage{gourand.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/Lighting/Basic-Lighting}{learnopengl.com/Lighting/Basic-Lighting}
+\item \href{http://www.opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}{opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}
+\item \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial/point-lights}{lighthouse3d.com/tutorials/glsl-tutorial/point-lights}
 \end{itemize}
 \end{frame}
 
