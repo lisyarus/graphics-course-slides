@@ -497,11 +497,11 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \draw[black,thick] (4.5, -0.25) -- (4.5, 0.25);
 \draw[black,thick] (5.5, -0.25) -- (5.5, 0.25);
 \draw[blue,thick] (7.5, 3.0) -- (8.0, 2.5);
-\draw[red,thick] (6.0, 0.0) arc (0:45:0.5);
+\draw[red,thick] (5.5, 0.25) arc (90:45:0.25);
 
 \node[black] at (5.0, -0.5) {A};
 \node[blue] at (8.0, 3.0) {\begin{math}\Phi\end{math}};
-\node[red] at (6.5, 0.5) {\begin{math}\theta\end{math}};
+\node[red] at (5.75, 0.5) {\begin{math}\theta\end{math}};
 
 \only<3->{
   \draw[black,thick,-stealth] (5.0, 3.0) -- (5.0, 3.5);
@@ -631,11 +631,10 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 \begin{frame}[fragile]
 \frametitle{Уравнение рендеринга}
-\begin{center}
 \begin{equation}
-{\color{magenta}I_{out}}(p, {\color{magenta}\vec\omega_{out}}, \lambda) = I_{e}(p, {\color{magenta}\vec\omega_{out}})+\int\limits_{\mathbb S^2} {\color{blue}I_{in}}(p, {\color{blue}\vec\omega_{in}}, \lambda) \cdot {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) \cdot ({\color{blue}\vec\omega_{in}} \cdot \vec{n}) d{\color{blue}\vec\omega_{in}}
+\hspace*{-0.5cm}
+{\color{magenta}I_{out}}(p, {\color{magenta}\vec\omega_{out}}, \lambda) = I_{e}(p, {\color{magenta}\vec\omega_{out}}, \lambda)+\int\limits_{\mathbb S^2} {\color{blue}I_{in}}(p, {\color{blue}\vec\omega_{in}}, \lambda) \cdot {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) \cdot ({\color{blue}\vec\omega_{in}} \cdot \vec{n}) d{\color{blue}\vec\omega_{in}}
 \end{equation}
-\end{center}
 \pause
 \begin{itemize}
 \item Уравнение для конкретной точки \begin{math}p\end{math}
@@ -681,19 +680,19 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \pause 
 \item Если \begin{math}{\color{green}f}\end{math} только отражает свет, её называют BRDF: Bidirectional Reflectance Distribution Function
 \pause 
-\item Если \begin{math}{\color{green}f}\end{math} только преломляет свет, её называют BRTF: Bidirectional Transmittance Distribution Function
+\item Если \begin{math}{\color{green}f}\end{math} только преломляет свет, её называют BTDF: Bidirectional Transmittance Distribution Function
 \pause 
-\item В общем случае её называют BSTF: Bidirectional Scattering Distribution Function
+\item В общем случае её называют BSDF: Bidirectional Scattering Distribution Function
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{BSDF}
 \begin{itemize}
-\item Обычно BSTF предполагается нормированной:
+\item Обычно BSDF предполагается нормированной: тело не может отразить больше света, чем пришло
 \end{itemize}
 \begin{equation}
-\int\limits_{\mathbb S^2} {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) d{\color{blue}\vec\omega_{in}} = 1
+\int\limits_{\mathbb S^2} {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) d{\color{blue}\vec\omega_{in}} \leq 1
 \end{equation}
 \end{frame}
 
@@ -876,7 +875,7 @@ void main() {
   float light_factor = max(0.0, cosine);
 
   float light_distance = length(light_vector);
-  float light_intensity = dot(light_attenuation, 
+  float light_intensity = 1.0 / dot(light_attenuation, 
     vec3(1.0, light_distance, light_distance * light_distance));
 
   vec3 result_color = light_factor * light_intensity * color
