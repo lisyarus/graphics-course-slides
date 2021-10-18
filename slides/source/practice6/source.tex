@@ -1,0 +1,183 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 6: Освещение}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Добавляем ambient освещение
+\begin{itemize}
+\item Добавляем uniform-переменную \verb|vec3 ambient| во фрагментный шейдер
+\pause
+\item Используем её для вычисления отражённого ambient освещения по формуле \verb|color = ambient * albedo| (альбедо читается из текстуры)
+\pause
+\item Устанавливаем значение uniform-переменной (\verb|glGetUniformLocation|, \verb|glUniform3f|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Добавляем точечный источник света
+\begin{itemize}
+\item Добавляем uniform-переменные, описывающие источник света
+\begin{itemize}
+\item \verb|vec3 light_position| - координаты источника
+\item \verb|vec3 light_color| - цвет источника
+\item \verb|vec3 light_attenuation| - параметры затухания источника с расстоянием
+\end{itemize}
+\pause
+\item Для вычисления освещённости нам нужны расстояние от рисуемого пикселя до источника света, и направление на него \begin{math}\Rightarrow\end{math} нужно передать во фрагментный шейдер интерполированную позицию пикселя (\textbf{не} \verb|gl_Position|, а что-то в духе \verb|model * in_position|)
+\pause
+\item Вычисляем освещённость: \verb|albedo * light_color * cosine * intensity|
+\pause
+\item Устанавливаем какие-нибудь значения для uniform-переменных (в качестве \verb|attenuation| можно взять, например, \verb|vec3(1.0, 0.0, 0.1)|)
+\begin{itemize}
+\item Если источник плохо видно, можно сделать его поярче - компоненты \verb|light_color| могут быть и больше 1
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Три источника света
+\begin{itemize}
+\item Заменяем uniform-переменные, описывающие источник, на массивы uniform-переменных: \verb|vec3 light_position[3]| и т.п.
+\pause
+\item Во фрагментном шейдере суммируем отраженный свет каждого источника
+\pause
+\item Для \verb|glGetUniformLocation| в качестве имени переменной указываем \verb|light_position[0]|, \verb|light_position[1]|, и т.д.
+\pause
+\item В сумме будет 9 uniform-переменных (3 массива по 3), нужно задать им всем значения
+\pause
+\item Лучше, если источники света будут двигаться (например, крутиться вокруг общего центра)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+Добавляем стены
+\begin{itemize}
+\item Меняя матрицу \verb|model| и вызывая рисование ещё раз (\verb|glm::rotate|, \verb|glm::translate|, \verb|glUniformMatrix|, \verb|glDrawArrays|) добавляем три стены: слева, справа, и сзади
+\pause
+\begin{itemize}
+\item N.B. Исходная геометрия - плоскость \begin{math}[-10, 10]\times[-10, 10]\end{math} параллельная XY, с Z = 0
+\item Задняя стена - плоскость, параллельная XY, с Z = -10
+\item Левая стена - плоскость, параллельная YZ, с X = -10
+\item Правая стена - плоскость, параллельная YZ, с X = 10
+\pause
+\item Не забываем очищать матрицу перед записью в неё нового преобразования: \verb|model = glm::mat4(1.f)|
+\end{itemize}
+\pause
+\item Если стена не освещается источниками света, значит она обращена в другую сторону - нужно повернуть её на 180 градусов 
+\begin{itemize}
+\item N.B. функции GLM принимают радианы
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+\fontsize{10pt}{10pt}
+Добавляем normal mapping
+\begin{itemize}
+\item Нормаль в вершинном шейдере нам больше не нужна
+\pause
+\item Добавляем во фрагментный шейдер uniform-текстуру \verb|sampler2D normal_map|
+\pause
+\item Читаем нормали из текстуры и переводим из диапазона \begin{math}[0, 1]\end{math} в диапазон \begin{math}[-1, 1]\end{math}
+\pause
+\item Нормали заданы в исходной системе координат объекта, но мы сдвигаем/поворачиваем объект \begin{math}\Rightarrow\end{math} к нормалям надо применить матрицу \verb|model| (её нужно объявить во фрагментном шейдере)
+\pause
+\item В качестве значения uniform-переменной снаружи записываем 0 (чтобы использовать текстуру из нулевого texture unit'а)
+\pause
+\item Создаём текстуру типа \verb|GL_TEXTURE_2D|, загружаем данные из \verb|brick_normal|, настраиваем mip-mapping (\verb|glGenTextures|, \verb|glBindTexture|, \verb|glTexImage2D|, \verb|glTexParameteri|, опционально \verb|glGenerateMipmap|)
+\pause
+\item При рендеринге делаем активным нулевой texture unit и делаем для него текущей нашу текстуру (\verb|glActiveTexture|, \verb|glBindTexture|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+Добавляем ambient occlusion mapping
+\begin{itemize}
+\item Ещё одна текстура: \verb|sampler2D ao_map|
+\pause
+\item Читаем из неё значение ambient occlusion, умножаем на него ambient освещение в данной точке
+\begin{itemize}
+\item Эффект можно сделать заметнее, возведя значение из \verb|ao_map| в какую-нибудь степень (скажем, 4)
+\end{itemize}
+\pause
+\item Данные для текстуры - \verb|brick_ao|, texture unit = 1
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 7}
+Добавляем specular light и material mapping
+\begin{itemize}
+\item Ещё одна текстура: \verb|sampler2D roughness_map|
+\pause
+\item Читаем из неё значение roughness, яркость specular компоненты = (1 - roughness)
+\pause
+\item Для вычисления specular нужно направление на камеру \begin{math}\Rightarrow\end{math} нужно передать позицию камеры как uniform в шейдер
+\pause
+\item Вычисляем интенсивность specular как
+\begin{verbatim}
+pow(max(0.0, dot(reflected_direction, 
+    camera_direction)), 4.0) * (1.0 - roughness)
+\end{verbatim}
+\begin{itemize}
+\item 4 - настраиваемый параметр: чем больше, тем более точечным получается отражение
+\end{itemize}
+\pause
+\item Добавляем specular-компоненту к результирующему освещению
+\pause
+\item Данные для текстуры - \verb|brick_roughness|, texture unit = 2
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 8}
+Добавляем tone mapping
+\begin{itemize}
+\item Применяем к результирующему цвету пикселя простейший Reinhard operator: \verb|color = color / (vec3(1.0) + color)|
+\end{itemize}
+\end{frame}
+
+\end{document}
