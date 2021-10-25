@@ -403,4 +403,141 @@ drawSomethingElse();
 \end{itemize}
 \end{frame}
 
+\begin{frame}<1-2>[fragile,label=fb_examples]
+\frametitle{Примеры использования render to texture}
+\begin{itemize}
+\item Пост-обработка кадра
+\pause
+\begin{itemize}
+\item Размытие
+\pause
+\item Свечение (bloom)
+\pause
+\item Toon shading (edge detection, color grading)
+\pause
+\item HDR, гамма-коррекция
+\pause
+\item Сглаживание (FXAA)
+\pause
+\item И т.д.
+\end{itemize}
+\pause
+\item Тени (shadow maps)
+\pause
+\item Отражения (как environment maps, но рисующиеся в реальном времени)
+\pause
+\item Deferred shading
+\pause
+\item И т.д.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Размытие}
+\slideimage{blur.png}
+\end{frame}
+
+\againframe<3>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Свечение}
+\slideimage{bloom.png}
+\end{frame}
+
+\againframe<4>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Toon shading}
+\slideimage{toon-shading.jpg}
+\end{frame}
+
+\againframe<5-6>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{FXAA}
+\slideimage{fxaa.jpg}
+\end{frame}
+
+\againframe<7-8>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping}
+\slideimage{shadow-maps.png}
+\end{frame}
+
+\againframe<9->{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Размытие}
+\begin{itemize}
+\item Усреднение значений соседних пикселей
+\pause
+\item Box blur: все веса одинаковые, получается слегка угловатым
+\pause
+\item Gaussian blur: веса пропорциональны гауссиане \begin{math}\exp\left(-\frac{x^2+y^2}{r^2}\right)\end{math}, получается равномерное сглаживание
+\pause
+\item Несколько итераций box blur похожи на один gaussian blur
+\pause
+\item Обычно gaussian blur делают в два прохода: один размывает по горизонтали, второй - по вертикали
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Box blur}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform sampler2D source;
+
+in vec2 texcoord;
+
+out vec4 out_color;
+
+void main()
+{
+    vec4 sum = vec4(0.0);
+    const int N = 5;
+
+    for (int x = -N; x <= N; ++x) {
+        for (int y = -N; y <= N; ++y) {
+            sum += texture(source, texcoord +
+                vec2(x,y) / vec2(textureSize(source)));
+        }
+    }
+
+    out_color = sum / float((2*N+1)*(2*N+1));
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Gaussian blur}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform sampler2D source;
+
+in vec2 texcoord;
+
+out vec4 out_color;
+
+void main()
+{
+    vec4 sum = vec4(0.0);
+    float sum_w = 0.0;
+    const int N = 5;
+    float radius = 3.0;
+
+    for (int x = -N; x <= N; ++x) {
+        for (int y = -N; y <= N; ++y) {
+            float c = exp(-float(x*x + y*y) / (radius*radius));
+            sum += c * texture(source, texcoord +
+                vec2(x,y) / vec2(textureSize(source)));
+            sum_w += c;
+        }
+    }
+
+    out_color = sum / sum_w;
+}
+\end{verbatim}
+\end{frame}
+
 \end{document}
