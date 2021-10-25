@@ -181,4 +181,226 @@
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Framebuffer (FBO, кадровый буфер)}
+\begin{itemize}
+\item OpenGL-объект, хранящий настройки того, куда осуществляется рисование
+\pause
+\item Не владеет памятью, только ссылается на неё
+\pause
+\item Может иметь depth buffer, stencil buffer, и несколько color buffer'ов
+\pause
+\item Общепринятая аббревиатура: FBO
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer}
+\begin{itemize}
+\item Создание/удаление: \verb|glGenFramebuffers|/\verb|glDeleteFramebuffers|
+\pause
+\item Сделать текущим: \verb|glBindFramebuffer|
+\pause
+\item Два значения target:
+\begin{itemize}
+\item \verb|GL_DRAW_FRAMEBUFFER| - в этот фреймбуфер рисуют все операции рисования (\verb|glDrawArrays|, etc), этот фреймбуфер очищает \verb|glClear|
+\pause
+\item \verb|GL_READ_FRAMEBUFFER| - из этого фреймбуфера читают операции чтения
+\end{itemize}  
+\pause
+\item Можно вызвать \verb|glBindFramebuffer(GL_FRAMEBUFFER, fbo)| - это эквивалентно
+\begin{verbatim}
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Default framebuffer}
+\begin{itemize}
+\item Особый объект, имеет ID = 0
+\pause
+\item Создаётся при создании OpenGL-контекста
+\pause
+\item Настроен, чтобы рисовать на экран, к которому привязан контекст
+\pause
+\item Для него форматы цвета, буфера глубины и stencil буфера настраиваются при создании контекста
+\pause
+\item Нельзя настроить по-другому или удалить
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Чтение из фреймбуфера}
+\begin{itemize}
+\item \verb|glReadPixels| - достаёт пиксели из определённого участка текущего \verb|GL_READ_FRAMEBUFFER| (можно прочитать цвет, глубину или stencil)
+\pause
+\item \verb|glBlitFramebuffer| - копирует пиксели из определённого участка текущего \verb|GL_READ_FRAMEBUFFER| в определённый участок текущего \verb|GL_DRAW_FRAMEBUFFER| (можно скопировать цвет, глубину или stencil)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer attachments}
+\begin{itemize}
+\item Текстура, на которую ссылается фреймбуфер, называется attachment
+\pause
+\item У каждого фреймбуфера есть набор attachment points
+\pause
+\item \verb|GL_COLOR_ATTACHMENT0|, ... \verb|GL_COLOR_ATTACHMENT7| - цветовые буферы
+\pause
+\begin{itemize}
+\item Максимальное количество: \verb|glGet(GL_MAX_COLOR_ATTACHMENTS)|
+\item Номер (0..7) - то, что мы указываем как location для выходной переменной фрагментного шейдера \verb|layout (location = 0) ...|
+\end{itemize}
+\pause
+\item \verb|GL_DEPTH_ATTACHMENT| - буфер глубины
+\item \verb|GL_STENCIL_ATTACHMENT| - stencil буфер
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer attachments}
+\begin{itemize}
+\item Связать текстуру с фреймбуфером: \verb|glFramebufferTexture|
+\pause
+\begin{itemize}
+\item \verb|target| - текстура будет привязана к текущему фреймбуферу с таким таргетом (\verb|GL_READ_FRAMEBUFFER| или \verb|GL_DRAW_FRAMEBUFFER|)
+\pause
+\item \verb|attachment| - \verb|GL_COLOR_ATTACHMENT0|, ...
+\pause
+\item \verb|texture| - ID текстуры (делать её текущей не нужно)
+\pause
+\item \verb|level| - mipmap-уровень текстуры, в который будет осуществляться рисование
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer attachments}
+\begin{itemize}
+\item Можно привязать несколько текстур к одному фреймбуферу (в т.ч. иметь несколько цветовых буферов - соответственно, несколько \verb|out|-переменных во фрагментном шейдере)
+\pause
+\item Можно привязать одну текстуру к нескольким фреймбуферам
+\pause
+\item Можно привязать несколько разных mipmap-уровней одной текстуры к одному или нескольким фреймбуферам
+\pause
+\item Можно привязать одномерные и двумерные текстуры, грани cubemap-текстуры (\verb|glFramebufferTexture2D|), слои трёхмерных или 2D-array текстур (\verb|glFramebufferTexture3D| или \verb|glFramebufferTextureLayer|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer completeness}
+\begin{itemize}
+\item У фреймбуферов есть особое свойство - completeness: означает, можно ли рисовать в этот фреймбуфер
+\pause
+\item Фреймбуфер считается complete, если
+\begin{itemize}
+\item Размеры всех его attachment'ов совпадают
+\pause
+\item Все attachment'ы имеют правильный формат
+\end{itemize}
+\pause
+\item Проверить completeness - \verb|glCheckFramebufferStatus|: вернёт \verb|GL_FRAMEBUFFER_COMPLETE| или некий код ошибки
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Renderable formats}
+\begin{itemize}
+\item Что такое \textit{правильный формат}?
+\pause
+\item Для цветового буфера - color-renderable формат, т.е. любой цветовой формат: \verb|GL_RED|, \verb|GL_RGB8|, \verb|GL_RGBA8|, \verb|GL_RG32F|, ...
+\pause
+\item Для буфера глубины - depth-renderable формат: \verb|GL_DEPTH_COMPONENT16|, \verb|GL_DEPTH_COMPONENT24|, \verb|GL_DEPTH_COMPONENT32F|, \verb|GL_DEPTH24_STENCIL8|, \verb|GL_DEPTH32F_STENCIL8|
+\pause
+\item Для stencil буфера - stencil-renderable формат: \verb|GL_DEPTH24_STENCIL8|, \verb|GL_DEPTH32F_STENCIL8|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Viewport}
+\begin{itemize}
+\item \verb|glViewport| настраивает преобразование из координат \begin{math}[-1, 1]^2\end{math} в пиксельные координаты
+\pause
+\item Никак не связан с фреймбуфером
+\pause
+\item Но обычно мы хотим, чтобы viewport совпадал с размером текущего фреймбуфера
+\pause
+\item \begin{math}\Rightarrow\end{math} Перед рисованием с помощью фреймбуфера надо подумать о viewport'е
+\pause
+\item N.B. \verb|glClear| игнорирует viewport
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рисование в текстуру: код}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+GLuint fbo;
+glGenFramebuffers(1, &fbo);
+
+// создаём текстуру
+...
+
+// привязываем текстуру
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+    fbo_color_texture, 0);
+
+// проверяем completeness
+if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    throw std::runtime_error("Framebuffer incomplete");
+
+...
+
+// Рисование в FBO
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+glClear(GL_COLOR_BUFFER_BIT);
+glViewport(0, 0, fbo_width, fbo_height);
+drawSomething();
+
+// Рисование в дефолтный фреймбуфер
+// здесь можно использовать текстуру fbo_color_texture
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+glClear(GL_COLOR_BUFFER_BIT);
+glViewport(0, 0, screen_width, screen_height);
+drawSomethingElse();
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Renderbuffers}
+\begin{itemize}
+\item Объекты OpenGL, хранящие пиксели
+\pause
+\item Нельзя загрузить данные, нет режимов фильтрации, нет mipmaps
+\pause
+\item Могут быть attachment'ами для фреймбуфера, вместо текстур
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Renderbuffers}
+\begin{itemize}
+\item Создать/удалить: \verb|glGenRenderbuffers/glDeleteRenderbuffers|
+\pause
+\item Сделать текущим: \verb|glBindRenderbuffer|, target = \verb|GL_RENDERBUFFER|
+\pause
+\item Выделить память: \verb|glRenderbufferStorage|
+\pause
+\item Привязать renderbuffer к фреймбуферу: \verb|glFramebufferRenderbuffer|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffers \& renderbuffers: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Framebuffer_Object}{www.khronos.org/opengl/wiki/Framebuffer\_Object}
+\item \href{https://www.khronos.org/opengl/wiki/Renderbuffer_Object}{www.khronos.org/opengl/wiki/Renderbuffer\_Object}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture}{opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Framebuffers}{learnopengl.com/Advanced-OpenGL/Framebuffers}
+\end{itemize}
+\end{frame}
+
 \end{document}
