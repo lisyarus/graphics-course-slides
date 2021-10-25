@@ -1,0 +1,184 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 8: Stencil bufer, framebuffer, renderbuffer, пост-обработка}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Stencil buffer (буфер трафарета)}
+\begin{itemize}
+\item Особый буфер, хранящий произвольные данные, с особыми побитовыми операциями над ними
+\pause
+\item Чем-то аналогичен буферу глубины: тоже хранит какие-то данные, такого же размера (как и цветовой буфер), тоже позволяет рисовать или не рисовать пиксель по какому-то условию (depth test)
+\pause
+\item У дефолтного фреймбуфера часть есть 8-битный stencil буфер (зависит от настроек контекста OpenGL)
+\pause
+\item Можно (и нужно, если вы его используете) очищать как \verb|glClear(GL_STENCIL_BUFFER_BIT|)
+\pause
+\item Настроить значение, которым очищается буфер: \verb|glClearStencil|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\begin{itemize}
+\item Включить/выключить stencil тест: \verb|glEnable/glDisable(GL_STENCIL_TEST)|
+\pause
+\item Настроить stencil тест: \verb|glStencilFunc|
+\begin{itemize}
+\item \verb|func| - одна из констант \verb|GL_ALWAYS|, \verb|GL_LESS|, \verb|GL_GREATER|, \verb|GL_EQUAL|, ...
+\item \verb|ref| - референсное значение для теста
+\item \verb|mask| - побитовая маска для теста
+\end{itemize}
+\item Stencil тест: \verb|func(ref & mask, stencil & mask)|
+\pause
+\item Так же, как с depth тестом: если stencil тест не прошёл, пиксель не будет нарисован
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\begin{itemize}
+\item Как записать значение в stencil буфер? \pause \verb|glStencilOp|
+\begin{itemize}
+\item \verb|sfail| - что делать, если пиксель не прошёл stencil тест
+\item \verb|dpfail| - что делать, если пиксель не прошёл depth тест
+\item \verb|dppass| - что делать, если пиксель прошёл оба теста
+\end{itemize}
+\pause
+\item Возможные значение \verb|sfail|, \verb|dpfail| и \verb|dppass|:
+\begin{itemize}
+\item \verb|GL_KEEP| - не менять записанное значение
+\item \verb|GL_ZERO| - записать 0
+\item \verb|GL_INVERT| - побитово обратить
+\item \verb|GL_REPLACE| - записать \verb|ref| из функции \verb|glStencilFunc|
+\item \verb|GL_INCR| - увеличить на 1, если значение меньше максимального
+\item \verb|GL_DECR| - уменьшить на 1, если значение больше минимального (0)
+\item \verb|GL_INCR_WRAP| - увеличить на 1 с целочисленным переполнением
+\item \verb|GL_DECR_WRAP| - уменьшить на 1 с целочисленным переполнением
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\begin{itemize}
+\item Дополнительно можно включать/выключать запись отдельных битов stencil буфера: \verb|glStencilMask|
+\pause
+\item Все параметры stencil теста можно настраивать отдельно для front и back граней функциями \verb|glStencilFuncSeparate|, \verb|glStencilOpSeparate|, \verb|glStencilMaskSeparate|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\slideimage{stencil-example-1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\slideimage{stencil-example-2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\slideimage{stencil-example-3.png}
+\end{frame}
+
+\begin{frame}<1>[fragile,label=stencil_examples]
+\frametitle{Stencil буфер: применение}
+\begin{itemize}
+\item Некоторые алгоритмы рисования теней (shadow volumes)
+\pause
+\item Любая ситуация, в которой нужно ограничить рисование определённых пикселей:
+\pause
+\begin{itemize}
+\item Симулятор самолёта: сначала рисуется внутренность самолёта, затем - окружающий мир, только там, где не был нарисован самолёт \begin{math}\Rightarrow\end{math} можно избежать проблем с точностью буфера глубины
+\pause
+\item UI, который нужно нарисовать в какой-то ограниченной области экрана (например, scroll)
+\pause
+\item Рисование невыпуклых полигонов (odd-even rule)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (stencil shadows)}
+\slideimage{shadow-volumes.jpeg}
+\end{frame}
+
+\againframe<2-3>{stencil_examples}
+
+\begin{frame}[fragile]
+\frametitle{Microsoft flight simulator}
+\slideimage{flight-simulator.jpg}
+\end{frame}
+
+\againframe<4>{stencil_examples}
+
+\begin{frame}[fragile]
+\frametitle{Unity Scroll View}
+\slideimage{scroll-view.png}
+\end{frame}
+
+\againframe<5>{stencil_examples}
+
+\begin{frame}[fragile]
+\frametitle{Невыпуклый полигон}
+\slideimage{non-convex-polygon.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil буфер: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Stencil_Test}{khronos.org/opengl/wiki/Stencil\_Test}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Stencil-testing}{learnopengl.com/Advanced-OpenGL/Stencil-testing}
+\item \href{https://open.gl/depthstencils}{open.gl/depthstencils}
+\item \href{https://en.wikibooks.org/wiki/OpenGL_Programming/Stencil_buffer}{en.wikibooks.org/wiki/OpenGL\_Programming/Stencil\_buffer}
+\end{itemize}
+\end{frame}
+
+\end{document}
