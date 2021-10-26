@@ -64,7 +64,7 @@
 \begin{itemize}
 \item Перед \verb|glClear| устанавливаем наш framebuffer текущим для рисования (\verb|glBindFramebuffer|) и настраиваем \verb|glViewport|
 \pause
-\item После рисования основной модели, перед рисованием прямоугольника делаем текущим для рисования основной framebuffer (id = 0), настраиваем \verb|glViewport| и очищаем цветовой буфер (\verb|glClear|)
+\item После рисования основной модели, перед рисованием прямоугольника делаем текущим для рисования основной framebuffer (id = 0), настраиваем \verb|glViewport| и очищаем цветовой буфер и буфер глубины (\verb|glClear|)
 \pause
 \item Раскомментируем рисование прямоугольника: пока он всё ещё выведется просто с цветовым градиентом, так как шейдер мы не меняли
 \end{itemize}
@@ -127,7 +127,7 @@
 \frametitle{Задание 6}
 Делаем color grading
 \begin{itemize}
-\item При \verb|mode == 2| преобразуем цвет как \verb|color = floor(color / 4.0) * 3.0|
+\item При \verb|mode == 2| преобразуем цвет как \verb|color = floor(color * 4.0) / 3.0|
 \end{itemize}
 \end{frame}
 
