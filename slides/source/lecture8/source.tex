@@ -39,7 +39,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 8: Stencil bufer, framebuffer, renderbuffer, пост-обработка, anti-aliasing}
+\subtitle{Лекция 8: Stencil buffer, framebuffer, renderbuffer, пост-обработка, anti-aliasing}
 \date{2021}
 
 \setbeamertemplate{footline}[frame number]
@@ -502,7 +502,7 @@ void main()
     for (int x = -N; x <= N; ++x) {
         for (int y = -N; y <= N; ++y) {
             sum += texture(source, texcoord +
-                vec2(x,y) / vec2(textureSize(source)));
+                vec2(x,y) / vec2(textureSize(source, 0)));
         }
     }
 
@@ -532,7 +532,7 @@ void main()
         for (int y = -N; y <= N; ++y) {
             float c = exp(-float(x*x + y*y) / (radius*radius));
             sum += c * texture(source, texcoord +
-                vec2(x,y) / vec2(textureSize(source)));
+                vec2(x,y) / vec2(textureSize(source, 0)));
             sum_w += c;
         }
     }
