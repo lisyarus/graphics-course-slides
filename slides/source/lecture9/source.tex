@@ -581,4 +581,51 @@ void main(){
 \slideimage{shadow-mapping3.png}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Разрешение shadow map}
+\slideimage{shadow-map-resolution.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item При низком разрешении shadow map хорошо видны "пиксели"{} теней
+\pause
+\item Чем выше разрешение, тем лучше жёсткая тень
+\pause
+\begin{itemize}
+\item Алгоритм silhouette mapping позволяет получить жёсткую тень без слишком большого разрешения
+\end{itemize}
+\pause
+\item Можно слегка размыть тень, избавившись от "пикселей"{} и получив аппроксимацию мягких теней
+\pause
+\begin{itemize}
+\item Размывать нужно результат сравнения глубины со значением в shadow map, а \textbf{не} саму shadow map!
+\pause
+\item Percentage-closer filtering
+\pause
+\item В OpenGL есть встроенная реализация: shadow samplers
+\end{itemize}
+\pause
+\item Более современные вариации shadow maps пишут в текстуру не глубину, а какие-нибудь значения, которые имеет смысл складывать и усреднять
+\pause
+\begin{itemize}
+\item Позволяет использовать фильтрацию текстур, mipmaps, размытие shadow map
+\pause
+\item Exponential shadow maps, variance shadow maps
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}{learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping}{opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping}
+\item \href{https://ogldev.org/www/tutorial23/tutorial23.html}{ogldev.org/www/tutorial23/tutorial23.html}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-17-efficient-soft-edged-shadows-using}{GPU Gems 2, Chapter 17. Efficient Soft-Edged Shadows Using Pixel Shader Branching}
+\end{itemize}
+\end{frame}
+
 \end{document}
