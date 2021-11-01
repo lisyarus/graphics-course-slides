@@ -1,0 +1,144 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{tikz}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Домашнее задание 2: сцена с освещением, тенями и отражениями}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание}
+\begin{itemize}
+\item Выбрать некоторую сцену, нарисовать её с текстурами, normal mapping'ом, несколькими источниками света и тенями
+\pause
+\item Выбрать некоторую модель, нарисовать её с reflection mapping'ом (отражениями), в отражении должна быть видна основная сцена, модель должна двигаться по сцене (сама или управляемая пользователем)
+\pause
+\item Камера должна управляться пользователем (любым способом, главное - чтобы можно было разглядеть все реализованные эффекты)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сцена}
+Ограничения на сцену:
+\begin{itemize}
+\item Порядка 100k-1kk треугольников в сумме
+\item Порядка 100-1000 различных объектов
+\item У большинства объектов есть текстуры альбедо и нормалей
+\end{itemize}
+Рекомендую \textit{Crytek Sponza}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Crytek Sponza}
+\slideimage{crytek-sponza.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сцена: формат}
+Один из общепринятых форматов сцен - Wavefront OBJ
+\begin{itemize}
+\item Текстовый, достаточно простой для чтения
+\item Содержит координаты вершин, нормали и текстурные координаты
+\item Содержит индексы вершин, образующих треугольники
+\item Может содержать много объектов
+\item Может ссылаться на MTL-файл (Material Template Library), содержащий описания материалов
+\item MTL может в свою очередь ссылаться на текстуры (альбедо, нормали, и т.п.)
+\end{itemize}
+При желании можно использовать и другие форматы, это не принципиально
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель}
+В качестве модели можно взять что угодно, например:
+\begin{itemize}
+\item Stanford dragon (7ая практика)
+\item Stanford bunny (8ая практика)
+\item Utah teapot
+\item Happy buddha
+\item Suzanne
+\end{itemize}
+От неё нужны только координаты вершин и нормали (нормали можно и посчитать самим)
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Текстуры}
+Текстуры нужно как-то прочитать, варианты:
+\begin{itemize}
+\item Предварительно сконвертировать в максимально простой формат (raw rgb / netpbm) - это можно сделать утилитой convert пакета imagemagick или любым серьёзным редактором изображений (Photoshop/GIMP/etc)
+\item Использовать библиотеку загрузки изображений: SDL\_image / stb\_image / Boost.GIL (рекомендую stb\_image)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Технические детали}
+\begin{itemize}
+\item Скорее всего, у вас будет по VAO + VBO + EBO + набор текстур на объект, удобно это занести в некую структуру/класс
+\item Скорее всего, у вас будет 1 draw call (\verb|glDrawElements| или т.п.) на один объект
+\item Объём данных немаленький, возможно проще будет сначала тестировать на упрощённой сцене
+\item Возможно будет удобнее предварительно перевести сцену в свой бинарный формат
+\item При использовании формата OBJ \textbf{внимательно} прочитайте документацию по нему, треугольники там описываются немного неочевидным образом
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Баллы}
+\begin{itemize}
+\item 4 балла: рисуется сцена с ambient освещением (AO необязательно) и текстурами, двигается камера
+\item 1 балл: есть направленный источник света ("солнце"{}, откуда-нибудь сверху) и несколько точечных
+\item 2 балла: освещение учитывает normal mapping
+\item 3 балла: есть тени от "солнца"
+\item 1 балл: рисуется двигающаяся модель (расчёт освещения для неё не принципиален)
+\item 4 балла: на модели видны отражения окружающей сцены (должны рассчитываться на каждый кадр)
+\end{itemize}
+Всего: 15 баллов
+
+Защита заданий на практике 16 ноября
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+\begin{itemize}
+\item \href{https://casual-effects.com/g3d/data10/index.html#mesh8}{Crytek Sponza} (на этом же сайте есть много других моделей)
+\item \href{https://en.wikipedia.org/wiki/Wavefront_.obj_file}{Описание формата Wavefront OBJ}
+\item \href{https://github.com/nothings/stb/blob/master/stb_image.h}{Библиотека stb\_image}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Cubemaps}{Туториал про environment mapping}
+\item \href{https://www.youtube.com/watch?v=xutvBtrG23A}{Видео-туториал про reflection mapping}
+\end{itemize}
+\end{frame}
+
+\end{document}
