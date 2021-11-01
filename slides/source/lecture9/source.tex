@@ -483,7 +483,7 @@ void main(){
     shadow_coord /= shadow_coord.w; // perspective divide
     shadow_coord = shadow_coord * 0.5 + vec2(0.5);
 
-    bool in_shadow = texture(shadow_depth, shadow_coord.xy)
+    bool in_shadow = texture(shadow_depth, shadow_coord.xy).r
         < shadow_coord.z;
 
     ...
