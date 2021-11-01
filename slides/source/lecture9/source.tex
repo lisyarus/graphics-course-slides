@@ -306,4 +306,135 @@ void main() {
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (они же stencil shadows)}
+\begin{itemize}
+\item Тень от конкретного объекта - некая (полубесконечная) трёхмерная область пространства (shadow volume)
+\end{itemize}
+\slideimage{shadow-volume.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (они же stencil shadows)}
+\begin{itemize}
+\item Тень от конкретного объекта - некая (полубесконечная) трёхмерная область пространства (shadow volume)
+\pause
+\item Нарисуем её как трёхмерный объект (построим и нарисуем её грани)
+\pause
+\item Если в конкретный пиксель попало одинаковое количество front-facing и back-facing граней, то он не в тени, иначе - в тени
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (они же stencil shadows)}
+\slideimage{shadow-volumes-scheme.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: алгоритм}
+\begin{itemize}
+\item Выключаем рисование в цветовой буфер и буфер глубины (\verb|glColorMask|, \verb|glDepthMask|) (но не выключаем тест глубины!)
+\pause
+\item Настраиваем stencil буфер: \verb|+1| для front-facing треугольников, \verb|-1| для back-facing
+\pause
+\item Вычисляем и рисуем shadow volume
+\pause
+\item Обратно включаем рисование цвета и глубины
+\pause
+\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \verb|stencil=0|, и рисуем сцену шейдером, вычисляющим освещение
+\pause
+\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \verb|stencil!=0|, и рисуем сцену шейдером, игнорирующим освещение
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volume}
+\slideimage{shadow-volume2.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volume}
+\slideimage{shadow-volume3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (Doom 3)}
+\slideimage{doom3-shadows.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: как вычислять shadow volume?}
+\begin{itemize}
+\item Шаг 1: определить shadow edges - рёбра модели, у которых один соседний треугольник обращён к источнику света \begin{math}\left(\vec n \cdot \vec r > 0\right)\end{math}, а второй - против источника света \begin{math}\left(\vec n \cdot \vec r \leq 0\right)\end{math}
+\pause
+\item Щаг 2: для каждого shadow edge построить четырёхугольную грань shadow volume - к точкам ребра \begin{math}p_1, p_2\end{math} добавлются точки \begin{math}p_1 + D \cdot \frac{p_1 - o}{|p_1 - o|}\end{math} и аналогично для \begin{math}p_2\end{math}
+\begin{itemize}
+\item \begin{math}o\end{math} - координаты источника света
+\item \begin{math}D\end{math} - расстояние, до которого отбрасывается тень (в идеале мы хотим \begin{math}D\rightarrow\infty\end{math}, для этого можно воспользоваться однородными координатами)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (Doom 3)}
+\slideimage{shadow-edge.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: как вычислять shadow volume?}
+\begin{itemize}
+\item Два варианта: на CPU или на GPU
+\pause
+\item На CPU: очень дорого (положение модели и источника света могут меняться каждый кадр)
+\pause
+\item На GPU: геометрические шейдеры!
+\begin{itemize}
+\item Нужен тип примитива \textit{lines adjacency}, позволяющий передать 4 вершины как один примитив (две вершины ребра + две вершины соседних треугольников)
+\pause
+\item Шейдер проверяет, является ли ребро shadow edge, и генерирует грань shadow volume
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes}
+\begin{itemize}
+\item {\color{green}+} Pixel-perfect жёсткие тени
+\item {\color{red}---} Алиасинг
+\item {\color{red}---} Сложно получить мягкие тени
+\item {\color{red}---} Требует правильной геометрии (без дырок и дублирования)
+\item {\color{red}---} Не работает, если камера находится внутри тени (исправляется с помощью т.н. Carmack's Reverse)
+\item {\color{red}---} Ресурсозатратен: даже для маленького объекта его shadow volume может занимать значительную часть сцены \begin{math}\Rightarrow\end{math} слишком много растеризации, чтения/записи памяти (stencil buffer)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes с плохой геометрией}
+\slideimage{shadow-volume-bad-mesh.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes}
+\begin{itemize}
+\item Thief 3
+\item Doom 3
+\item Quake 4
+\item Prey
+\item Far Cry
+\item F.E.A.R 1, 2, 3
+\item S.T.A.L.K.E.R.
+\item Timeshift
+\item и др.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: ссылки}
+\begin{itemize}
+\item \href{https://en.wikipedia.org/wiki/Shadow_volume}{en.wikipedia.org/wiki/Shadow\_volume}
+\item \href{https://ogldev.org/www/tutorial40/tutorial40.html}{ogldev.org/www/tutorial40/tutorial40.html}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch09.html}{GPU Gems, Chapter 9. Efficient Shadow Volume Rendering}
+\end{itemize}
+\end{frame}
+
 \end{document}
