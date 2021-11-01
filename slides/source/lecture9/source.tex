@@ -227,4 +227,83 @@ void main() {
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Тени: теория}
+\begin{itemize}
+\item Точка сцены, в которую не попадает (заблокирован чем-то) прямой свет из конкретного источника света
+\item Свойство точки по отношению к конкретному источнику света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени}
+\slideimage{shadows1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: теория}
+\begin{itemize}
+\item Если источник света точечный (или бесконечно удалённый), тень - бинарное свойство: луч из точки сцены в источник света или пересекает что-то (точка в тени), или нет (точка не в тени) \begin{math}\Rightarrow\end{math} жёсткие тени (hard shadows)
+\pause
+\item Если источник света объёмный, точка сцены может находиться в тени относительно части источника света, и не находиться в тени относительно другой его части \begin{math}\Rightarrow\end{math} мягкие тени (soft shadows)
+\pause
+\begin{itemize}
+\item Точки, полностью находящиеся в тени - \textit{umbra}
+\item Точки, частично находящиеся в тени - \textit{penumbra}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: мягкие vs жёсткие}
+\slideimage{shadow-scheme1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Мягкие тени}
+\slideimage{shadows2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Солнечное затмение}
+\slideimage{eclipse.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: теория}
+\begin{itemize}
+\item Реальные источники света - объёмные
+\pause
+\item Размер и форма penumbra зависит от размеров и формы источника света, а также от расстояния до него (чем дальше, тем меньше penumbra)
+\pause
+\begin{itemize}
+\item В пределе расстояния \begin{math}\rightarrow\infty\end{math} мягкая тень вырождается в жёсткую
+\end{itemize}
+\pause
+\item В real-time графике получить правильные тени (как жёсткие, так и мягкие) довольно сложно
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: алгоритмы}
+\begin{itemize}
+\item Shadow volumes
+\pause
+\begin{itemize}
+\item {\color{green}+} Идеальные жёсткие тени
+\item {\color{red}---} Алиасинг
+\item {\color{red}---} Сложно сделать мягкие тени
+\item {\color{red}---} Очень большой fill rate (количество обрабатываемых пикселей), плохо предсказумая производительность
+\end{itemize}
+\pause
+\item Shadow mapping
+\pause
+\begin{itemize}
+\item {\color{green}+} Производительность растёт +/- линейно с ростом сложности сцены
+\item {\color{red}---} Крупный алиасинг ("пиксельные" тени)
+\item {\color{green}+} Много вариаций, улучшающих качество и позволяющих делать как жёсткие, так и мягкие тени
+\end{itemize}
+\end{itemize}
+\end{frame}
+
 \end{document}
