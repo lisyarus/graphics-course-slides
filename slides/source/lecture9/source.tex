@@ -1,0 +1,230 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 9: Геометрические шейдеры, shadow volumes, shadow mapping и его разновидности}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры}
+\begin{itemize}
+\item Тип шейдера, наравне в вершинным и фрагментным
+\pause
+\item Создаётся как \verb|glCreateShader(GL_GEOMETRY_SHADER)|
+\pause
+\item Встраивается после вершинного шейдера, до perspective divide
+\pause
+\item Оперирует целыми примитивами (точками/линиями/треугольниками), т.е. наборами вершин
+\pause
+\item Может менять тип примитива и количество вершин
+\pause
+\item Может варьировать количество вершин на выходе
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1>[fragile,label=geometry_shader_examples]
+\frametitle{Геометрические шейдеры: примеры использования}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item Расчёт нормалей для flat shading'а
+\pause
+\begin{itemize}
+\item Вход: треугольник (тройка вершин)
+\item Выход: те же вершины с посчитанной нормалью
+\end{itemize}
+\pause
+\item Визуализация нормалей
+\pause
+\begin{itemize}
+\item Вход: вершина с нормалью
+\item Выход: линия из двух вершин - исходная вершина, исходная вершина + нормаль
+\end{itemize}
+\pause
+\item Shadow volumes
+\pause
+\item Billboards - плоские фигуры, всегда смотрящие в сторону камеры
+\pause
+\begin{itemize}
+\item Вход: одна вершина (точка)
+\item Выход: набор треугольников
+\pause
+\item Системы частиц
+\pause
+\item Облака
+\pause
+\item Деревья
+\pause
+\item Трава
+\end{itemize}
+\pause
+\item Изолинии
+\pause
+\begin{itemize}
+\item Вход: треугольник
+\item Выход: изолиния, проходящая через этот треугольник (0 или 2 вершины)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Flat shading}
+\slideimage{flat-shading.png}
+\end{frame}
+
+\againframe<2-4>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Визуализация нормалей}
+\slideimage{normals-viz.png}
+\end{frame}
+
+\againframe<5-6>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards}
+\slideimage{billboards.jpg}
+\end{frame}
+
+\againframe<7-8>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: система частиц (дым)}
+\slideimage{smoke.jpg}
+\end{frame}
+
+\againframe<8-9>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: облака}
+\slideimage{clouds.jpg}
+\end{frame}
+
+\againframe<9-10>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: деревья}
+\slideimage{trees.jpg}
+\end{frame}
+
+\againframe<10-11>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: трава}
+\slideimage{grass.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры: пример}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+#version 330 core
+uniform mat4 transform;
+// Входные примитивы - точки
+layout (points) in;
+// Выходные примитивы - линии, в сумме не больше 2х вершин
+layout (line_strip, max_vertices = 2) out;
+// Данные из вершинного шейдера
+in vec3 normal[];
+  
+void main() {    
+    gl_Position = transform * gl_in[0].gl_Position;
+    EmitVertex();
+
+    gl_Position = transform * (gl_in[0].gl_Position
+        + vec4(normal[0], 0));
+    EmitVertex();
+
+    EndPrimitive();
+} 
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры: пример}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+#version 330 core
+// Входные примитивы - линии
+layout (lines) in;
+// Выходные примитивы - треугольники, в сумме не больше 4х вершин
+layout (triangle_strip, max_vertices = 4) out;
+// Данные для фрагментного шейдера
+out vec4 color;
+  
+void main() {
+    gl_Position = gl_in[0].gl_Position + vec4(-1.0, -1.0, 0.0, 0.0);
+    color = vec4(1.0, 0.0, 0.0, 1.0);
+    EmitVertex();
+
+    gl_Position = gl_in[0].gl_Position + vec4( 1.0, -1.0, 0.0, 0.0);
+    color = vec4(0.0, 1.0, 0.0, 1.0);
+    EmitVertex();
+
+    gl_Position = gl_in[1].gl_Position + vec4(-1.0,  1.0, 0.0, 0.0);
+    color = vec4(0.0, 0.0, 1.0, 1.0);
+    EmitVertex();
+
+    gl_Position = gl_in[1].gl_Position + vec4( 1.0,  1.0, 0.0, 0.0);
+    color = vec4(1.0, 1.0, 1.0, 1.0);
+    EmitVertex();
+
+    EndPrimitive();
+} 
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Geometry_Shader}{khronos.org/opengl/wiki/Geometry\_Shader}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Geometry-Shader}{learnopengl.com/Advanced-OpenGL/Geometry-Shader}
+\item \href{https://open.gl/geometry}{open.gl/geometry}
+\item \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial/geometry-shader}{lighthouse3d.com/tutorials/glsl-tutorial/geometry-shader}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch07.html}{GPU Gems, Chapter 7. Rendering Countless Blades of Waving Grass}
+\end{itemize}
+\end{frame}
+
+\end{document}
