@@ -437,4 +437,148 @@ void main() {
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: идея}
+\begin{itemize}
+\item Самое популярное семейство алгоритмов рисования теней
+\pause
+\item Идея: представим, что источник света - это камера (наблюдатель)
+\item Тень - это то, что не видит источник света
+\pause
+\item Как понять, что видит источник света? \pause Нарисовать!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: алгоритм}
+\begin{itemize}
+\item Рисуем сцену в текстуру (shadow map, карта теней) с точки зрения источника света (цветовой буфер не нужен, достаточно буфера глубины)
+\pause
+\item Рисуем сцену на экран, фрагментный шейдер читает \textit{буфер глубины} нарисованный с точки зрения источника света - там содержатся расстояния от источника до ближайшей (к источнику) поверхности
+\item Если расстояние от источника до рисуемого пикселя больше, чем значение из буфера глубины, - текущий пиксель находится в тени
+\pause
+\item N.B. Линейная фильтрация для буфера глубины не имеет смысла - будут артефакты на границах объектов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: алгоритм}
+\slideimage{shadow-mapping1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: фрагментный шейдер}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+#version 330 core
+// Матрица (projection * view) с которой рисовался shadow map
+uniform mat4 shadow_transform;
+// Буфер глубины (shadow map)
+uniform sampler2D shadow_depth;
+
+in vec3 position;
+
+void main(){
+    vec4 shadow_coord = shadow_transform * vec4(position, 1.0);
+    shadow_coord /= shadow_coord.w; // perspective divide
+    shadow_coord = shadow_coord * 0.5 + vec2(0.5);
+
+    bool in_shadow = texture(shadow_depth, shadow_coord.xy)
+        < shadow_coord.z;
+
+    ...
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: буфер глубины}
+\slideimage{shadow-mapping-depth.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: результат}
+\slideimage{shadow-mapping2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: проекция}
+\begin{itemize}
+\item Как выбрать проекцию камеры (\verb|shadow_transform|) для shadow map?
+\pause
+\item Удалённый источник освещает всю сцену с одного направления \begin{math}\Rightarrow\end{math} удобно использовать ортографическую проекцию
+\pause
+\item Проекцию надо подобрать так, чтобы в видимую область попала вся сцена
+\pause
+\item Можно спроецировать все объекты на плоскость, перпендикулярную направлению на свет (которое можно считать Z-осью этой камеры), взять любые два ортогональных вектора X и Y в этой плоскости, и найти bounding box сцены в координатах XYZ - это даст размеры и ориентацию области shadow map
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: проекция}
+\begin{itemize}
+\item Как выбрать проекцию камеры (\verb|shadow_transform|) для shadow map?
+\pause
+\item Точечный источник светит во все стороны \begin{math}\Rightarrow\end{math} удобно использовать перспективную проекцию и cubemap-текстуру
+\pause
+\item 6 рендерингов shadow map (по одному на каждую грань) с соответствующей перспективной проекцией
+\pause
+\item Положение камеры совпадает с положением источника света, виртуальный "экран"{} совпадает с отрисовываемой гранью shadow map
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow acne}
+\slideimage{shadow-acne.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow acne}
+\slideimage{shadow-acne-scheme.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow acne}
+\begin{itemize}
+\item Артефакт, возникающий из-за дискретности shadow map: если луч света не перпендикулярен плоскости объекта, рядом с центром пикселя shadow map будут точки с меньшей или большей глубиной
+\pause
+\item Первый способ исправить: добавить к значению, прочитанному из из shadow map, некую константу (shadow bias)
+\begin{itemize}
+\item Часто эту константу умножают на тангенс угла падения света
+\end{itemize}
+\pause
+\item Второй способ исправить: рисовать только back-facing грани (т.е. обращённые против света) в shadow map
+\begin{itemize}
+\item Теперь shadow acne возникнет на back-facing гранях, но мы и без shadow map знаем, что они в тени!
+\item Работает только с правильной геометрией (двусторонней, без дырок, и т.п.)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Back-facing shadows}
+\slideimage{shadow-mapping-backface.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Peter panning}
+\slideimage{peter-panning.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Peter panning}
+\begin{itemize}
+\item Объекты кажутся приподнятыми над поверхностью из-за того, что их тень начинается не сразу под объектом
+\pause
+\item Усиливается при использовании shadow bias
+\pause
+\item Лучший способ исправить - не использовать слишком тонкую геометрию
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping}
+\slideimage{shadow-mapping3.png}
+\end{frame}
+
 \end{document}
