@@ -39,7 +39,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 10: Вычисление проекции для shadow mapping, PCF, ESM, VSM, PSM, CSM, SSAO}
+\subtitle{Лекция 10: Вычисление проекции для shadow mapping, PCF, ESM, VSM, PSM, CSM}
 \date{2021}
 
 \setbeamertemplate{footline}[frame number]
@@ -392,6 +392,18 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Convolution shadow maps (CSM)}
+\begin{itemize}
+\item Записывает в shadow map коэффициенты преобразования Фурье от функции распределения
+\pause
+\item {\color{green}+} Можно фильтровать (размывать, mipmaps, etc)
+\item {\color{red}—} Сложнее в реализации
+\item {\color{red}—} Требует многокомпонентных буферов (часто до 16 компонент на пиксель)
+\item {\color{red}—} Возникают ringing-артефакты (см. \href{https://en.wikipedia.org/wiki/Gibbs_phenomenon}{Gibbs phenomenon})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Ссылки}
 \begin{itemize}
 \item \href{https://ogldev.org/www/tutorial42/tutorial42.html}{ogldev.org/www/tutorial42/tutorial42.html}
@@ -399,7 +411,67 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \item \href{https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}{docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}
 \item \href{https://jankautz.com/publications/esm_gi08.pdf}{Оригинальная статья про ESM}
 \item \href{https://www.intel.com/content/dam/develop/external/us/en/documents/vsm-paper-182631.pdf}{Оригинальная статья про VSM}
-\item \href{https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps}{Улучшения VSM}
+\item \href{https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps}{Улучшения VSM, включая более реалистичные мягкие тени}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени на больших сценах}
+\begin{itemize}
+\item Если сцена очень большая, даже огромных (8k) shadow map текстур с хорошим сглаживанием может не хватить
+\pause
+\item Классически есть два решения:
+\begin{itemize}
+\item Использовать неравномерное соответствие пикселей shadow map и объектов в мире
+\item Использовать более одной shadow map
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Perspective shadow maps (PSM)}
+\begin{itemize}
+\item При генерации shadow map помимо обычного преобразования вершин применяет ещё перспективное преобразование так, чтобы больше пикселей shadow map приходилось на близкие к камере объекты
+\end{itemize}
+\slideimage{psm.jpeg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Perspective shadow maps (PSM)}
+\begin{itemize}
+\item {\color{green}+} Часто решает проблему точности shadow map
+\item {\color{red}—} Сложен в реализации
+\item {\color{red}—} Очень много худших случаев (например, камера смотрит на источник света), в которых алгоритм почти не работает
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Cascaded shadow maps (CSM)}
+\begin{itemize}
+\item Будем использовать несколько shadow maps (cascades): одну - для ближайших объектов, другую - для объектов на среднем расстоянии, третью - для далёких объектов, и т.п.
+\end{itemize}
+\slideimage{csm.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Cascaded shadow maps (CSM)}
+\begin{itemize}
+\item {\color{green}+} Прост в реализации
+\item {\color{green}+} Можно комбинировать с VSM/ESM/etc
+\item {\color{red}—} Большой расход памяти
+\item {\color{red}—} Нужно аккуратно обработать переход между разными каскадами
+\item Самый часто использующийся сегодня алгоритм
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+\begin{itemize}
+\item \href{https://www-sop.inria.fr/reves/Basilic/2002/SD02/PerspectiveShadowMaps.pdf}{Оригинальная статья про PSM}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch14.html}{PSM + улучшения}
+\item \href{https://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf}{Статья про CSM}
+\item \href{https://ogldev.org/www/tutorial49/tutorial49.html}{ogldev.org/www/tutorial49/tutorial49.html}
+\item \href{https://learnopengl.com/Guest-Articles/2021/CSM}{learnopengl.com/Guest-Articles/2021/CSM}
 \end{itemize}
 \end{frame}
 
