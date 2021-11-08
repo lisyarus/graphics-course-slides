@@ -1,0 +1,141 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 9: Shadow mapping 2}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Подбираем shadow bias
+\begin{itemize}
+\item Нужно прибавить константу (bias) к значению, прочитанному из shadow map
+\pause
+\item Слишком большое значение приведёт к заметному peter panning (тень будет съезжать в сторону от модели)
+\pause
+\item Слишком маленького значения будет недостаточно, чтобы убрать shadow acne
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Вычисляем хорошую матрицу проекции для shadow map
+\begin{itemize}
+\item Нужно найти центр видимой области и оси \begin{math}X, Y, Z\end{math}
+\pause
+\item Направления осей \begin{math}\hat X, \hat Y, \hat Z\end{math} уже посчитаны, нужно только вычислить их длину
+\pause
+\item С помощью функции \verb|bbox| можно посчитать bounding box сцены, её центр \begin{math}C\end{math} - центр видимой области
+\pause
+\item Пройдясь по всем 8 вершинам \begin{math}V\end{math} bounding box'а сцены, можно посчитать скалярное произведение \begin{math}(V - C) \cdot \hat X\end{math}, максимум модуля таких произведений - длина вектора \begin{math}X\end{math}
+\pause
+\item Аналогично для \begin{math}Y\end{math} и \begin{math}Z\end{math}
+\pause
+\item Используя \begin{math}X,Y,Z,C\end{math} можно построить матрицу ортографической проекции
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Shadow sampler + PCF
+\begin{itemize}
+\item Меняем min/mag фильтры shadow map на \verb|GL_LINEAR|
+\pause
+\item Устанавливаем текстуре shadow map свойства \verb|GL_TEXTURE_COMPARE_MODE = GL_COMPARE_REF_TO_TEXTURE| и \verb|GL_TEXTURE_COMPARE_FUNC, GL_LESS|
+\pause
+\item Меняем тип sampler'а в шейдере на \verb|sampler2DShadow|
+\pause
+\item Меняем обращение к текстуре: \verb|texture(..., shadow_pos.xyz + bias)| (возвращает \verb|float|, а не \verb|vec4|!)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+\fontsize{10pt}{10pt}
+Variance shadow maps
+\begin{itemize}
+\item Убираем свойства \verb|GL_TEXTURE_COMPARE_MODE| и \verb|GL_TEXTURE_COMPARE_FUNC|
+\pause
+\item Устанавливаем текстуре shadow map тип данных \verb|GL_RG32F| (format и type не принипиальны, можно \verb|GL_RGBA| и \verb|GL_FLOAT|)
+\pause
+\item Добавляем shadow map к фреймбуферу как \verb|GL_COLOR_ATTACHMENT0| (вместо \verb|GL_DEPTH_ATTACHMENT|)
+\pause
+\item Создаём текстуру или renderbuffer, которые будут использоваться для глубины, и добавляем его как \verb|GL_DEPTH_ATTACHMENT| фреймбуфера
+\pause
+\item Во фрагментном шейдере, рисующем shadow map, добавляем out-переменную и пишем в неё \verb|vec4(z, z * z, 0.0, 0.0)| (\verb|z| можно достать из \verb|gl_FragCoord|)
+\pause
+\item В основном фрагментном шейдере меняем тип sampler'а обратно на \verb|sampler2D|, читаем из него и используем неравенство Чебышёва для вычисления освещённости:
+\begin{verbatim}
+vec2 data = texture(shadow_map, shadow_pos.xy).rg;
+float mu = data.r;
+float sigma = data.g - mu * mu;
+float z = shadow_pos.z;
+float factor = (z < mu) ? 1.0
+    : sigma / (sigma + (z - mu) * (z - mu));
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+Исправляем артефакты
+\begin{itemize}
+\item Добавляем наклон поверхности к среднему значению квадрата глубины:
+\begin{itemize}
+\item Через \verb|dFdx| и \verb|dFdy| можно получить градиент глубины по X и Y
+\item К квадрату глубины добавляем \begin{math}\frac{1}{4}\left[\left(\frac{\partial Z}{\partial X}\right)^2 + \left(\frac{\partial Z}{\partial Y}\right)^2\right]\end{math}
+\end{itemize}
+\pause
+\item Добавляем shadow bias (вычитаем константу из значения \verb|Z|, использующегося для вычисления освещённости)
+\pause
+\item Значение, получающееся из формулы неравенства Чебышёва, преобразуем: диапазон \begin{math}[0, \delta]\end{math} переходит в \begin{math}0\end{math}, а диапазон \begin{math}[\delta, 1]\end{math} переходит в \begin{math}[0, 1]\end{math} (\begin{math}\delta\end{math} - некое фиксированное значение, например, \verb|0.125|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+Размываем shadow map
+\begin{itemize}
+\item Вместо чтения одного пикселя из shadow map, читаем набор значений из соседних пикселей (аналогично тому, как делалось размытие в задании №5 практики №7) и усредняем по Гауссу
+\pause
+\item Полученный двумерный вектор используем для вычисления освещённости через неравенство Чебышёва
+\pause
+\item {\color{red}N.B.}: по-хорошему это размытие нужно делать отдельными проходами с отдельными шейдерами и отдельным размытием по X и Y (см. \textit{separable Gaussian blur})
+\end{itemize}
+\end{frame}
+
+\end{document}
