@@ -39,7 +39,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 10: Gamma correction, sRGB, color banding, dithering, deferred shading, tiled/clustered shading}
+\subtitle{Лекция 10: Gamma correction, sRGB, color banding, dithering}
 \date{2021}
 
 \setbeamertemplate{footline}[frame number]
@@ -188,6 +188,193 @@ color = pow(color, vec3(1.0 / 2.2));
 \item \href{https://en.wikipedia.org/wiki/SRGB}{en.wikipedia.org/wiki/SRGB}
 \item \href{https://stackoverflow.com/a/12894053/2315602}{Подробный текст про sRGB на stackoverflow}
 \item \href{https://www.khronos.org/opengl/wiki/Framebuffer#Colorspace}{sRGB framebuffers}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Color banding}
+\slideimage{banding.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Color banding}
+\begin{itemize}
+\item Артефакт, когда чётко видна граница между областями, заполненными одним цветом
+\pause
+\item Обычно не сильно заметен, особенно после наложения текстур и пост-обработки
+\pause
+\item Хорошо заметен на монотонных поверхностях (напр. небо)
+\pause
+\item Может усиливаться при неаккуратной работе с форматами хранения и нелинейными преобразованиями
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Color banding: пример возникновения}
+\begin{itemize}
+\item Рисуем сцену, записываем линейную интенсивность в текстуру в формате \verb|GL_RGB8|
+\pause
+\item Выводим сцену на экран с гамма-коррекцией: значения из текстуры возводятся в степень 1/2.2
+\pause
+\item Значение текстуры 0 переходит в значение 0 на экране
+\pause
+\item Значение текстуры 1 переходит в значение \verb|255 * (1/255)^(1/2.2) = 21| на экране
+\pause
+\item Колоссальная потеря точности: значения от 1 до 20 не используются!
+\pause
+\item Для избавления можно увеличить битность промежуточной текстуры до \verb|GL_RGB16|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Color banding}
+\begin{itemize}
+\item Banding, связанный с потерей точности, обычно решают увеличением точности
+\pause
+\item Banding, связанный с ограниченной точностью самого экрана, обычно решают с помощью \textit{дизеринга}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Dithering}
+\slideimage{dither.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Dithering}
+\begin{itemize}
+\item Способ рисования градиентов (переходов между цветами) за счёт варьирования количества пикселей двух цветов
+\pause
+\item Работает только для больших (по размеру) градиентов
+\pause
+\item Не зависит от точности
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Dithering}
+\slideimage{dither2.png}
+\end{frame}
+
+\begin{frame}<1>[fragile,label=dither]
+\frametitle{Dithering: реализация}
+\begin{itemize}
+\item Допустим, мы рисуем в однобитное (чёрно-белое) изображение, и хотим добиться серого цвета с помощью дизеринга
+\pause
+\item Нам нужен способ определить, какой из пикселей будет чёрным, а какой - белым
+\pause
+\item В real-time графике это обычно делается с помощью т.н. dither mask / dither matrix (ordered dithering)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Dithering}
+\slideimage{dither3.png}
+\end{frame}
+
+\againframe<2->{dither}
+
+\begin{frame}[fragile]
+\frametitle{Dithering: реализация}
+\begin{itemize}
+\item Dither mask - одноканальная текстура, хранящая для каждого пикселя пороговое значение, начиная с которого его надо рисовать белым
+\pause
+\item Например, для серого цвета с яркостью 0.25 мы нарисуем белыми те пиксели, для которых значение в dither map \begin{math}\leq 0.25\end{math}
+\pause
+\item Например, для серого цвета с яркостью 0.5 мы нарисуем белыми те пиксели, для которых значение в dither map \begin{math}\leq 0.5\end{math}
+\pause
+\item Например, для серого цвета с яркостью 0.75 мы нарисуем белыми те пиксели, для которых значение в dither map \begin{math}\leq 0.75\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Dither mask}
+\slideimage{dither-mask.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Dithering: реализация}
+\begin{itemize}
+\item Для дизеринга при рисовании в 8-битный буфер:
+\begin{itemize}
+\item Хотим записать значение \begin{math}v \in [0, 1]\end{math}
+\item Вычисляем \begin{math}v' = 255 \cdot v\end{math}
+\item Вычисляем \begin{math}v_0 = floor(v')\end{math}
+\item Вычисляем \begin{math}v_1 = v_0 + 1\end{math}
+\item Вычисляем \begin{math}dv = v' - v0\end{math}
+\item Если значение в dither mask меньше \begin{math}dv\end{math}, рисуем значение \begin{math}v_1 / 255\end{math}, иначе \begin{math}v_0 / 255\end{math}
+\end{itemize}
+\pause
+\item Дизеринг нужно делать для каждого канала (RGB) по отдельности
+\pause
+\item Обычно dither mask имеет маленький размер (напр. 16x16) и циклически (\verb|GL_REPEAT|) повторяется на весь экран
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Dithering: реализация}
+\begin{verbatim}
+vec3 color = ...;
+
+vec3 c = color * 255.0;
+vec3 c0 = floor(c);
+vec3 c1 = c0 + vec3(1.0);
+vec3 dc = c - c0;
+
+float threshold = texture(dither_mask, pixel_coord);
+
+color = c0 / 255.0;
+if (dc.r > threshold) color.r = c1.r / 255.0;
+if (dc.g > threshold) color.g = c1.g / 255.0;
+if (dc.b > threshold) color.b = c1.b / 255.0;
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Генерация dither mask}
+\begin{itemize}
+\item Bayer dithering - очень быстро генерируется, могут быть заметны артефакты из-за регулярности паттерна
+\pause
+\item Void-and-cluster - использует медленный blue noise для генерации маски, лучше распределение пикселей
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сравнение bayer и void-and-cluster}
+\slideimage{dither-mask-compare.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Screen-door transparency}
+\slideimage{dither-transparency.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Screen-door transparency}
+\begin{itemize}
+\item Дизеринг часто применяют как дешёвый аналог прозрачности
+\pause
+\item Если значение в альфа-канале больше значения из dither mask, то рисуем пиксель, иначе - не рисуем (\verb|discard|)
+\pause
+\item Не требует сортировки объектов по расстоянию
+\pause
+\item Выглядит заметно хуже, часто применяется для временно прозрачных объектов (появляющихся/исчезающих)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Return of the Obra Dinn (2018)}
+\slideimage{obra-dinn.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Dithering: ссылки}
+\begin{itemize}
+\item \href{https://en.wikipedia.org/wiki/Dither}{en.wikipedia.org/wiki/Dither}
+\item \href{https://surma.dev/things/ditherpunk}{Статья про дизеринг}
+\item \href{http://alex-charlton.com/posts/Dithering_on_the_GPU}{Ещё одна статья про дизеринг}
+\item \href{https://forums.tigsource.com/index.php?topic=40832.msg1363742}{Использование дизеринга в Return of the Obra Dinn}
 \end{itemize}
 \end{frame}
 
