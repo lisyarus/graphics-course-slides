@@ -39,7 +39,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 10: Gamma correction, dithering, deferred shading, tiled/clustered shading}
+\subtitle{Лекция 10: Gamma correction, sRGB, color banding, dithering, deferred shading, tiled/clustered shading}
 \date{2021}
 
 \setbeamertemplate{footline}[frame number]
@@ -136,6 +136,58 @@ color = pow(color, vec3(1.0 / 2.2));
 \item \href{http://filmicworlds.com/blog/linear-space-lighting-i-e-gamma}{Linear-space lighting (i.e. gamma)}
 \item \href{https://learnopengl.com/Advanced-Lighting/Gamma-Correction}{Туториал на learnopengl.com}
 \item \href{https://github.com/lisyarus/graphics-course-practice/tree/master/gamma-correction}{Пример с гамма-коррекцией}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{sRGB}
+\begin{itemize}
+\item По тем же причинам, по которым существует нелинейная гамма у мониторов (отдать больше бит под тёмные цвета), хочется хранить текстуры не в сыром формате, а в гамма-преобразованном: значение пикселя \begin{math}V\end{math} зависит от желаемой интенсивности \begin{math}I\end{math} как \begin{math}V \sim I^\frac{1}{\gamma}\end{math}
+\pause
+\item Такой формат хранения цвета называется sRGB
+\begin{itemize}
+\item N.B. Точная формула преобразования sRGB отличается от \begin{math}I^\frac{1}{2.2}\end{math}, но очень близка к ней
+\end{itemize}
+\pause
+\item Обычно изображения хранятся именно в таком формате
+\pause
+\item Проверить формат можно любым редактором изображений или программой \verb|identify| пакета \verb|imagemagick|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{sRGB}
+\begin{itemize}
+\item При чтении из sRGB-текстуры нужно возводить прочитанное значение в степень 2.2
+\pause
+\item При записи в sRGB-текстуру нужно возводить записываемое значение в степень 1/2.2
+\pause
+\item В OpenGL есть поддержка sRGB для текстур и фреймбуферов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{sRGB-текстуры}
+\begin{itemize}
+\item Специальное значение internal format для текстуры (\verb|GL_SRGB8| или \verb|GL_SRGB8_ALPHA8|) означает, что текстура хранит sRGB-значения - они будут \textit{автоматически} переведены в линейные значения (т.е. возведены в степень 2.2) при чтении из шейдера
+\pause
+\item \verb|glEnable(GL_FRAMEBUFFER_SRGB)| включит автоматическое обратное преобразование (возведение в степень 1/2.2) при рисовании в sRGB-текстуру
+\pause
+\item {\color{red}N.B.:} \verb|glGenerateMipmap| \textit{не обязан} правильно обрабатывать sRGB-текстуры!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{sRGB-correct mipmap}
+\slideimage{srgb-mipmap.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{sRGB: ссылки}
+\begin{itemize}
+\item \href{https://en.wikipedia.org/wiki/SRGB}{en.wikipedia.org/wiki/SRGB}
+\item \href{https://stackoverflow.com/a/12894053/2315602}{Подробный текст про sRGB на stackoverflow}
+\item \href{https://www.khronos.org/opengl/wiki/Framebuffer#Colorspace}{sRGB framebuffers}
 \end{itemize}
 \end{frame}
 
