@@ -1,0 +1,142 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 10: Gamma correction, dithering, deferred shading, tiled/clustered shading}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}<1>[fragile,label=gamma]
+\frametitle{Гамма}
+\begin{itemize}
+\item Обычно, интенсивность света \begin{math}I\end{math}, излучаемого монитором, нелинейно зависит от значения \begin{math}V\end{math}, записанного в пикселе
+\pause
+\item Это лучше соответствует восприятию света человеком
+\pause
+\item Почти всегда используется показательная функция:
+\begin{equation}I \sim V^\gamma\end{equation}
+\pause
+\item \begin{math}\gamma\end{math} обычно равна 2.2 (некоторые компьютеры Macintosh использовали 1.8)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Линейное значение пикселя vs линейная интенсивность излучения}
+\begin{figure}
+\slideimage{gamma-scale.png}
+\end{figure}
+\end{frame}
+
+\againframe<2->{gamma}
+
+\begin{frame}<1>[fragile,label=gamma2]
+\frametitle{Проблемы гаммы}
+\begin{itemize}
+\item Картинка может издалека выглядеть ярче, чем её усреднённый вариант (e.g. mipmap)
+\pause
+\item Искажается восприятие относительных яркостей, особенно при реалистичном рендеринге (e.g. объект в два раза ярче не будет выглядеть в два раза ярче)
+\pause
+\item Неправильно выглядит освещение, наложение источников света, и т.д.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Серый (цвет=0.5) квадрат и квадрат с мелкой шахматной раскраской}
+\begin{figure}
+\slideimage{gamma-checkers.png}
+\end{figure}
+\end{frame}
+
+\againframe<2->{gamma2}
+
+\begin{frame}[fragile]
+\frametitle{Коррекция гаммы (gamma-correction)}
+\begin{itemize}
+\item Коррекция гаммы - общий термин для применения любых нелинейных преобразований над интенсивностью пикселя
+\pause
+\item В рендеринге под гамма-коррекцией обычно подразумевают применение обратного к \begin{math}V^{2.2}\end{math} преобразования, чтобы получить линейную зависимость выходящего излучения от значения пикселя
+\pause
+\item Делает картинку ярче и часто более реалистичной
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Коррекция гаммы (gamma-correction)}
+\begin{verbatim}
+// Вычислили цвет пикселя
+// с учётом освещения
+vec3 color = ...;
+
+color = pow(color, vec3(1.0 / 2.2));
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Эффекты коррекции гаммы}
+\slideimage{gamma-ex1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Эффекты коррекции гаммы}
+\slideimage{gamma-ex2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Эффекты коррекции гаммы}
+\slideimage{gamma-ex3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Коррекция гаммы: ссылки}
+\begin{itemize}
+\item \href{https://en.wikipedia.org/wiki/Gamma_correction}{en.wikipedia.org/wiki/Gamma\_correction}
+\item \href{http://blog.johnnovak.net/2016/09/21/what-every-coder-should-know-about-gamma}{What every coder should know about gamma}
+\item \href{http://filmicworlds.com/blog/linear-space-lighting-i-e-gamma}{Linear-space lighting (i.e. gamma)}
+\item \href{https://learnopengl.com/Advanced-Lighting/Gamma-Correction}{Туториал на learnopengl.com}
+\item \href{https://github.com/lisyarus/graphics-course-practice/tree/master/gamma-correction}{Пример с гамма-коррекцией}
+\end{itemize}
+\end{frame}
+
+\end{document}
