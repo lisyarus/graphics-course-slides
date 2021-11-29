@@ -289,4 +289,153 @@ for (i in 0..5) {
 \end{verbatim}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Дистрибуция программ на C++}
+\begin{itemize}
+\item Чтобы программа запустилась на конкретном компьютере, нужно, чтобы:
+\pause
+\begin{itemize}
+\item Операционная система понимала формат исполняемого файла
+\pause
+\item Бинарный код подходил для используемого процессора и операционной системы
+\pause
+\item Присутствовали все необходимые динамические библиотеки
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Форматы исполняемых файлов}
+\begin{itemize}
+\item Windows: PE (Portable Executable)
+\item Linux: ELF (Executable and Linkable Format)
+\item MacOS: Mach-O (Mach Object)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Форматы исполняемых файлов}
+\begin{itemize}
+\item Содержат:
+\pause
+\begin{itemize}
+\item Magic number для идентификации формата
+\pause
+\item Метаинформация: битность (32/64), CPU (набор инструкций - ISA), ABI, endianess, etc
+\pause
+\item Блоки с данными и кодом
+\pause
+\item Таблицы релокации (для функций из динамических библиотек)
+\pause
+\item Список зависимостей - динамических библиотек
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Форматы исполняемых файлов}
+\begin{itemize}
+\item Обычно компилятор по умолчанию генерирует исполняемый файл для системы, на которой происходит сборка (host)
+\pause
+\item Кросс-компиляция: компиляция программы, предназначенной для запуска на системе (target), отличной от той, на которой происходит сборка (host)
+\pause
+\item Кросс-компиляция с Linux (host) на Windows (target): MinGW
+\pause
+\item Кросс-компиляция с Windows (host) на Linux (target): Cygwin + crosstool-ng
+\pause
+\item Кросс-компиляция на MacOS (target): нет
+\begin{itemize}
+\item Apple требует, чтобы программы для MacOS собирались на MacOS, на железе от Apple, и были подписаны платными сертификатами разработчика
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{CPU}
+\begin{itemize}
+\item Скомпилированный код - байт-код для исполнения процессором
+\pause
+\item Если конкретный процессор не понимает этот байт-код, программу не запустить
+\pause
+\item Обычно линейки процессоров сохраняют обратную совместимость: программу для старого процессора можно запустить на более новом процессоре
+\pause
+\item Компиляторы позволяют настраивать то, под какой процессор генерируется код, e.g. для GCC: \verb|gcc -march=haswell ...| (полный список для GCC: \href{https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html}{gcc.gnu.org/onlinedocs/gcc/x86-Options.html})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{ABI}
+\begin{itemize}
+\item Скомпилированный код содержит вызовы внешних функций (системные вызовы и функции из динамически загруженных библиотек)
+\pause
+\item На уровне ассемблера нет понятия вызова функции \begin{math}\Rightarrow\end{math} нужны соглашения о вызове (calling conventions) - как передаются аргументы в функции, как возвращается результат, как передаётся параметр \verb|this|, и т.п.
+\pause
+\item Скомпилированный код содержит работу со структурами данных
+\pause
+\item На уровне ассемблера нет структур данных \begin{math}\Rightarrow\end{math} нужно соглашение о том, как выглядят структуры в памяти (memory layout)
+\pause
+\item (для C++) нужно соглашение о деталях обработки исключений, разрешения namespace'ов и перегрузки функций
+\pause
+\item За всё это отвечает ABI (Application Binary Interface)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{ABI}
+\begin{itemize}
+\item GCC: начиная с 3ей версии использует стандартизованный Itanium ABI
+\pause
+\item MSVC: начиная с Visual Studio 2015 сохраняет ABI-совместимость кода, скомпилированного разными версиями MSVC
+\pause
+\item Clang: почти ABI-совместим с GCC; умеет генерировать код, ABI-совместимый с MSVC
+\pause
+\item Код может быть ABI-совместим с другим кодом с точки зрения C, но не с точки зрения C++
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Динамические библиотеки}
+\begin{itemize}
+\item Стандартная библиотека C (\verb|libc.so| в Linux, \verb|msvcrt.dll| в Windows) и C++ (\verb|libstdc++.so| у GCC, \verb|libc++.so| у Clang, \verb|msvcp140.dll| и т.п. у Visual Studio, etc.)
+\pause
+\item Библиотека математических функций (\verb|libm.so|)
+\pause
+\item Библиотека с реализацией OpenGL (\verb|libGL.so| в Linux, \verb|opengl32.dll| в Windows)
+\pause
+\item Вспомогательные библиотеки (SDL, загрузчик OpenGL, etc)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Динамические библиотеки}
+\begin{itemize}
+\item Некоторые библиотеки можно слинковать статически - их код будет влит в код исполняемого файла, и при исполнении они уже не нужны
+\pause
+\begin{itemize}
+\item Стандартная библиотека C++
+\pause
+\item Загрузчик OpenGL
+\end{itemize}
+\pause
+\item Остальные нужно где-то найти!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Динамические библиотеки}
+\begin{itemize}
+\item Многие библиотеки (стандартная библиотека C, математические функции, реализация OpenGL) есть в любой системе и лежат по каким-то стандартным путям (\verb|/usr/lib| в Linux, \verb|C:\Program Files| в Windows)
+\pause
+\item Поиск дополнительных зависимостей специфичен для системы:
+\pause
+\begin{itemize}
+\item Windows: если библиотеки не найдены в системных путях, они ищутся в директории с исполняемым файлом
+\pause
+\item Linux, MacOS: у исполняемых файлов есть свойство RPATH (runtime path) - список путей, по которым нужно искать зависимости; в качестве RPATH можно указать текущую директорию (\verb|.| для Linux, специальные макросы для MacOS)
+\end{itemize}
+\pause
+\item С таким подходом зависимости можно поставлять в собранном виде рядом с исполняемым файлом
+\end{itemize}
+\end{frame}
+
 \end{document}
