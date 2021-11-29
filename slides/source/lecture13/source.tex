@@ -1,0 +1,141 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 13: состояние OpenGL (напоминание), матрицы проекций (напоминание), рендеринг в cubemap, дистрибуция приложений на OpenGL}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Настройка графического конвейера}
+\begin{itemize}
+\item Графический конвейер (pipeline) - набор всех операций, происходящих с данными от момента вызова \verb|glDraw*| до появления пикселей на экране (или текстуре/рендербуфере)
+\pause
+\item Графический конвейер = programmable pipeline + fixed-function pipeline
+\pause
+\item Настройка programmable pipeline: шейдеры (шейдерная программа)
+\pause
+\item Настройка fixed-function pipeline: включение/выключение (\verb|glEnable/glDisable|) конкретных операций и их специфическая настройка
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Настройка fixed-function pipeline}
+\begin{itemize}
+\item Depth clamp
+\begin{itemize}
+\item По умолчанию, все примитивы обрезаются по уравнению \begin{math}z \leq |w|\end{math}
+\item Можно заменить обрезание clamping'ом через \verb|glEnable(GL_DEPTH_CLAMP)|
+\end{itemize}
+\pause
+\item Culling
+\begin{itemize}
+\item Можно не рисовать back-facing или front-facing полигоны
+\item Включить: \verb|glEnable(GL_CULL_FACE)|
+\item Настроить, что \textbf{не} рисуется: \verb|glCullFace|
+\item Настроить, что считается back-facing, а что front-facing: \verb|glFrontFace|
+\end{itemize}
+\pause
+\item Viewport
+\begin{itemize}
+\item Настроить перевод из NDC (normalized device coordinates, [-1..1]) в пиксельные координаты: \verb|glViewport|
+\item Обычно нужно делать каждый раз при изменении размеров окна или при переключении фреймбуферов
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Настройка fixed-function pipeline}
+\begin{itemize}
+\item Depth test
+\begin{itemize}
+\item Можно не рисовать пиксели, находящиеся сзади уже нарисованных пикселей
+\item Включить: \verb|glEnable(GL_DEPTH_TEST)|
+\item Настроить: \verb|glDepthFunc|
+\item Настроить преобразование из NDC в [0, 1]: \verb|glDepthRangef|
+\item Включить/выключить запись значений глубины: \verb|glDepthMask|
+\end{itemize}
+\pause
+\item Stencil test
+\begin{itemize}
+\item Включить: \verb|glEnable(GL_STENCIL_TEST)|
+\item Настроить: \verb|glStencilFunc|, \verb|glStencilOp|, \verb|glStencilMask|
+\end{itemize}
+\pause
+\item Scissor test
+\begin{itemize}
+\item Можно не рисовать пиксели, находящиеся вне некоторого прямоугольника
+\item Включить: \verb|glEnable(GL_SCISSOR_TEST)|
+\item Настроить: \verb|glScissor|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Настройка fixed-function pipeline}
+\begin{itemize}
+\item Color mask
+\begin{itemize}
+\item Настроить запись в конкретные цветовые каналы: \verb|glColorMask|
+\end{itemize}
+\pause
+\item Blending
+\begin{itemize}
+\item Можно записывать значение некоторой функции от входного цвета и уже записанного цвета
+\item Включить: \verb|glEnable(GL_BLEND)|
+\item Настроить: \verb|glBlendFunc|/\verb|glBlendFuncSeparate|, \verb|glBlendEquation|, \verb|glBlendColor|
+\end{itemize}
+\pause
+\item Color logical operation
+\begin{itemize}
+\item Можно записывать результат некоторой побитовой операции от входного цвета и уже записанного цвета
+\item Выключает blending
+\item Включить: \verb|glEnable(GL_COLOR_LOGIC_OP)|
+\item Настроить: \verb|glLogicOp|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\end{document}
