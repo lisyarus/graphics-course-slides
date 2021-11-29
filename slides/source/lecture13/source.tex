@@ -204,4 +204,89 @@
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Cubemaps}
+\begin{itemize}
+\item Cubemap-текстура: (концептуально) набор из шести 2D текстур, понимаемых как грани \textit{виртуального} куба
+\pause
+\item Удобно хранить изображения, натянутые на куб/сферу
+\pause
+\item Текстурная координата в шейдере - вектор направления; вычисляется пересечение луча из центра куба в этом направлении с поверхностью куба (не зависит от длины вектора направления и от размеров куба), по этому пересечению вычисляется пиксель в конкретной грани cubemap текстуры
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Cubemaps: примеры использования}
+\begin{itemize}
+\item Хочется нарисовать некое бесконечно удалённое окружение сцены (skybox) - небо, далёкие горы, и т.п.: нужна текстура для всех направлений \begin{math}\Rightarrow\end{math} cubemaps!
+\pause
+\item Environment mapping (как skybox, только для отражений) - нужно знать, как выглядит сцена в некотором направлении из отражающей точки \begin{math}\Rightarrow\end{math} cubemaps!
+\pause
+\item Отражения (как environment mapping, только динамический) \begin{math}\Rightarrow\end{math} cubemaps!
+\pause
+\item Shadow maps от точечного источника - источник светит во все стороны из фиксированной точки: нужно знать расстояние до ближайшего объекта в каждом направлении \begin{math}\Rightarrow\end{math} cubemaps!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг в cubemap}
+\begin{itemize}
+\item Cubemap - это текстура \begin{math}\Rightarrow\end{math} чтобы рисовать в неё, нужен фреймбуфер
+\pause
+\item Cubemap целиком нельзя сделать attachment'ом фреймбуфера, можно только отдельные её грани
+\pause
+\item \verb|glFramebufferTexture2D| - принимает (в отличие от \verb|glFramebufferTexture|) дополнительный параметр \verb|textarget|, который можно (в том числе) использовать как индикатор конкретной грани cubemap текстуры:
+\begin{itemize}
+\item \verb|GL_TEXTURE_CUBE_MAP_POSITIVE_X|
+\item \verb|GL_TEXTURE_CUBE_MAP_NEGATIVE_X|
+\item \verb|GL_TEXTURE_CUBE_MAP_POSITIVE_Y|
+\item \verb|GL_TEXTURE_CUBE_MAP_NEGATIVE_Y|
+\item \verb|GL_TEXTURE_CUBE_MAP_POSITIVE_Z|
+\item \verb|GL_TEXTURE_CUBE_MAP_NEGATIVE_Z|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг в cubemap}
+\begin{itemize}
+\item Нужно 6 фреймбуферов, к каждому нужно присоединить соответствующую грань cubemap текстуры
+\pause
+\item Рисуем сцену 6 раз, по одному разу для каждой грани
+\pause
+\item Для каждой грани нужна перспективная проекция
+\begin{itemize}
+\item Центр - точка, с точки зрения которой рисуется cubemap (для теней - позиция источника света, для отражений - координаты отражающей точки)
+\pause
+\item fovx = fovy = \begin{math}90^\circ\end{math} (из геометрии куба)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг в cubemap: псевдокод}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+// Инициализация:
+GLuint fbos[6];
+... 
+for (i in 0..5) {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+    GL_COLOR_ATTACHMENT0, 
+    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, cubemap, 0);
+}
+
+// Рендеринг:
+...
+glViewport(0, 0, cubemap_size, cubemap_size);
+set_uniform("projection", cubemap_projection);
+for (i in 0..5) {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[i]);
+  set_uniform("view", cubemap_view[i]);
+  draw_scene();
+}
+\end{verbatim}
+\end{frame}
+
 \end{document}
