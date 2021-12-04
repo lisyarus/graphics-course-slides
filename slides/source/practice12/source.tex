@@ -1,0 +1,137 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 12: Объёмный рендеринг}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Находим пересечение с кубом
+\begin{itemize}
+\item Во фрагментном шейдере заводим координаты крайних точек куба (\verb|vec3 box_min(-1.0), box_max(1.0)|) - можно как uniform'ы, можно как const переменные
+\pause
+\item Вычисляем \textbf{нормированный} вектор направления из камеры в текущую точку поверхности куба - это вектор направления луча
+\pause
+\item Вычисляем пересечение этого луча с кубом: интервал \begin{math}[t_{min}, t_{max}]\end{math} для которых \begin{math}p + t \cdot d\end{math} пересекает куб
+\pause
+\item Делаем \verb|tmin >= 0|, чтобы не включать часть пересечения сзади камеры
+\pause
+\item В качестве цвета пикселя выводим \verb|tmax - tmin| (это значение часто будет больше единицы, так что можно его нормировать, разделив на 3.5)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Загружаем 3D текстуру
+\begin{itemize}
+\item Создаём текстуру типа \verb|GL_TEXTURE_3D|
+\pause
+\item Устанавливаем min фильтр в \verb|GL_LINEAR|, mag в \verb|GL_LINEAR_MIPMAP_NEAREST|
+\pause
+\item Устанавливаем wrap\_r, wrap\_s, wrap\_t в \verb|GL_CLAMP_TO_EDGE|
+\pause
+\item Считываем данные из файла \verb|house256| (256x256x256, 4 байта на пиксель) и загружаем в текстуру (\verb|glTexImage3D|)
+\begin{itemize}
+\item Если GPU не потянет, можно взять файл поменьше - \verb|house128| или \verb|house64| (128x128x128 и 64x64x64 соответственно)
+\end{itemize}
+\pause
+\item Добавляем текстуру в шейдер (\verb|sampler3D|), выводим в качестве цвета значение из текстуры в точке \verb|position|
+\begin{itemize}
+\item Нужно перевести пространственные координаты в текстурные: \verb|(position - box_min) / box_size|
+\item В качестве альфа-канала возьмём 1, иначе ничего не увидим
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Вычисляем среднее значение цвета вдоль луча
+\begin{itemize}
+\item В вершинном шейдере делаем цикл (например, в 64 шага); шаг цикла соответствует 1/64 части отрезка \begin{math}[t_{min}, t_{max}]\end{math}, т.е. \begin{math}[t_{min} + \frac{\Delta t \cdot i}{64}, t_{min} + \frac{\Delta t \cdot (i + 1)}{64}]\end{math}, где \begin{math}\Delta t = t_{max} - t_{min}\end{math}
+\begin{itemize}
+\item Каждому значению \begin{math}t\in[t_{min}, t_{max}]\end{math} соответствует точка \begin{math}p + t \cdot d\end{math}
+\item Вместо 64 можно взять любое другое число; чем больше, тем красивее и медленнее
+\end{itemize}
+\pause
+\item Вычисляем цвет из текстуры в текущей точке (лучше взять середину отрезка, т.е. точку соответствующую \begin{math}\frac{i + 0.5}{64}\end{math}), и переводим в premultiplied формат (RGB-часть нужно домножить на альфа-канал)
+\begin{itemize}
+\item Лучше читать 0-ой mipmap-уровень (\verb|textureLod(sampler, texcoord, 0.0)|)
+\end{itemize}
+\pause
+\item Суммируем усреднённое значение цвета по всем точкам (цвет в точке нужно домножить на длину одного отрезка, т.е. на \begin{math}\frac{\Delta t}{64}\end{math})
+\pause
+\item Усреднённый цвет выводим в качестве цвета
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+Вычисляем настоящую интенсивность цвета используя front-to-back проход
+\begin{itemize}
+\item Заводим коэффициент интенсивности \verb|C = 16.0| (чем больше, тем менее прозрачной будет сцена) - он используется для перевода значений альфа-канала в плотность среды
+\pause
+\item Вычисляем реальную плотность вдоль \verb|i|-ого отрезка как \begin{math}1 - \exp(- C \frac{\Delta t}{64} A)\end{math}, где \begin{math}A\end{math} - значение альфа-канала, и перезаписываем в альфа-канал текущего (прочитанного из текстуры) цвета
+\pause
+\item Переводим цвет в premultiplied формат (домножаем RGB-часть на альфа-канал, который мы перезаписали в предыдущем пункте)
+\pause
+\item Прибавляем к результату текущий цвет, умноженный на \verb|1 - result.a| (чтобы учесть прозрачность уже посчитанного цвета)
+\pause
+\item После суммирования применяем к RGB-части результирующего пикселя гамма-коррекцию
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+Добавляем тени
+\begin{itemize}
+\item Для каждого цвета, прочитанного из текстуры (т.е. на каждой итерации цикла) вычисляем его освещённость (число в диапазоне \begin{math}[0, 1]\end{math})
+\pause
+\item Чтобы вычислить освещённость, пускаем луч из текущей точки в направлении источника света и пересекаем с кубом (делаем \verb|tmin >= 0|, иначе тени будут неверными)
+\pause
+\item Вдоль этого луча запускаем внутренний цикл, аналогичный внешнему, но нас интересует только альфа-канал результата; освещённость - это \verb|1 - A|
+\begin{itemize}
+\item Число итераций лучше взять не очень большим, например, 8 или 16
+\item Можно упростить вычисления, просто просуммировав \begin{math}C \cdot A \cdot \frac{\Delta t}{16}\end{math}, и посчитав освещённость как \verb|exp(-sum)|
+\item Так как итераций мало, лучше читать какой-нибудь низкодетализированный mipmap текстуры (например, 4ый)
+\end{itemize}
+\pause
+\item Домножаем RGB-часть цвета текущей точки (во внешнем цикле) на значение освещённости
+\end{itemize}
+\end{frame}
+
+\end{document}
