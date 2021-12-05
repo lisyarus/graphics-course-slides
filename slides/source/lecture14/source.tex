@@ -1,0 +1,174 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 14: рендеринг текста, bitmap-шрифты, векторные шрифты, SDF-шрифты, volume rendering, volume slicing, raymarching}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг текста}
+\begin{itemize}
+\item Абстрактный текст
+\pause
+\item + кодировка \begin{math}\Rightarrow\end{math} машинное представление текста
+\pause
+\item + шрифт + настройки шейпинга (shaping) \begin{math}\Rightarrow\end{math} набор глифов (изображений символов) и их координат
+\pause
+\item \begin{math}\Rightarrow\end{math} нарисованный текст
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кодировки}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item Описывают машинное представление текста, т.е. соответствие последовательностей символов и последовательностей бит
+\pause
+\item ASCII: 7 бит (обычно дополняется нулевым старшим битом до 8 бит), первые 32 символа - управляющие (\verb|\r|, \verb|\n|, tab, ...), остальные 96 - буквы английского алфавита (большие и маленькие) и прочие символы (различные скобки, арифметические операции, пунктуация, пробел, ...)
+\pause
+\begin{itemize}
+\item Многие кодировки совпадают с ASCII в диапазоне 0-127 или 32-127
+\end{itemize}
+\pause
+\item Огромное количество в основном 8-битных кодировок для разных алфавитов и систем:
+\begin{itemize}
+\item ISO/IEC 8859 - 15 разных вариантов (ISO/IEC 8859-5 для русского языка)
+\item Code page XXX - много разных кодировок для DOS (Code page 866 для русского языка)
+\item Windows code pages (Windows-1251 для русского языка)
+\item KOI-8 и вариации - для русского языка
+\item etc.
+\end{itemize}
+\pause
+\item Unicode-кодировки
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Unicode}
+\begin{itemize}
+\item Unicode - стандарт, описывающий соответствие символов целочисленным кодам в диапазоне \verb|0..10FFFFh| исключая \verb|D800h..DFFFh| (используется для суррогатных пар в UTF-16; всего 1112064 символов), и рекомендации по их интерпретации и визуализации
+\pause
+\item На сегодняшний день описывает 144697 символа
+\pause
+\item Unicode-кодировки:
+\pause
+\begin{itemize}
+\item UTF-8: от 1 до 4 байт на символ, совпадает с ASCII в диапазоне \verb|0..7Fh|, самая распространённая сегодня кодировка (95\% интернета)
+\pause
+\item UCS-2: устаревшая, 2 байта на символ, не поддерживает весь unicode
+\pause
+\item UTF-16: 2 или 4 байта на символ
+\pause
+\item UTF-32: 4 байта на символ
+\pause
+\item GB 18030: специальная кодировка для китайских иероглифов (но тоже поддерживает весь unicode)
+\end{itemize}
+\pause
+\item N.B.: один символ unicode \textbf{не соответствует} одному видимому символу (\textit{графеме})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Шрифты}
+\begin{itemize}
+\item Содержит набор \textit{глифов} (изображений символов в каком-либо виде) и правил их использования
+\pause
+\item Виды шрифтов:
+\pause
+\begin{itemize}
+\item Bitmap-шрифты: глиф - готовое изображение (bitmap)
+\pause
+\item Векторные шрифты: глиф описывается как геометрическая фигура
+\pause
+\item SDF-шрифты: глиф описывается с помощью \textit{signed distance field} (SDF)
+\end{itemize}
+\pause
+\item Современные форматы шрифтов (\verb|.ttf| - TrueType, \verb|.otf| - OpenType) - векторные, описывают границу глифа как набор отрезков и квадратичных кривых Безье (т.е. 2-ого порядка)
+\pause
+\item Bitmap и SDF шрифты часто строятся по векторным шрифтам
+\pause
+\item Freetype - самая распространённая библиотека для чтения векторных шрифтов; умеет растеризовать в bitmap и (с версии 2.11.0, июль 2021) в SDF
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Шейпинг}
+\begin{itemize}
+\item Процесс преобразования последовательности символов в набор отпозиционированных глифов
+\pause
+\item Может включать в себя:
+\pause
+\begin{itemize}
+\item Настройки шейпинга: направление (слева-направо, справа-налево, сверху-вниз, снизу-вверх), размер шрифта, межбуквенное расстояние, стиль (жирный, курсив, и т.п.)
+\pause
+\item Hinting: применение дополнительных преобразований к векторному глифу в зависимости от разрешения
+\pause
+\item Kerning: изменение расстояния между соседними глифами
+\pause
+\item Лигатуры: последовательность несвязанных символов, представленная одним глифом (ff, fi, <=>)
+\end{itemize}
+\pause
+\item harfbuzz - одна из самых распространённых библиотек для шейпинга текста
+\item Freetype позволяет сделать шейпинг, но хуже, чем harfbuzz
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Hinting}
+\slideimage{hinting.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Kerning}
+\slideimage{kerning.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Лигатуры}
+\slideimage{ligatures.png}
+\end{frame}
+
+\end{document}
