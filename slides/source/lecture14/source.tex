@@ -340,4 +340,114 @@ void main()
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Volume rendering}
+\begin{itemize}
+\item Рендеринг объектов, заданных распределением свойств в пространстве:
+\pause
+\begin{itemize}
+\item Цвет
+\item Прозрачность
+\item Параметры рассеивания
+\end{itemize}
+\pause
+\item Медицина: КТ-сканы, МРТ-сканы
+\item Небо
+\item Аппроксимации, основанные на теории volume рендеринга: дым, туман, облака, жидкости, subsurface scattering
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume-rendering черепа}
+\slideimage{volume-skull.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Небо (Nishita model)}
+\slideimage{sky.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Свет, попавший в некую трёхмерную среду, может:
+\pause
+\begin{itemize}
+\item Поглотиться (absorption)
+\pause
+\item Рассеяться (scattering), т.е. изменить направление
+\pause
+\item Пройти насквозь
+\end{itemize}
+\pause
+\item Кроме того, среда может сама излучать свет (emission)
+\pause
+\item Absorption + scattering = extinsion
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Коэффициенты поглощения \begin{math}k_a\end{math}, рассеяния \begin{math}k_s\end{math} и излучения \begin{math}k_e\end{math} могут зависеть от
+\pause
+\begin{itemize}
+\item Точки пространства
+\pause
+\item Длины волны
+\end{itemize}
+\pause
+\item Обычно задаются в единицах м\textsuperscript{-1}: отношение количества поглощённого/рассеянного/излучённого света к длине пройденного пути (для бесконечно малых отрезков)
+\pause
+\item N.B.: часто как \begin{math}k_e = k_a + k_s\end{math} обозначают коэффициент исчезновения (extinsion)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Пусть есть среда с постоянным коэффициентом поглощения \begin{math}k_a\end{math}, т.е. для бесконечно малого расстояния \begin{math}\Delta x\end{math} поглотится \begin{math}k_a \Delta x\end{math} света
+\pause
+\item Как много света поглотится на отрезке длины \begin{math}L\end{math}?
+\pause
+\item Разобьём отрезок на \begin{math}N\end{math} частей равной длины \begin{math}\Delta x = \frac{L}{N}\end{math}.
+\pause
+\item На первом отрезке поглотится \begin{math}k_a \frac{L}{N}\end{math} света, т.е. останется \begin{math}1 - k_a\frac{L}{N}\end{math}. На втором поглотится \begin{math}k_a \frac{L}{N}\end{math} от того, что осталось после первого отрезка, и всего останется \begin{math}\left(1 - k_a\frac{L}{N}\right)^2\end{math}.
+\pause
+\item Всего после \begin{math}N\end{math} отрезков останется \begin{math}\left(1 - k_a\frac{L}{N}\right)^N\end{math} света.
+\pause
+\item В пределе: \begin{math}\lim\limits_{N \rightarrow \infty} \left(1 - k_a\frac{L}{N}\right)^N = \exp(- k_a L)\end{math}.
+\pause
+\begin{itemize}
+\item При \begin{math}L, k_a \in [0, \infty)\end{math} имеем \begin{math}\exp(-k_a L) \in (0, 1]\end{math}
+\pause
+\item Если \begin{math}L = 0\end{math}, то весь свет останется (ничего не поглотится)
+\item Если \begin{math}L \rightarrow \infty\end{math}, то весь свет поглотится
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Пусть есть среда с постоянным коэффициентом поглощения \begin{math}k_a\end{math} и излучения \begin{math}k_e\end{math}, т.е. для бесконечно малого расстояния \begin{math}\Delta x\end{math} излучится \begin{math}k_e \Delta x\end{math} света
+\pause
+\item Как много света излучится на отрезке длины \begin{math}L\end{math}?
+\pause
+\item Разобьём отрезок на \begin{math}N\end{math} частей равной длины \begin{math}\Delta x = \frac{L}{N}\end{math}.
+\pause
+\item На первом отрезке излучится \begin{math}k_e \Delta x\end{math} света. На втором отрезке излучится \begin{math}k_e \Delta x\end{math} света, плюс \begin{math}(1 - k_a \Delta x) k_e \Delta x\end{math} от первого отрезка, в сумме \begin{math}\left(1 + (1 - k_a \Delta x)\right) k_e \Delta x\end{math}
+\pause
+\item На третьем отрезке в сумме \begin{math}\left(1 + (1 - k_a \Delta x) + (1 - k_a \Delta x)^2\right) k_e \Delta x\end{math}
+\pause
+\item На \begin{math}N\end{math} отрезках: \begin{math}\frac{1 - (1 - k_a \Delta x)^N}{k_a \Delta x} k_e \Delta x = \frac{1 - (1 - k_a \Delta x)^N}{k_a} k_e\end{math}
+\pause
+\item В пределе: \begin{math}\lim\limits_{N \rightarrow \infty} \frac{1 - (1 - k_a \Delta x)^N}{k_a} k_e = \frac{1 - \exp(-k_a L)}{k_a} k_e\end{math}.
+\pause
+\begin{itemize}
+\item Сингулярность при \begin{math}k_a = 0\end{math}, в пределе получим \begin{math}L k_e\end{math}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
 \end{document}
