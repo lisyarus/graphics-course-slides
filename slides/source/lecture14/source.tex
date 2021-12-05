@@ -395,9 +395,13 @@ void main()
 \item Точки пространства
 \pause
 \item Длины волны
+\pause
+\item Угла (рассеяние)
 \end{itemize}
 \pause
-\item Обычно задаются в единицах м\textsuperscript{-1}: отношение количества поглощённого/рассеянного/излучённого света к длине пройденного пути (для бесконечно малых отрезков)
+\item \begin{math}k_a\end{math} и \begin{math}k_s\end{math} обычно задаются в единицах м\textsuperscript{-1}: отношение количества поглощённого/рассеянного света к длине пройденного пути (для бесконечно малых отрезков)
+\pause
+\item Аналогично, \begin{math}k_e\end{math} задаётся в единицах люкс\begin{math}\cdot\end{math}м\textsuperscript{-1}
 \pause
 \item N.B.: часто как \begin{math}k_e = k_a + k_s\end{math} обозначают коэффициент исчезновения (extinsion)
 \end{itemize}
@@ -447,6 +451,282 @@ void main()
 \begin{itemize}
 \item Сингулярность при \begin{math}k_a = 0\end{math}, в пределе получим \begin{math}L k_e\end{math}
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Пусть есть среда с коэффициентом поглощения, зависящим от точки \begin{math}k_a(x)\end{math}
+\pause
+\item Как много света поглотится на отрезке длины \begin{math}L\end{math}?
+\pause
+\item Разобьём отрезок на \begin{math}N\end{math} частей равной длины \begin{math}\Delta x = \frac{L}{N}\end{math}, и пусть \begin{math}x_i\end{math} - центр i-ого отрезка
+\pause
+\item i-ый отрезок поглотит примерно \begin{math}1 - \exp\left(-k_a(x_i) \Delta x\right)\end{math} света и оставит \begin{math}\exp\left(-k_a(x_i) \Delta x\right)\end{math}
+\pause
+\item В сумме останется \begin{math}\prod\exp\left(-k_a(x_i) \Delta x\right) = \exp\left(-\sum k_a(x_i) \Delta x\right)\end{math}
+\pause
+\item В пределе: \begin{math}\exp\left(-\int\limits_0^L k_a(x) dx\right)\end{math}
+\pause
+\item Величина \begin{math}\int\limits_0^L k_a(x) dx\end{math} называется \textit{оптической глубиной (optical depth)}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Пусть есть среда с коэффициентами поглощения и излучения, зависящими от точки \begin{math}k_a(x), k_e(x)\end{math}
+\pause
+\item Как много света излучится на отрезке длины \begin{math}L\end{math}?
+\pause
+\item \begin{math}\int\limits_0^L \exp\left(-\int\limits_x^L k_a(s) ds\right) k_e(x) dx\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: рассеяние (scattering)}
+\begin{itemize}
+\item Обычно любая среда рассеивает свет в определённом направлении
+\pause
+\item Phase function: описывает количество света, рассеянного под определённым углом (относительно падающего света) \begin{math}f(x, \lambda, \theta)\end{math}
+\pause
+\item Зависит от конкретных составляющих среды, выводится из решения уравнений Максвелла
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рассеяние Релея (Rayleigh)}
+\begin{itemize}
+\item Рассеяние света частицами намного меньшими длины волны (например, молекулами газов N\textsubscript{2} и O\textsubscript{2})
+\pause
+\item \begin{math}f \cong \frac{1+\cos(\theta)^2}{\lambda^4}\end{math}
+\pause
+\item Больше рассеяния вперёд и назад, чем в стороны
+\pause
+\item Короткие волны (e.g. синие) рассеиваются намного больше длинных (e.g. красных)
+\pause
+\item Главный эффект, ответственный за цвет неба
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рассеяние Релея: phase function}
+\slideimage{rayleigh-phase.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рассеяние Ми (Mie)}
+\begin{itemize}
+\item Рассеяние света частицами сравнимыми по размеру с длиной волны (например, каплями воды)
+\pause
+\item Точная формула - разложение в ряд по сферическим гармоникам
+\pause
+\item Обычно для рендеринга используются аппроксимации
+\pause
+\item Влияет на цвет неба (частицы воды, аэрозоли) и облаков
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: рассеяние}
+\begin{itemize}
+\item Значительно усложняет уравнения: свет, пришедший из любого направления, может рассеяться в сторону камеры в любой точке
+\pause
+\item Различают
+\begin{itemize}
+\item Zero-scattering: рассеяние не учитывается
+\item Single scattering: учитывается свет, пришедший из источника света и рассеявшийся сразу в направлении камеры (самое часто используемое приближение)
+\item Multiple scattering: свет, пришедший из источника света, может рассеяться много раз и в итоге прийти в камеру
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: применения}
+\begin{itemize}
+\item Для визуализации трёхмерных данных (МРТ-сканы и т.п.) обычно игнорируют рассеяние, и считают среду полупрозрачной и излучающей свет
+\pause
+\begin{itemize}
+\item Вместо \begin{math}k_a\end{math} часто хранят некую "непрозрачность" (как значение альфа-канала), не имеющую физического смысла
+\pause
+\item Цвет излучаемого света может храниться в текстуре, а может зависеть от значения альфа-канала (transfer function)
+\end{itemize}
+\pause
+\item Для визуализации неба, облаков и т.д. рассеяние - обязательная составляющая, коэффициенты часто берут из реальных данных
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: представление данных}
+\begin{itemize}
+\item 3D текстура
+\pause
+\item Явная функция
+\pause
+\item Их комбинация
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: методы}
+\begin{itemize}
+\item Slicing
+\item Splatting
+\item Raymarching
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: slicing}
+\begin{itemize}
+\item Объект "разрезается" набором равноудалённых плоскостей, перпендикулярных направлению на камеру (чем больше, тем дороже и точнее)
+\pause
+\item Каждый слой (slice) рисуется как текстурированный многоугольник, читая данные из 3D текстуры или из явной фукнции, задающей объект
+\pause
+\item Слои накладываются друг на друга с blending'ом
+\pause
+\item Нужно отсортировать слои от дальнего к ближнему (back-to-front) или наоборот (front-to-back), об этого будет зависеть режим blending'а
+\pause
+\item В значении альфа-канала нужно учесть расстояние между слоями
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: slicing}
+\slideimage{slicing.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: slicing}
+\begin{itemize}
+\item Нужно обновлять геометрию slice'ов при каждом изменении камеры\pause (это проще, чем звучит)
+\pause
+\item Использует встроенный механизм (blending) \begin{math}\Rightarrow\end{math} работает достаточно быстро
+\pause
+\item Тяжело учесть освещение/рассеяние
+\pause
+\item Часто применяется в медицине
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: splatting}
+\begin{itemize}
+\item Объект рисуется как набор частиц (splats) внутри объёма объекта
+\pause
+\item Частицы рисуются как прямоугольники, перпендикулярные направлению на камеру (billboards), с gaussian-текстурой и значениями цвета/прозрачности, взятыми из центра частицы
+\pause
+\item Так же, как в slicing'е, нужно отсортировать частицы, правильно настроить blending и значение альфа-канала
+\pause
+\item Не нужно менять геометрию каждый кадр, но нужно сортировать частицы
+\pause
+\item Сложнее добиться красивой картинки при малом числе частиц
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: splatting}
+\slideimage{splatting-scheme.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Ray*}
+Есть несколько алгоритмов, название которых звучит как ray-<глагол>:
+\pause
+\begin{itemize}
+\item Raycasting - алгоритм, использовавшийся в старых 3D играх: находится пересечение луча из камеры в конкретном направлении в плоскости XZ со стенами сцены; по расстоянию до пересечения можно вычислить, как рисовать целый столбец пикселей с одинаковой экранной X-координатой
+\pause
+\item Raytracing - алгоритм, использующийся для фотореалистичного рендеринга: находится пересечение луча из камеры с ближайшим объектом сцены (обычно используюя вспомогательные структуры данных для ускорения), после чего из точки пересечения рекурсивно бросаются новые лучи
+\pause
+\item Raymarching - алгоритм, использующийся для volume рендеринга, screen-space отражений, SDF, и подобного: вдоль луча из камеры выбирается дискретный набор точек (часто - с фиксированным шагом), в этих точках вычисляются значения некоторой функции и (в случае volume рендеринга) по этим точкам вычисляется искомый интеграл
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raycasting}
+\slideimage{raycasting.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\begin{itemize}
+\item Рисуется некая грубая оболочка объекта, часто - AABB (axis-aligned bounding box), на неё удобно накладывать 3D-текстуру
+\begin{itemize}
+\item Можно с \textbf{front-face culling}, чтобы алгоритм работал даже в случае, если камера находится внутри объекта
+\end{itemize}
+\pause
+\item Во фрагментный шейдер передаются координаты точки объекта; по ней вычисляется луч из камеры в точку объекта: \begin{math}c + d\cdot t\end{math}, где \verb|c| - позиция камеры, \verb|d| - единичный вектор направления
+\pause
+\item Вычисляется пересечение луча с AABB - отрезок значений \begin{math}[t_{min}, t_{max}]\end{math}, для которых соответствующие точки луча лежат внутри AABB
+\begin{itemize}
+\item Если \begin{math}t_{min} < 0\end{math}, нужно сделать его равным 0, иначе в рендеринг попадут точки, находящиеся сзади камеры
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\begin{itemize}
+\item Выбирается количество шагов N, т.е. количество частей, на которые будет разбит отрезок \begin{math}[t_{min}, t_{max}]\end{math}: фиксированное, или в зависимости от длины отрезка
+\pause
+\item Вдоль отрезка вычисляется аппроксимация интеграла \begin{math}\int\limits_0^L \exp\left(-\int\limits_x^L k_a(s) ds\right) k_e(x) dx\end{math} в виде \begin{math}\sum\limits_{i=0}^{N-1} \exp\left(-\sum\limits_{j=i}^{N-1} k_a(x_j) \Delta x\right) k_e(x_i) \Delta x\end{math}
+\pause
+\item В качестве \begin{math}x_i\end{math} лучше брать центр i-ого отрезка
+\pause
+\item Важно следить за направлением: интеграл выводился для луча идущего \textbf{в направлении камеры}, а интегрирование мы можем делать как \textbf{в направлении камеры} (back-to-front, от \begin{math}t_{max}\end{math} к \begin{math}t_{min}\end{math}), так и \textbf{в направлении от камеры} (back-to-front, от \begin{math}t_{min}\end{math} к \begin{math}t_{max}\end{math})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\slideimage{raymarching-1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\begin{itemize}
+\item Для учёта рассеяния/освещения можно посылать дополнительные лучи, обрабатываемые тем же алгоритмом
+\pause
+\item Например, послать луч в сторону источника света, вычислить вдоль него optical depth, и по ней получить значение освещённости в точке (в GLSL это будет цикл внутри внешнего цикла)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\slideimage{raymarching-2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: оптимизации}
+\begin{itemize}
+\item Для хорошего качества нужно довольно много шагов вдоль луча (десятки, сотни)
+\pause
+\item С учётом внутреннего цикла для рассеяния/освещённости получается ещё на порядок больше
+\pause
+\item Работает очень медленно
+\pause
+\item Типичные оптимизации:
+\begin{itemize}
+\item Использовать mipmap'ы 3D текстуры для хранения максимальной (вместо усреднённой) полупрозрачности; модифицировать алгоритм, чтобы он пропускал большие полностью прозрачные куски
+\pause
+\item Заканчивать алгоритм при front-to-back проходе, когда текущий вычисленный цвет уже имеет непрозрачность выше некого порогового значения (напр. 0.99)
+\pause
+\item Рисовать объект в меньшем разрешении
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: ссылки}
+\begin{itemize}
+\item \href{https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-39-volume-rendering-techniques}{GPU Gems, Chapter 39. Volume Rendering Techniques}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-16-accurate-atmospheric-scattering}{GPU Gems 2, Chapter 16. Accurate Atmospheric Scattering}
+\item \href{https://www.codeproject.com/Articles/352270/Getting-Started-with-Volume-Rendering-using-OpenGL}{Туториал по slicing (старый OpenGL!)}
+\item \href{https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/simulating-sky/simulating-colors-of-the-sky}{Подробнее про цвет неба}
+\item \href{https://sebh.github.io/publications/egsr2020.pdf}{A Scalable and Production Ready Sky and Atmosphere Rendering Technique (статья 2020 года)}
+\item \href{https://www.youtube.com/watch?v=DxfEbulyFcY}{Видео-туториал про рендеринг атмосферы}
 \end{itemize}
 \end{frame}
 
