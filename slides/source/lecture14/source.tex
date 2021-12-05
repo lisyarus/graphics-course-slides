@@ -130,7 +130,7 @@
 \pause
 \item Bitmap и SDF шрифты часто строятся по векторным шрифтам
 \pause
-\item Freetype - самая распространённая библиотека для чтения векторных шрифтов; умеет растеризовать в bitmap и (с версии 2.11.0, июль 2021) в SDF
+\item FreeType - самая распространённая библиотека для чтения векторных шрифтов; умеет растеризовать в bitmap и (с версии 2.11.0, июль 2021) в SDF
 \end{itemize}
 \end{frame}
 
@@ -151,8 +151,10 @@
 \item Лигатуры: последовательность несвязанных символов, представленная одним глифом (ff, fi, <=>)
 \end{itemize}
 \pause
+\item Для простых моноширинных шрифтов шейпинг может сводиться к расположению глифов на равных расстояниях друг от друга
+\pause
 \item harfbuzz - одна из самых распространённых библиотек для шейпинга текста
-\item Freetype позволяет сделать шейпинг, но хуже, чем harfbuzz
+\item FreeType позволяет сделать шейпинг, но хуже, чем harfbuzz
 \end{itemize}
 \end{frame}
 
@@ -169,6 +171,173 @@
 \begin{frame}[fragile]
 \frametitle{Лигатуры}
 \slideimage{ligatures.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг bitmap-шрифтов}
+\begin{itemize}
+\item Обычно представлены в виде texture atlas: одна текстура, содержащая все глифы шрифта
+\pause
+\item Содержит информацию о расположении глифов в текстуре (текстурные координаты левого верхнего и правого нижнего пикселя)
+\pause
+\item Плохо ведёт себя при масштабировнии (как увеличении, так и уменьшении), mipmap'ы не особо помогают
+\pause
+\item Очень прост в реализации
+\pause
+\item Часто используется для дебажного текста, инди-игр, и т.п.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Bitmap-шрифт}
+\slideimage{bitmap-font.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Bitmap-шрифт: описание в коде}
+\begin{verbatim}
+struct bitmap_font
+{
+  GLuint texture_id;
+
+  struct glyph
+  {
+    vec2 top_left;
+    vec2 bottom_right;
+  };
+
+  std::unordered_map<std::uint32_t, glyph_data> glyphs;
+};
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг векторных шрифтов}
+\begin{itemize}
+\item Глиф описывается как набор геометрических фигур (фигура может описывать "дырку" в другой фигуре, как дырка в букве "О"), граница фигуры - набор отрезков и квадратичных кривых Безье
+\pause
+\item Много разных способов рендеринга:
+\pause
+\begin{itemize}
+\item Аппроксимация набором треугольников
+\pause
+\item Запаковка фигур в текстуру, шейдер вычисляет площадь пересечения фигуры и пикселя
+\pause
+\item Полигональная аппроксимация глифа (рисуется с использованием stencil буфера) + треугольник со специальным шейдером для каждой кривой Безье
+\pause
+\item Slug algorithm (запатентован)
+\end{itemize}
+\pause
+\item Обычно легко переносит масштабирование
+\pause
+\item Сложен в реализации
+\pause
+\item Используется для текста максимально возможного качества
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Векторный глиф}
+\slideimage{vector-glyph.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Slug algorithm}
+\slideimage{slug.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Signed distance field (SDF)}
+\begin{itemize}
+\item Описание двумерного или трёхмерного объекта/фигуры функцией расстояния до границы объекта
+\pause
+\item Обычно положительна снаружи объекта и отрицательна внутри (поэтому \textit{signed}), \begin{math}f(p) = 0\end{math} - граница объекта
+\pause
+\item SDF может быть представлена явной формулой (напр. \begin{math}f(p) = \|p - O\| - R\end{math} - расстояние до сферы радиуса \begin{math}R\end{math} с центром в точке \begin{math}O\end{math}) или текстурой
+\pause
+\item SDF-сцены часто используются для экспериментального рендеринга и удобны для raymarching'а
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг SDF-шрифтов (Valve, 2007)}
+\begin{itemize}
+\item Описывается так же, как bitmap-шрифт, но текстура хранит значения SDF для глифов
+\pause
+\item Фрагментный шейдер читает значение SDF из текстуры шрифта: если оно меньше 0, то пиксель находится внутри глифа (рисуем чёрный пиксель), иначе - нет (рисуем белый пиксель)
+\begin{itemize}
+\item Обычно добавляется интерполяция от чёрного к белому в районе границы глифа для сглаживания
+\end{itemize}
+\pause
+\item Прост в реализации
+\pause
+\item Требует чуть больше памяти под текстуры
+\pause
+\item Неплохо масштабируется (бывают артефакты, но куда менее серьёзные, чем для bitmap-шрифтов)
+\pause
+\item Один из самых распространённых способов рендеринга шрифтов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт}
+\slideimage{sdf-font.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт: артефакты при magnification}
+\slideimage{sdf-artifacts.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг SDF-шрифтов}
+\begin{itemize}
+\item Можно легко реализовать много дополнительных эффектов:
+\pause
+\begin{itemize}
+\item Обводка текста другим цветом: рисуем цвет обводки, если \begin{math}0 \leq f(p) \leq \varepsilon\end{math}
+\pause
+\item Псевдотрёхмерный текст: по градиенту SDF можно восстановить нормаль к глифу
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт с эффектами}
+\slideimage{sdf-effects.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт: фрагментный шейдер}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform sampler2D sdfTexture;
+
+in vec2 texcoord;
+
+layout (location = 0) out vec4 out_color;
+
+void main()
+{
+  float sdfValue = texture(sdfTexture, texcoord).r;
+  float alpha = smoothstep(-0.5, 0.5, sdfValue);
+  out_color = vec4(0.0, 0.0, 0.0, alpha);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг текста: ссылки}
+\begin{itemize}
+\item \href{https://freetype.org}{FreeType}
+\item \href{https://harfbuzz.github.io}{harfbuzz}
+\item \href{https://learnopengl.com/In-Practice/Text-Rendering}{Туториал по рендерингу bitmap-шрифтов}
+\item \href{https://blog.mapbox.com/drawing-text-with-signed-distance-fields-in-mapbox-gl-b0933af6f817}{Туториал по рендерингу SDF-шрифтов}
+\item \href{https://wdobbie.com/post/gpu-text-rendering-with-vector-textures}{Один способ рендеринга векторных шрифтов}
+\item \href{https://medium.com/@evanwallace/easy-scalable-text-rendering-on-the-gpu-c3f4d782c5ac}{Другой способ рендеринга векторных шрифтов}
+\item \href{https://jcgt.org/published/0006/02/02}{Slug algorithm}
+\item \href{https://sluglibrary.com}{Slug library}
+\end{itemize}
 \end{frame}
 
 \end{document}
