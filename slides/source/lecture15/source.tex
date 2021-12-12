@@ -39,7 +39,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 15: оптимизация рендеринга, timer queries, frustum culling, occlusion culling, instancing}
+\subtitle{Лекция 15: оптимизация рендеринга, timer queries, batching, instancing, uniform buffers, frustum culling, occlusion culling}
 \date{2021}
 
 \setbeamertemplate{footline}[frame number]
@@ -473,6 +473,260 @@ glGetQueryObjectiv(query_id,
 \item \href{https://www.khronos.org/opengl/wiki/Uniform_Buffer_Object}{khronos.org/opengl/wiki/Uniform\_Buffer\_Object}
 \item \href{https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Buffer_backed}{khronos.org/opengl/wiki/Interface\_Block\_(GLSL)\#Buffer\_backed}
 \item \href{https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL}{learnopengl.com/Advanced-OpenGL/Advanced-GLSL}
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1-2>[fragile,label=frustum_culling]
+\fontsize{10pt}{10pt}
+\frametitle{Frustum culling}
+\begin{itemize}
+\item Давайте не рисовать то, что заведомо не попадёт в камеру
+\pause
+\item Видимая область камеры \textendash{} параллелепипед (ортографическая проекция) или усечённая пирамида (перспективная проекция)
+\pause
+\item Для каждого объекта нужно посчитать какую-нибудь оболочку (bounding volume) и пересечь её с видимой областью
+\pause
+\item Оболочка должна:
+\begin{itemize}
+\item Как можно плотнее прилегать к объекту
+\pause
+\item Быть дешёвой для вычисления
+\pause
+\item Иметь поменьше вершин (упрощает поиск пересечений)
+\pause
+\item Быть выпуклой (упрощает поиск пересечений)
+\end{itemize}
+\pause
+\item Варианты оболочки:
+\begin{itemize}
+\item Выпуклая оболочка \textendash{} плотно прилегает, но дорого вычислять и много вершин
+\pause
+\item Ограничивающая сфера/эллипсоид \textendash{} легко вычислять, довольно нетривиальный алгоритм пересечения
+\pause
+\item AABB (axis-aligned bounding box) \textendash{} легко вычислять (но нужно пересчитывать каждый кадр), не всегда плотно прилегает, легко искать пересечения
+\pause
+\item OBB (oriented bounding box) \textendash{} легко вычислять (предподсчитали для модели, поворачиваем вместе с моделью), плотно прилегает, легко искать пересечения
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Усечённая пирамида (frustum)}
+\slideimage{frustum.png}
+\end{frame}
+
+\againframe<3->{frustum_culling}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\begin{itemize}
+\item Для детектирования пересечения выпуклых многогранников (frustum, AABB, OBB, etc.) обычно используется алгоритм, основанный на SAT \textendash{} Separating Axis Theorem (в математике известна как HST \textendash{} Hyperplane Separation Theorem)
+\pause
+\item Пусть A и B \textendash{} два непересекающихся замкнутых выпуклых подмножества Евклидова пространства (есть версия для Банаховых пространств). Тогда:
+\pause
+\begin{itemize}
+\item HST: существует гиперплоскость (separating hyperplane), проходящая между этими подмножествами
+\pause
+\item SAT: существует прямая (separating axis), такая, что проекции A и B на эту прямую не пересекаются
+\pause
+\item HST \begin{math}\Leftrightarrow\end{math} SAT: гиперплоскость \begin{math}\Leftrightarrow\end{math} перпендикулярная ей прямая
+\end{itemize}
+\pause
+\item N.B.: на этой же теореме основывается метод SVM \textendash{} Support Vector Machine
+\item N.B.: тот же алгоритм используется для детектирования столкновений в физических движках
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\slideimage{sat.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: вычисление проекции на прямую}
+\begin{itemize}
+\item Проекция выпуклого замкнутого ограниченного множества на прямую \textendash{} отрезок
+\pause
+\item Нужно выбрать некоторую точку \begin{math}o\end{math} на прямой, тогда проекция точки \begin{math}p\end{math} на прямую вычисляется как \begin{math}(p - o) \cdot n\end{math} (где \begin{math}n\end{math} \textendash{} вектор направления прямой)
+\pause
+\item Выбор другой точки \begin{math}o\end{math} или замена вектора \begin{math}n\end{math} на коллинеарный приведёт к сдвигу и масштабированию проекций \begin{math}\Rightarrow\end{math} непересекающиеся проекции останутся непересекающимися
+\pause
+\item \begin{math}\Rightarrow\end{math} нам не важна начальная точка, можно вычислять \begin{math}p \cdot n\end{math} (интерпретируя точку \begin{math}p\end{math} как радиус-вектор из начала координат)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Frustum culling: вычисление проекции на прямую}
+Псевдокод вычисления проекции выпуклого множества на прямую:
+\begin{verbatim}
+float vmin = inf, vmax = -inf;
+for (p : vertices) {
+  float v = dot(p, n);
+  vmin = min(vmin, v);
+  vmax = max(vmax, v);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Frustum culling: вычисление пересечения проекций}
+\begin{itemize}
+\item Число принадлежит отрезку \verb|[vmin, vmax]|, если \begin{math}v_{min} \leq v \leq v_{max}\end{math}
+\pause
+\item Число принадлежит пересечению двух отрезков, если выполняются два уравнения
+\begin{equation}
+\begin{cases}
+v^1_{min} \leq v \leq v^1_{max} \\
+v^2_{min} \leq v \leq v^2_{max}
+\end{cases}
+\end{equation}
+\pause
+\item Чтобы эта система имела решения (т.е. отрезки пересекались), нужно
+\begin{equation}
+\begin{cases}
+v^1_{min} \leq v^2_{max} \\
+v^2_{min} \leq v^1_{max}
+\end{cases}
+\end{equation}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Frustum culling: вычисление пересечения проекций}
+Псевдокод детектирования пересечения двух отрезков:
+\begin{verbatim}
+if (v1min <= v2max && v2min <= v1max)
+  return true;
+else
+  return false;
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\begin{itemize}
+\item Если проекции объектов на любые прямые пересекаются, то объекты пересекаются, иначе \textendash{} не пересекаются
+\pause
+\item Возможных прямых бесконечно много, мы можем проверить только конечное их число
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT, 2D}
+\begin{itemize}
+\item Будем мысленно сдвигать объекты вдоль separating axis друг к другу до первого пересечения
+\pause
+\item Три варианта пересечения:
+\begin{itemize}
+\item Ребро-ребро
+\item Ребро-вершина
+\item Вершина-вершина
+\end{itemize}
+\pause
+\item Во всех трёх случаях в качестве направления separating axis можно взять нормаль к какому-нибудь ребру
+\pause
+\item SAT для выпуклых многоугольников: в качестве множества направлений для separating axis берём множество нормалей к рёбрам обоих объектов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT, 3D}
+\begin{itemize}
+\item Можно рассмотреть ту же идею, но в 3D больше случаев
+\pause
+\item SAT для выпуклых многогранников: в качестве множества направлений для separating axis берём
+\begin{itemize}
+\item Множество нормалей к граням обоих объектов
+\item + множество попарных векторных произведений \begin{math}e_1 \times e_2\end{math}, где \begin{math}e_1\end{math} и \begin{math}e_2\end{math} \textendash{} рёбра первого и второго многогранников, соответственно (для всех пар рёбер)
+\end{itemize}
+\pause
+\item N.B.: нас интересуют только направления с точностью до умножения на константу, так что во многих случаях необязательно рассматривать все грани и рёбра
+\pause
+\begin{itemize}
+\item Например, у куба/параллелепипеда только три неколлинеарных нормали и три неколлинеарных ребра
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{8pt}{8pt}
+\frametitle{Frustum culling: SAT, 3D}
+\begin{verbatim}
+bool intersect_along(Body b1, Body b2, vec3 n) {
+  auto p1 = project(b1.vertices, n);
+  auto p2 = project(b2.vertices, n);
+  return intersect(p1, p2);
+}
+
+bool intersect(Body b1, Body b2) {
+  for (n : b1.face_normals) {
+    if (intersect_along(b1, b2, n))
+      return true;
+  }
+
+  for (n : b2.face_normals) {
+    if (intersect_along(b1, b2, n))
+      return true;
+  }
+
+  for (e1 : b1.edges) {
+    for (e2 : b2.edges) {
+      vec3 n = cross(e1, e2);
+      if (intersect_along(b1, b2, n))
+        return true;
+    }
+  }
+
+  return false;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: вычисление camera frustum}
+\begin{itemize}
+\item В независимости от проекции, комбинаторно видимая область \textendash{} куб, т.е. имеет 8 вершин, 12 рёбер, и 6 граней, соединённых как в кубе
+\pause
+\item Достаточно вычислить координаты 8-ми вершин
+\pause
+\item Можно вычислить напрямую из параметров и свойств камеры \begin{math}\Rightarrow\end{math} сложный ad-hoc алгоритм
+\pause
+\item Можно вычислить из матрицы \begin{math}T\end{math} (view + projection):
+\pause
+\begin{itemize}
+\item Координаты вершин видимой области в NDC (normalized device coordinates): \begin{math}(\pm 1, \pm 1, \pm 1)\end{math}
+\pause
+\item Координаты вершин видимой области в сцене: \begin{math}\operatorname{Proj}\left(T^{-1} \cdot (\pm 1, \pm 1, \pm 1, 1)\right)\end{math}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling}
+\begin{itemize}
+\item Объекты можно как-то групировать, чтобы отсекать сразу большие группы объектов, не попадающие в камеру:
+\pause
+\begin{itemize}
+\item Деревья (BVH \textendash{} bounding volume hierarchy, octree, R-tree, ...)
+\pause
+\item Сетки/bins: группируем объекты в ячейки квадратной/кубической сетки, отсекаем сразу целые ячейки
+\end{itemize}
+\pause
+\item Можно перевести отсечение на GPU (indirect rendering)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: ссылки}
+\begin{itemize}
+\item Есть много способов написать этот алгоритм; есть вариации, соптимизированные для параллелограммов/кубов
+\item Часто в туториалах описывают неправильный/неполный алгоритм, выдающий false positive пересечения \textendash{} не страшно для frustum culling, но неэффективно
+\item \href{https://en.wikipedia.org/wiki/Hyperplane_separation_theorem}{en.wikipedia.org/wiki/Hyperplane\_separation\_theorem}
+\item \href{https://www.geometrictools.com/Documentation/MethodOfSeparatingAxes.pdf}{Статья с разбором SAT и выводом алгоритмов для 2D и 3D}
+\item \href{https://learnopengl.com/Guest-Articles/2021/Scene/Frustum-Culling}{Большая статья с разбором разных вариантов bounding volume}
 \end{itemize}
 \end{frame}
 
