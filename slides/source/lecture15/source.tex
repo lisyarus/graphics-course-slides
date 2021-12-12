@@ -730,4 +730,81 @@ bool intersect(Body b1, Body b2) {
 \end{itemize}
 \end{frame}
 
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Occlusion culling}
+\begin{itemize}
+\item Не будем рисовать объекты (ocludees), закрытые другими объектами (occluders)
+\pause
+\item \textbf{Очень} много вариаций
+\pause
+\item Если есть заранее известные occluders (здания, ландшафт)
+\pause
+\begin{itemize}
+\item Можно растеризовать их на CPU в буфер глубины низкого разрешения, и использовать его для проверки видимости
+\pause
+\item Можно нарисовать их обычным способом, и затем полагаться на early depth test (z pre-pass)
+\end{itemize}
+\pause
+\item Можно использовать буфер глубины с предыдущего кадра
+\pause
+\begin{itemize}
+\item Нужно запомнить матрицу проекции предыдущего кадра
+\pause
+\item Может давать неточный результат
+\end{itemize}
+\pause
+\item Лучше построить max-mipmaps по буферу глубины (HiZ \textendash{} hierarchical Z): специальным шейдером строить mipmaps, вычисляя максимум среди группы 2x2 пикселей
+\pause
+\begin{itemize}
+\item По размеру объекта (ocludee) вычисляем mipmap-уровень: если в Z-буфере значение меньше, чем минимальная глубина нашего объекта, то объект не будет видно
+\end{itemize}
+\pause
+\item Можно сгенерировать HiZ по списку известных occluders
+\pause
+\item Можно запомнить список видимых объектов с прошлого кадра и использовать их как occluders
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Occlusion culling}
+\begin{itemize}
+\item Главное \textendash{} избежать \textit{pipeline stall}, т.е. блокирующего ожидания окончания работы GPU на CPU
+\pause
+\item Если Z-буфер для occlusion culling (возможно, в виде HiZ) построен на CPU, проверку тоже можно осуществлять на CPU
+\pause
+\item Если Z-буфер построен на GPU (взят с прошлого кадра, или построен по известным occluders), проверку хочется делать на GPU
+\pause
+\begin{itemize}
+\item Можно использовать compute shaders + indirect rendering (OpenGL 4.0)
+\pause
+\item Можно использовать occlusion queries + conditional rendering
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Occlusion culling: conditional rendering}
+\begin{itemize}
+\item Выключаем рисование в z-буфер и в цветовой буфер (нас интересует только то, \textbf{будет ли нарисован} объект)
+\pause
+\item Внутри \verb|glBeginQuery(GL_ANY_SAMPLES_PASSED, query_id)| рисуем дешёвую аппроксимацию объекта (напр. bounding box)
+\pause
+\item Обратно включаем рисование в z-буфер и в цветовой буфер
+\pause
+\item Внутри пары \verb|glBeginConditionalRender(query_id, GL_QUERY_NO_WAIT)| и \verb|glEndConditionalRender| рисуем сам объект
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Occlusion culling: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Vertex_Rendering#Conditional_rendering}{Статья про conditional rendering на OpenGL wiki}
+\item \href{https://arm-software.github.io/opengl-es-sdk-for-android/occlusion_culling.html}{Статья про много вариантов реализации occlusion culling}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-6-hardware-occlusion-queries-made-useful}{Ещё одна статья}
+\item \href{https://interplayoflight.wordpress.com/2017/11/15/experiments-in-gpu-based-occlusion-culling}{И ещё одна статья}
+\item \href{http://www.diva-portal.org/smash/get/diva2:934562/FULLTEXT02.pdf}{И ещё одна, очень большая, статья}
+\end{itemize}
+\end{frame}
+
 \end{document}
