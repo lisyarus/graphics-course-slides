@@ -358,7 +358,7 @@ glGetQueryObjectiv(query_id,
 \begin{itemize}
 \item Frustum culling: не рисуем то, что не попадёт в камеру
 \pause
-\item Occlusion culling: не рисуем то, что не видно (закрыто другими объектами)
+\item Occlusion culling: не рисуем то, чего не видно (закрыто другими объектами)
 \end{itemize}
 \pause
 \item Переводим рисование в отдельный поток
@@ -373,6 +373,106 @@ glGetQueryObjectiv(query_id,
 \pause
 \item Применяется только в крайних случаях
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Performance}{khronos.org/opengl/wiki/Performance}
+\item \href{https://www.opengl.org/pipeline/article/vol003_8}{opengl.org/pipeline/article/vol003\_8}
+\item \href{https://www.nvidia.com/docs/IO/8230/GDC2003_OGL_Performance.pdf}{Доклад с GDC 2003, всё ещё актуальный}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{LOD (level of detail)}
+\begin{itemize}
+\item Когда модель далеко от камеры, рисуем упрощённую модель вместо детализированной
+\pause
+\item Таких уровней детализации может быть несколько, вплоть до почти непрерывного изменения детализации (Unreal 5 Nanite)
+\pause
+\item Упрощённая модель может иметь отдельные VAO/VBO/EBO, а может лежать вместе с основной моделью (рисование конкретного LOD'а сводится к передаче правильных \verb|first| и \verb|count| в \verb|glDrawArrays| и т.п.)
+\pause
+\item Автоматическая генерация упрощённой модели \textendash{} предмет активных исследований
+\begin{itemize}
+\item Большинство современных подходов используют edge collapse: пара вершин, соединённых ребром, схлопывается в одну вершину
+\end{itemize}
+\pause
+\item Конкретный уровень детализации выбирается на основе желаемого видимого размера треугольников
+\pause
+\item Выбор уровня детализации можно перенести на GPU (indirect rendering)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Batching}
+\begin{itemize}
+\item Может быть неявным: объекты, использующие один шейдер/материал/etc сами по себе лежат в одном месте
+\pause
+\item Может быть явным: движок рендеринга получает список объектов и сам их сортирует
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Instanced rendering (instancing)}
+\begin{itemize}
+\item Позволяет рисовать несколько копий (instances) объекта одним OpenGL-вызовом
+\pause
+\item Обычно атрибуты вершин берутся в соответствии с индексом вершины: \verb|offset + stride * vertexID|
+\pause
+\item При использовании instancing конкретный атрибут вычисляется из номера instance: \verb|offset + stride * (instanceID / divisor)| (целочисленное деление)
+\pause
+\item Включить instancing для конкретного атрибута: \verb|glVertexAttribDivisor(index, divisor)|:
+\begin{itemize}
+\item \verb|divisor = 0|: атрибут не использует instancing и использует номер вершины
+\item \verb|divisor != 0|: атрибут использует instancing и использует номер instance (по формуле выше)
+\end{itemize}
+\pause
+\item Вызвать instanced rendering: \verb|glDrawArraysInstanced|
+\begin{itemize}
+\item Параметры \textendash{} те же, что у \verb|glDrawArrays|, плюс последний параметр \textendash{} количество instance'ов (значения \verb|instanceID| будут в диапазоне \verb|0 .. isntance_count-1|)
+\end{itemize}
+\pause
+\item Аналогично есть \verb|glDrawElementsInstanced|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Instancing: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Vertex_Rendering#Instancing}{khronos.org/opengl/wiki/Vertex\_Rendering\#Instancing}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Instancing}{learnopengl.com/Advanced-OpenGL/Instancing}
+\item \href{https://ogldev.org/www/tutorial33/tutorial33.html}{ogldev.org/www/tutorial33/tutorial33.html}
+\item \href{https://habr.com/ru/post/352962}{habr.com/ru/post/352962}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Uniform buffers}
+\begin{itemize}
+\item Позволяет использовать в качестве uniform-переменных данные из буфера
+\pause
+\item Специальный тип (target) для буферов: \verb|GL_UNIFORM_BUFFER| (создание и загрузка данных \textendash{} так же, как для других буферов)
+\pause
+\item В шейдере \textendash{} т.н. \textit{buffer-backed interface block}
+\pause
+\item Нужно быть внимательным с memory layout данных в буфере (конкретные правила описаны в спецификации)
+\pause
+\item Каждый interface block нужно привязать к \textit{binding index}: \verb|glGetUniformBlockIndex + glUniformBlockBinding| (в OpenGL 4.2 можно задать прямо в шейдере)
+\item Uniform buffer нужно привизать к тому же \textit{binding index}: \verb|glBindBufferBase| или \verb|glBindBufferRange|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Uniform buffers: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Uniform_Buffer_Object}{khronos.org/opengl/wiki/Uniform\_Buffer\_Object}
+\item \href{https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Buffer_backed}{khronos.org/opengl/wiki/Interface\_Block\_(GLSL)\#Buffer\_backed}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL}{learnopengl.com/Advanced-OpenGL/Advanced-GLSL}
 \end{itemize}
 \end{frame}
 
