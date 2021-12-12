@@ -129,6 +129,21 @@ while (true) {
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Измерение времени работы: glFlush и glFinish}
+\begin{itemize}
+\item Многие (старые) туториалы по измерению времени кадра советуют вызывать \verb|glFlush| или \verb|glFinish| в конце кадра
+\pause
+\item \verb|glFlush| сбрасывает буфер команд (хранящийся внутри драйвера) с CPU на GPU
+\pause
+\item \verb|glFinish| ждёт, пока GPU не завершит обрабатывать все посланные команды
+\pause
+\item \verb|SwapBuffers| сама вызывает \verb|glFlush|
+\pause
+\item \verb|glFinish| ухудшает производительность: половину времени вы отправляете команды на GPU, а GPU (скорее всего) ничего не делает; половину времени вы ждёте, пока GPU закончит выполнять команды
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Измерение времени работы: FPS vs frame duration}
 \begin{itemize}
 \item FPS (frames per second, количество кадров в секунду) \textendash{} очень неудобная метрика:
@@ -193,7 +208,7 @@ glGetQueryObjectiv(query_id,
   GL_QUERY_RESULT_AVAILABLE, &result);
 \end{verbatim}
 \pause
-\item Получить результат (блокирует поток, если результат ещё не готов)
+\item Получить результат (блокирует поток, если результат ещё не готов; неявно вызывает \verb|glFlush|)
 \begin{verbatim}
 glGetQueryObjectiv(query_id,
   GL_QUERY_RESULT, &result);
