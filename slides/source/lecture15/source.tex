@@ -1,0 +1,227 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 15: оптимизация рендеринга, timer queries, frustum culling, occlusion culling, instancing}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация \textendash{} это сложно}
+На производительность (CPU) влияют:
+\pause
+\begin{itemize}
+\item Общая загруженность системы
+\pause
+\item Количество и паттерн доступов к памяти (cache-friendliness)
+\pause
+\item Помещаются ли данные в кеш
+\pause
+\item Branch prediction
+\pause
+\item Как функции программы лежат в памяти (опять кеш)
+\pause
+\item Многое другое
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация на GPU \textendash{} это очень сложно}
+\begin{itemize}
+\item Асинхронность
+\pause
+\item Параллельность
+\pause
+\item Много встроенных операций (fixed-function pipeline)
+\pause
+\item Сложные операции с памятью (доступ к текстуре: mipmaps + фильтрация)
+\pause
+\item Многое другое
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы \textendash{} неправильный способ}
+\begin{verbatim}
+while (true) {
+  auto frame_start = clock::now();
+
+  // нарисовали сцену
+  ...
+
+  auto frame_end = clock::now();
+
+  SwapBuffers();
+}
+\end{verbatim}
+\pause
+\begin{itemize}
+\item \verb|frame_end - frame_start| \textendash{} сколько времени ушло на то, чтобы \textbf{вызвать OpenGL-команды}
+\pause
+\item В реальности драйвер поставил их в очередь, и скорее всего GPU ещё не начала их выполнять
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы \textendash{} простой способ}
+\begin{verbatim}
+disableVsync();
+auto last_frame_start = clock::now();
+while (true) {
+  auto frame_start = clock::now();
+  auto frame_time = frame_start - last_frame_start;
+  last_frame_start = frame_start;
+
+  // нарисовали сцену
+  ...
+
+  SwapBuffers();
+}
+\end{verbatim}
+\pause
+\begin{itemize}
+\item Из-за выключенного vsync видеокарта будет работать \begin{math}\pm\end{math} постоянно
+\pause
+\item В итоге мы получим примерное время, тратящееся на рисование одного кадра
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы: FPS vs frame duration}
+\begin{itemize}
+\item FPS (frames per second, количество кадров в секунду) \textendash{} очень неудобная метрика:
+\pause
+\begin{itemize}
+\item Нелинейна: если кадр рисовался 10 мс, и мы добавили что-то рисующееся 1 мс, и ещё что-то рисующееся 1 мс, то FPS изменялся от 100 до 90.9 до 83.3
+\end{itemize}
+\pause
+\item Обычно используют время, тратящееся на рисование кадра или конкретного объекта/эффекта (миллисекунды/микросекунды)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы \textendash{} правильный способ: timer queries}
+\begin{itemize}
+\item Query objects \textendash{} объекты OpenGL, позволяющие узнать некоторую статистику с GPU:
+\pause
+\begin{itemize}
+\item Сколько было нарисовано пикселей
+\pause
+\item Сколько сгенерировано примитивов (геометрическим шейдером)
+\pause
+\item Сколько прошло времени
+\end{itemize}
+\pause
+\item \verb|glGenQueries/glDeleteQueries|
+\pause
+\item \textbf{Нет} \verb|glBindQuery|!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы \textendash{} правильный способ: timer queries}
+\begin{itemize}
+\item \verb|glBeginQuery/glEndQuery| \textendash{} статистика будет собрана для команд между этими вызовами
+\pause
+\item \textbf{Не могут} быть вложенными
+\end{itemize}
+\pause
+\begin{verbatim}
+GLuint query_id;
+glGenQueries(1, &query_id);
+
+...
+
+glBegin(GL_TIME_ELAPSED, query_id);
+
+// что-нибудь рисуем
+
+glEnd(GL_TIME_ELAPSED);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы \textendash{} правильный способ: timer queries}
+\begin{itemize}
+\item GPU работает асинхронно \begin{math}\Rightarrow\end{math} результат query будет готов не сразу
+\pause
+\item Узнать, готов ли результат:
+\begin{verbatim}
+glGetQueryObjectiv(query_id,
+  GL_QUERY_RESULT_AVAILABLE, &result);
+\end{verbatim}
+\pause
+\item Получить результат (блокирует поток, если результат ещё не готов)
+\begin{verbatim}
+glGetQueryObjectiv(query_id,
+  GL_QUERY_RESULT, &result);
+\end{verbatim}
+\pause
+\item Время возвращается в \textbf{наносекундах}, т.е. знаковый 32-битный тип может представить 2 секунды
+\pause
+\item Если 64-битные и беззнаковые версии этих функций
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы \textendash{} правильный способ: пул timer queries}
+\begin{itemize}
+\item Хотим мерять время рисования каждого кадра, но результат для предыдущего кадра может быть не готов к началу следующего кадра
+\pause
+\item \begin{math}\Rightarrow\end{math} Заводим пул (pool) query-объектов:
+\pause
+\begin{itemize}
+\item Храним расширяемый массив (\verb|std::vector|) query-объектов: ID + свободен или нет
+\pause
+\item Когда нам нужен новый query, ищем в массиве свободный объект, если такого нет - добавляем новый
+\pause
+\item В конце рисования кадра проходим по всем несвободным объектам и проверяем: если результат уже готов, обрабатываем его и помечаем объект свободным
+\end{itemize}
+\pause
+\item Средний размер пула \textendash{} на сколько кадров отстаёт GPU от CPU
+\end{itemize}
+\end{frame}
+
+\end{document}
