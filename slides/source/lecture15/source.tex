@@ -57,11 +57,11 @@
 \pause
 \item Количество и паттерн доступов к памяти (cache-friendliness)
 \pause
-\item Помещаются ли данные в кеш
+\item Помещаются ли данные в кэш
 \pause
 \item Branch prediction
 \pause
-\item Как функции программы лежат в памяти (опять кеш)
+\item Как функции программы лежат в памяти (опять кэш)
 \pause
 \item Многое другое
 \end{itemize}
@@ -244,6 +244,135 @@ glGetQueryObjectiv(query_id,
 \begin{itemize}
 \item \href{https://www.khronos.org/opengl/wiki/Query_Object}{khronos.org/opengl/wiki/Query\_Object}
 \item \href{https://www.lighthouse3d.com/tutorials/opengl-timer-query}{Туториал по использованию timer queries}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Поиск bottleneck'а}
+\begin{itemize}
+\item Мы знаем, что что-то тормозит
+\pause
+\item OpenGL pipeline включает много компонентов, какой именно тормозит?
+\pause
+\item Обычно компоненты конвейера влияют на следующие за ними компоненты
+\pause
+\begin{itemize}
+\item Больше вершин \begin{math}\Rightarrow\end{math} больше вызовов вершинного шейдера
+\item Больше примитивов \begin{math}\Rightarrow\end{math} больше пикселей
+\item Больше пикселей \begin{math}\Rightarrow\end{math} больше вызовов фрагментного шейдера
+\item Больше пикселей \begin{math}\Rightarrow\end{math} больше операций записи в память
+\end{itemize}
+\pause
+\item Удобно искать bottleneck с конца конвейера
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Поиск bottleneck'а}
+\begin{itemize}
+\item Упростим до предела фрагментный шейдер (напр. выведем фиксированный цвет)
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком тяжёлый фрагментный шейдер
+\end{itemize}
+\pause
+\item Уменьшим размер окна до чего-нибудь в духе 50x50 пикселей
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком много операций записи в память
+\end{itemize}
+\pause
+\item Упростим до предела вершинный шейдер (напр. вернём фиксированные координаты)
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком тяжёлый фрагментный шейдер
+\end{itemize}
+\pause
+\item Уменьшим число вершин (параметр \verb|count| в \verb|glDraw*|)
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком много вершин
+\end{itemize}
+\pause
+\item Ничего не помогло \begin{math}\Rightarrow\end{math} CPU-bound
+\pause
+\begin{itemize}
+\item Слишком много OpenGL-вызовов
+\pause
+\item Слишком много других операций на CPU
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Оптимизация шейдеров}
+\begin{itemize}
+\item Выполняем меньше операций
+\pause
+\item Избегаем вызова сложных функций (\verb|sin|, \verb|exp|, \verb|pow|)
+\pause
+\item Реорганизуем вычисления (напр. \verb|exp(a+b+c+d)| вместо \verb|exp(a)*exp(b)*exp(c)*exp(d)|)
+\pause
+\item Предпосчитываем что-нибудь (в константный массив в шейдере или в текстуру)
+\pause
+\item Меньше читаем из текстур
+\pause
+\item Читаем из текстур меньшего размера (лучше утилизируется текстурный кэш)
+\pause
+\item Близкие пиксели читают близкие части текстуры (лучше утилизируется текстурный кэш)
+\pause
+\item Используем mipmap'ы
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация числа вершин}
+\begin{itemize}
+\item Используем индексированный рендеринг (меньше данных нужно прочитать из памяти; лучше используется вершинный кэш)
+\pause
+\item Используем примитивы, группирующие вершины \textendash{} line strip, triangle strip, triangle fan, etc (те же причины)
+\pause
+\item Используем LOD (level of detail)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация количества OpenGL-вызовов}
+\begin{itemize}
+\item Batching: группируем объекты по используемому шейдеру, текстуре, другим настройкам (меньше переключения состояния OpenGL \begin{math}\Rightarrow\end{math} меньше OpenGL-вызовов)
+\pause
+\item Instancing: рисуем много объектов одним OpenGL-вызовом
+\pause
+\item Uniform buffers: передаём uniform-переменные не по одной, а записываем их в буффер (вместо большого количества вызовов \verb|glUniform*| один вызов \verb|glBufferData|)
+\pause
+\item Indirect rendering: переносим вычисления того, что нужно нарисовать, на GPU (OpenGL 4.0 + compute shaders)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация чего угодно}
+\begin{itemize}
+\item Рисуем поменьше
+\begin{itemize}
+\item Frustum culling: не рисуем то, что не попадёт в камеру
+\pause
+\item Occlusion culling: не рисуем то, что не видно (закрыто другими объектами)
+\end{itemize}
+\pause
+\item Переводим рисование в отдельный поток
+\begin{itemize}
+\item Освобождает основной (UI) поток
+\pause
+\item Позволяет делать полезную работу, пока render-поток ждёт VSync
+\pause
+\item Сильно усложняет код
+\pause
+\item Все OpenGL-вызовы нужно делать из render-потока
+\pause
+\item Применяется только в крайних случаях
+\end{itemize}
 \end{itemize}
 \end{frame}
 
