@@ -365,6 +365,11 @@ glGetQueryObjectiv(query_id,
 \item Occlusion culling: не рисуем то, чего не видно (закрыто другими объектами)
 \end{itemize}
 \pause
+\item Рисуем с уменьшенным разрешением
+\begin{itemize}
+\item Обычно используется для эффектов (blur и т.п.)
+\end{itemize}
+\pause
 \item Переводим рисование в отдельный поток
 \begin{itemize}
 \item Освобождает основной (UI) поток
