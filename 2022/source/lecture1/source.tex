@@ -1,0 +1,1322 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 1: Введение в курс}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Как устроен курс}
+\pause
+\begin{itemize}
+\item Лекции (слайды в github-репозитории)
+\pause
+\item Практики:
+\pause
+\begin{itemize}
+\item Код-заготовка на C++ (в github-репозитории)
+\pause
+\item Слайды с заданием (в github-репозитории)
+\pause
+\item Сдача на занятии или отправкой кода
+\end{itemize}
+\pause
+\item Домашние задания:
+\pause
+\begin{itemize}
+\item Слайды с заданием (в github-репозитории)
+\pause
+\item Сдача на практическом занятии 
+\end{itemize}
+\pause
+\item Финальный проект
+\begin{itemize}
+\item В относительно свободной форме
+\pause
+\item Сдача в конце курса
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Баллы}
+\begin{itemize}
+\pause
+\item ~25 баллов -- работа на практиках
+\pause
+\begin{itemize}
+\item 1 балл -- получилось хоть что-нибудь
+\item 2 балл -- получилось всё
+\item 3 балла -- получилось всё + доп. задание
+\pause
+\item Можно прислать в течение 3х дней после практики (до 24:00 среды)
+\pause
+\item Можно прислать позже со штрафом в 1 балл
+\end{itemize}
+\pause
+\item ~15 баллов -- каждое из 3х домашних заданий
+\pause
+\begin{itemize}
+\item Можно получить неполный балл
+\end{itemize}
+\pause
+\item 50+ баллов -- финальный проект
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Пререквезиты}
+\pause
+\begin{itemize}
+\item Программирование
+\pause
+\begin{itemize}
+\item Основы C++
+\pause
+\item Компилировать и запускать программы в удобной вам среде
+\end{itemize}
+\pause
+\item Математика
+\pause
+\begin{itemize}
+\item Линейная алгебра (векторы, матрицы, умножение матриц, линейные системы, ортогональность)
+\pause
+\item Аналитическая геометрия (координаты, уравнения кривых и поверхностей)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1-2>[label=what_is]
+\frametitle{Что такое компьютерная графика?}
+\begin{itemize}
+\pause % 1
+\item Кинематограф, мультипликация
+\pause % 2
+\item Компьютерные игры
+\pause % 3
+\item Рисунки, concept art
+\pause % 4
+\item Графический интерфейс
+\pause % 5
+\item Визуализация данных
+\pause % 6
+\item Научная визуализация
+\pause % 7
+\item Карты
+\pause % 8
+\item И т.д.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Matrix Revolutions (2003)}
+\begin{figure}
+\slideimage{matrix.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Avatar (2009)}
+\begin{figure}
+\slideimage{avatar.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Avengers (2012)}
+\begin{figure}
+\slideimage{avengers.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Klaus (2019)}
+\begin{figure}
+\slideimage{klaus.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<3>{what_is}
+
+\begin{frame}
+\frametitle{Space Invaders (1978)}
+\begin{figure}
+\slideimage{space-invaders.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Doom (1993)}
+\begin{figure}
+\slideimage{doom.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Grand Theft Auto: Vice City (2002)}
+\begin{figure}
+\slideimage{vice-city.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Civilization V (2010)}
+\begin{figure}
+\slideimage{civ-5.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Witcher 3: Wild Hunt (2015)}
+\begin{figure}
+\slideimage{witcher.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Cyberpunk 2077 (2020)}
+\begin{figure}
+\slideimage{cyberpunk.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<4>{what_is}
+
+\begin{frame}
+\begin{figure}
+\slideimage{night.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}
+\slideimage{tunnel.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\begin{figure}
+\slideimage{forest.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<5>{what_is}
+
+\begin{frame}
+\frametitle{Mac OS Catalina}
+\begin{figure}
+\slideimage{macos.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Windows 10}
+\begin{figure}
+\slideimage{windows.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Europa Universalis 4}
+\begin{figure}
+\slideimage{eu4.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Dear ImGui}
+\begin{figure}
+\slideimage{imgui.png}
+\end{figure}
+\end{frame}
+
+\againframe<6>{what_is}
+
+\begin{frame}
+\frametitle{Популярность браузеров в 2002-2009}
+\begin{figure}
+\slideimage{browsers.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Карта землетрясений}
+\begin{figure}
+\slideimage{earthquakes.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Количество случаев заражения COVID-19}
+\begin{figure}
+\slideimage{covid.png}
+\end{figure}
+\end{frame}
+
+\againframe<7>{what_is}
+
+\begin{frame}
+\frametitle{Неустойчивость Рэлея — Тейлора}
+\begin{figure}
+\slideimage{fluids.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Молекулярные орбитали бензола}
+\begin{figure}
+\slideimage{benzene.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Симуляция напряжений в стенте методом конечных элементов}
+\begin{figure}
+\slideimage{stent.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<8>{what_is}
+
+\begin{frame}
+\frametitle{Схематическая карта}
+\begin{figure}
+\slideimage{map.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Спутниковая карта}
+\begin{figure}
+\slideimage{satellite.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Карта погоды}
+\begin{figure}
+\slideimage{weather.png}
+\end{figure}
+\end{frame}
+
+\againframe<9>{what_is}
+
+\begin{frame}<1-2>[label=classification]
+\frametitle{Грубая и неточная классификация}
+\pause
+\begin{itemize}
+\item \only<2>{2D / 3D} \pause \only<3->{2D / 2.5D / 3D}
+\pause
+\item Векторная / растровая
+\pause
+\item \only<5>{Realtime / offline} \pause \only<6->{Realtime / near real-time / offline}
+\pause
+\item Фотореалистичная / стилизованная
+\pause
+\item CPU / GPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Super Mario Bros. (1983) - 2D}
+\begin{figure}
+\slideimage{mario.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Red Dead Redemption 2 (2018) - 3D}
+\begin{figure}
+\slideimage{rdr2.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<2-3>{classification}
+
+\begin{frame}
+\frametitle{Civilization III (2001) - 2.5D}
+\begin{figure}
+\slideimage{civ3.png}
+\end{figure}
+\end{frame}
+
+\againframe<3-4>{classification}
+
+\begin{frame}
+\frametitle{Векторная графика}
+\begin{figure}
+\slideimage{vector.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Растровая графика}
+\begin{figure}
+\slideimage{raster.png}
+\end{figure}
+\end{frame}
+
+\againframe<4->{classification}
+
+\begin{frame}
+\frametitle{Чем мы будем заниматься?}
+\begin{itemize}
+\item \only<-1>{2D / 2.5D / 3D}\only<2->{{\color{blue}\underline{2D / 2.5D / 3D}}}
+\item \only<-2>{Векторная / растровая}\only<3->{{\color{blue}\underline{Векторная / растровая}}}
+\item \only<-3>{Realtime}\only<4->{{\color{blue}\underline{Realtime}}} / near real-time / offline
+\item \only<-4>{Фотореалистичная / стилизованная}\only<5->{{\color{blue}\underline{Фотореалистичная / стилизованная}}}
+\item CPU / \only<-5>{GPU}\only<6->{{\color{blue}\underline{GPU}}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Чем мы будем заниматься?}
+\begin{itemize}
+\pause
+\item Как реализовывать графические движки
+\pause
+\item Как реализовывать графические эффекты
+\pause
+\item Как их оптимизировать
+\pause
+\item Graphics engineer
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Где это пригодится?}
+\begin{itemize}
+\pause
+\item Разработка игр и движков
+\pause
+\item Разработка инструментов для художников/дизайнеров/архитекторов/etc
+\pause
+\item Разработка инструментов для научной визуализации/визуализации данных/etc
+\pause
+\item Разработка картографических приложений
+\pause
+\item Разработка графического интерфейса
+\pause
+\item И т.д.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Чем мы \textbf{не} будем заниматься?}
+\begin{itemize}
+\pause
+\item Учиться рисовать / моделировать и анимировать объекты / etc.
+\pause
+\begin{itemize}
+\item Красивая картинка -- движок + данные (текстуры, модели, частицы, etc, -- assets)
+\item Курс про \textit{движок}
+\end{itemize}
+\pause
+\item Делать игры
+\begin{itemize}
+\item Игра -- гейм-дизайн + контент + графика + физика + механики + UI + аудио + сетевые компоненты + ...
+\item Курс про \textit{графику}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Примерный план курса}
+\pause
+\begin{itemize}
+\item Основы OpenGL
+\begin{itemize}
+\item Как хранить данные на GPU
+\item Как рисовать эти данные
+\item Вершинные буферы, шейдеры, текстуры, фреймбуферы
+\item Работа с камерой, перспективная проекция
+\end{itemize}
+\pause
+\item Освещение
+\begin{itemize}
+\item Теория
+\item Модели освещения и материалов
+\item Тени, отражения, ambient occlusion
+\item Обработка большого количества источников света
+\end{itemize}
+\pause
+\item Эффекты и оптимизации
+\begin{itemize}
+\item Системы частиц (e.g. дым)
+\item Скелетная анимация
+\item Уровни детализации, frustum culling
+\item Объёмный (volumetric) рендеринг
+\item Рендеринг текста
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1>[label=history-1]
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{1960-е: Осциллографы}
+\pause
+\begin{itemize}
+\item Tennis For Two (1958)
+\pause
+\item Spacewar! (1962, PDP-1)
+\pause
+\item Sketchpad (1963, TX-2, световое перо)
+\pause
+\item Освещение и тени (Аппель, 1968)
+\pause
+\item Векторная графика довольно плохого качества: линии одного цвета
+\item Компьютеры довольно слабые (TX-2 занимал большую комнату)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Осциллограф}
+\slideimage{oscilloscope.jpg}
+\end{frame}
+
+\againframe<1-2>{history-1}
+
+\begin{frame}
+\frametitle{Tennis For Two}
+\slideimage{tennis-for-two.jpg}
+\end{frame}
+
+\againframe<2-3>{history-1}
+
+\begin{frame}
+\frametitle{PDP-1}
+\slideimage{pdp1.jpg}
+\end{frame}
+
+\begin{frame}
+\frametitle{Spacewar!}
+\slideimage{spacewar.jpg}
+\end{frame}
+
+\againframe<3-4>{history-1}
+
+\begin{frame}
+\frametitle{Sketchpad}
+\slideimage{sketchpad.jpg}
+\href{https://archive.org/details/AlanKeyD1987}{\nolinkurl{archive.org/details/AlanKeyD1987}}
+\end{frame}
+
+\againframe<4-5>{history-1}
+
+\begin{frame}
+\frametitle{Освещение (Аппель, 1968)}
+\slideimage{appel-shading.png}
+\href{https://graphics.stanford.edu/courses/Appel.pdf}{\nolinkurl{graphics.stanford.edu/courses/Appel.pdf}}
+\end{frame}
+
+\againframe<5->{history-1}
+
+\begin{frame}<1-2>[label=history-2]
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{1970-е: Аркадные игры}
+\pause
+\begin{itemize}
+\item Magnavox Odyssey (Magnavox, 1972) -- первая игровая консоль, подключалась к телевизору (CRT)
+\pause
+\item Pong (Atari, 1972) -- одна из первых аркадных игр
+\pause
+\item Speed Race (Taito, 1974)
+\pause
+\item Gun Fight (Taito, 1975)
+\pause
+\item Space Invaders (Taito, 1978)
+\pause
+\item Pac-Man (Namco, 1980)
+\pause
+\item Переход к растровой графике
+\pause
+\item Разрешение экрана ограничено объёмами памяти
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Magnavox Odyssey}
+\slideimage{magnavox.jpg}
+\end{frame}
+
+\againframe<2-3>{history-2}
+
+\begin{frame}
+\frametitle{Pong}
+\slideimage{pong-cabinet.jpg}
+\end{frame}
+
+\begin{frame}
+\frametitle{Pong}
+\slideimage{pong.png}
+\end{frame}
+
+\againframe<3-4>{history-2}
+
+\begin{frame}
+\frametitle{Speed Race}
+\slideimage{speed-race.png}
+\end{frame}
+
+\againframe<4-5>{history-2}
+
+\begin{frame}
+\frametitle{Gun Fight}
+\slideimage{gun-fight.png}
+\end{frame}
+
+\againframe<5-6>{history-2}
+
+\begin{frame}
+\frametitle{Space Invaders}
+\slideimage{space-invaders.jpg}
+\end{frame}
+
+\againframe<6-7>{history-2}
+
+\begin{frame}
+\frametitle{Pac-Man}
+\slideimage{pac-man.png}
+\end{frame}
+
+\begin{frame}
+\frametitle{Space Invaders}
+\pause
+\begin{itemize}
+\item Intel 8080, 8-bit, 2Mhz
+\pause
+\item Экран 256x224, монохромный (1-bit)
+\pause
+\item 8Kb ROM
+\pause
+\item 8Kb RAM, из которых 7Kb занимал экран (framebuffer)
+\end{itemize}
+\end{frame}
+
+\againframe<7->{history-2}
+
+\begin{frame}<1-2>[label=history-3]
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{1980-е: Векторные аркады}
+\pause
+\begin{itemize}
+\item Asteroids (Atari, 1979)
+\pause
+\item Tempest (Atari, 1981)
+\pause
+\item Star Wars (Atari, 1983)
+\pause
+\item Требует специального оборудования (Atari's QuadraScan)
+\pause
+\item Может рисовать только линии
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Asteroids}
+\slideimage{asteroids.png}
+\end{frame}
+
+\againframe<2-3>{history-3}
+
+\begin{frame}
+\frametitle{Tempest}
+\slideimage{tempest.png}
+\href{https://www.youtube.com/watch?v=eJVpYL44jUQ}{Arcade Machines look WEIRD in Slow Mo - The Slow Mo Guys}
+\end{frame}
+
+\againframe<3-4>{history-3}
+
+\begin{frame}
+\frametitle{Star Wars}
+\slideimage{star-wars.png}
+\end{frame}
+
+\againframe<4->{history-3}
+
+\begin{frame}<1-2>[label=history-4]
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{1980-е: 8-битные спрайтовые консоли}
+\pause
+\begin{itemize}
+\item Atari 2600 (Atari, 1977)
+\pause
+\item NES (Nintendo, 1983)
+\pause
+\item Рисуют готовые изображения (спрайты) в указанных частях экрана
+\pause
+\item Не так требовательны к объёмам памяти
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Atari 2600}
+\slideimage{atari-2600.jpg}
+\end{frame}
+
+\begin{frame}
+\frametitle{Donkey Kong (Nintendo, 1981)}
+\slideimage{donkey-kong.png}
+\end{frame}
+
+\begin{frame}
+\frametitle{Pitfall! (Activision, 1982)}
+\slideimage{pitfall.png}
+\end{frame}
+
+\againframe<2-3>{history-4}
+
+\begin{frame}
+\frametitle{Super Mario Bros. (Nintendo, 1985)}
+\slideimage{mario.png}
+\end{frame}
+
+\begin{frame}
+\frametitle{The Legend of Zelda. (Nintendo, 1986)}
+\slideimage{zelda.png}
+\end{frame}
+
+\againframe<3->{history-4}
+
+\begin{frame}<1-2>[label=history-5]
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{Конец 1980-х: 16-битные консоли и персональные компьютеры}
+\pause
+\begin{itemize}
+\item Sega Mega Drive (Sega, 1988)
+\pause
+\item Super NES (Nintendo, 1990)
+\pause
+\item Больше памяти, быстрее процессоры
+\pause
+\item Поддерживают больше спрайтов и цветов
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Sonic the Hedgehog (Sega, 1991)}
+\slideimage{sonic.png}
+\end{frame}
+
+\againframe<2-3>{history-5}
+
+\begin{frame}
+\frametitle{Super Mario World (Nintendo, 1990)}
+\slideimage{super-mario.jpg}
+\end{frame}
+
+\againframe<3->{history-5}
+
+\begin{frame}<1-3>[label=history-6]
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{1990-е: Raycasting}
+\pause
+\begin{itemize}
+\item Алгоритм рисования двумерных уровней в 3D
+\pause
+\item Wolfenstein 3D (id Software, 1992)
+\pause
+\item Doom (id Software, 1993)
+\pause
+\item Quake (id Software, 1996)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Wolfenstein 3D}
+\slideimage{wolfenstein.png}
+\end{frame}
+
+\againframe<3-4>{history-6}
+
+\begin{frame}
+\frametitle{Doom}
+\slideimage{doom-1993.png}
+\end{frame}
+
+\againframe<4-5>{history-6}
+
+\begin{frame}
+\frametitle{Quake}
+\slideimage{quake.png}
+\end{frame}
+
+\begin{frame}<1-5>[label=history-7]
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{1990-е: 32-битные консоли и компьютеры}
+\pause
+\begin{itemize}
+\item Графические процессоры с 3D графикой (Sony Playstation, Sega Saturn, Nintendo 64)
+\pause
+\item Умеют рисовать полигоны с текстурами и примитивным освещением (порядка нескольких тысяч за кадр)
+\pause
+\item Разрешения экрана до 640x480, 24-bit цвет
+\pause
+\item Virtua Racing (Sega, 1992)
+\pause
+\item Tomb Raider (Core Design, 1996)
+\pause
+\item Crash Bandicoot (Naughty Dog, 1996)
+\pause
+\item Первые 3D API (OpenGL, DirectX)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Virtua Racing}
+\slideimage{racing.png}
+\end{frame}
+
+\againframe<5-6>{history-7}
+
+\begin{frame}
+\frametitle{Tomb Raider}
+\slideimage{tomb-raider.png}
+\end{frame}
+
+\againframe<6-7>{history-7}
+
+\begin{frame}
+\frametitle{Crash Bandicoot}
+\slideimage{crash.jpg}
+\end{frame}
+
+\begin{frame}
+\frametitle{Краткая история real-time компьютерной графики}
+\centerline{2000-е и 2010-е}
+\pause
+\begin{itemize}
+\item Растут мощности как CPU, так и GPU
+\pause
+\item Растут доступные объёмы памяти
+\pause
+\item Новые возможности GPU: шейдеры, рендеринг в текстуру, тесселяция
+\pause
+\item Фотореалистичная графика
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Ghost of Tsushima (Sucker Punch Productions, 2020)}
+\slideimage{ghost.jpg}
+\end{frame}
+
+\begin{frame}
+\frametitle{О треугольниках}
+Почему основным примитивом рисования стал треугольник?
+\pause
+
+Более сложные геометрические фигуры (круг, многоугольник, и т.д.):
+\pause
+\begin{itemize}
+\item Сложно нарисовать на экране
+\pause
+\item Сложно интерполировать атрибуты (накладывать цвет и текстуру, вычислять освещение)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{О треугольниках}
+Плюсы треугольника:
+\pause
+\begin{itemize}
+\item Образ под действием перспективной проекции -- тоже треугольник
+\pause
+\item Есть единственный разумный способ интерполяции (линейная, с барицентрическими координатами)
+\pause
+\item Позволяет рисовать спрайты (прямоугольник -- два треугольника)
+\pause
+\item Позволяет рисовать многоугольники (посредством триангуляции)
+\pause
+\item Позволяет рисовать линии (превращая их в тонкие многоугольники)
+\pause
+\item Позволяет рисовать более сложные фигуры (аппроксимируя)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Как использовать GPU? \only<2->{Графические API}}
+GPU -- Graphics Processing Unit
+\pause
+\pause
+\begin{itemize}
+\item Вендор-специфичные API (1980е -- 1990е)
+\pause
+\item OpenGL (Silicon Graphics, 1992)
+\pause
+\begin{itemize}
+\item \only<-11>{OpenGL 3.3 (Khronos Group, 2010)}\only<12->{\color{blue}\underline{OpenGL 3.3 (Khronos Group, 2010)}}
+\end{itemize}
+\pause
+\item DirectX (Microsoft, 1995)
+\pause
+\begin{itemize}
+\item {\only<11->{\color{red}}DirectX 12 (Microsoft, 2015)}
+\end{itemize}
+\pause
+\item {\only<11->{\color{red}}Metal (Apple, 2014)}
+\pause
+\item {\only<11->{\color{red}}Vulkan (Khronos Group, 2018)}
+\pause
+\item {\only<11->{\color{red}}WebGPU (W3C, в разработке)}
+\end{itemize}
+\pause
+\bigskip
+{\color{red}Современные API}
+\end{frame}
+
+\begin{frame}
+\frametitle{Как использовать GPU? API общего назначения (GPGPU):}
+GPGPU -- General-Purpose Graphics Processing Unit
+\pause
+\begin{itemize}
+\item CUDA (Nvidia, 2007)
+\pause
+\item DirectX 11 DirectCompute (Microsoft, 2008)
+\pause
+\item OpenCL (Khronos Group, 2009)
+\pause
+\item OpenGL 4.3 Compute Shaders (Khronos Group, 2012)
+\pause
+\item Metal Compute Shaders (Apple, 2014)
+\pause
+\item Vulkan Compute Shaders (Khronos Group, 2018)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Почему OpenGL 3.3?}
+\pause
+\begin{itemize}
+\item Широкая поддержка: интегрированные GPU, встраиваемые устройства, телефоны, web, некоторые игровые приставки
+\pause
+\item Поддерживает всё, что нам нужно
+\pause
+\item +/- Кроссплатформенность \pause (спасибо, Apple)
+\pause
+\item Низкий порог вхождения (в сравнении с более современными API)
+\pause
+\item Достаточно старый
+\begin{itemize}
+\item Много вспомогательных библиотек
+\item Известны best practices
+\item Известны все грабли \pause (их много)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.0 (1992)}
+\begin{verbatim}
+for object in scene.objects:
+    glBegin(GL_TRIANGLES)
+    for triangle in object.triangles:
+        for vertex in triangle.vertices:
+            glColor3f(vertex.color)
+            glNormal3f(vertex.normal)
+            glVertex3f(vertex.position)
+    glEnd(GL_TRIANGLES)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item Данные хранятся в памяти CPU
+\pause
+\item Несколько OpenGL-вызовов на каждую вершину
+\pause
+\begin{itemize}
+\item GPU становятся быстрее $\Longrightarrow$ основное время тратится не на рисование, а на накладные расходы самих OpenGL-вызовов
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.0 (1992)}
+\begin{itemize}
+\item Как менять положение объектов и камеры?
+\pause
+\item $\Longrightarrow$ Матрицы преобразований (\verb|glMatrixMode(), glLoadMatrix()|)
+\pause
+\item Fixed-function pipeline: настраиваемая, но не расширяемая последовательность операций (применить матрицы к входным данным, нарисовать треугольник на экране, выполнить тест глубины, ...)
+\pause
+\item Асинхронный API: команды выполнятся на GPU когда-нибудь
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.1 (1997)}
+\begin{itemize}
+\item Vertex array -- спецификация формата и расположения вершин
+\begin{itemize}
+\item Сказать, где находятся вершины одной командой \verb|glVertexPointer|
+\item Нарисовать все вершины одной командой \verb|glDrawArrays|
+\item Вершины всё ещё хранятся на CPU
+\end{itemize}
+\pause
+\item Текстуры -- изображения в памяти GPU, натягиваемые на полигоны
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.1 (1997)}
+\begin{verbatim}
+// на старте
+for object in scene.objects:
+    object.createVertexArray(object.vertices)
+    object.createTexture()
+
+// при рендеринге
+for object in scene.objects:
+    glBindTexture(GL_TEXTURE_2D, object.texture)
+    glBindVertexArray(object.vertexArray)
+    glDrawArrays(object.vertexCount)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}
+\frametitle{История графических API: OpenGL 1.2 - 1.4 (1998 - 2002)}
+\begin{itemize}
+\item В текстурах можно записать очень много интересного, помимо цвета: normal map, material map, bump map
+\item Хочется выполнять сложные вычисления на каждый пиксель
+\pause
+\item $\Longrightarrow$ Texture environments -- зачатки программируемости GPU (шейдеров)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 1.5 (2003)}
+\begin{itemize}
+\item Vertex buffer -- возможность хранить вершины в памяти GPU
+\end{itemize}
+\pause
+\begin{verbatim}
+// на старте
+for object in scene.objects:
+    object.createVertexBuffer(object.vertices)
+    object.createVertexArray(object.vertexBuffer)
+    object.createTexture()
+
+// при рендеринге
+for object in scene.objects:
+    glBindTexture(GL_TEXTURE_2D, object.texture)
+    glBindVertexArray(object.vertexArray)
+    glDrawArrays(object.vertexCount)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}
+\frametitle{История графических API: OpenGL 2.0 (2004)}
+\begin{itemize}
+\item Шейдеры -- программы на C-подобном языке GLSL, компилируемые под конкретную GPU
+\item Заменяют fixed-function pipeline
+\begin{itemize}
+\item Необходимые части fixed-function pipeline остаются (растеризация, тест глубины, etc)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 2.0 (2004)}
+\begin{verbatim}
+// на старте
+for object in scene.objects:
+    object.createVertexBuffer(object.vertices)
+    object.createVertexArray(object.vertexBuffer)
+    object.createTexture()
+    object.createShaderProgram()
+
+// при рендеринге
+for object in scene.objects:
+    glBindTexture(GL_TEXTURE_2D, object.texture)
+    glBindVertexArray(object.vertexArray)
+    glUseProgram(object.shaderProgram)
+    glDrawArrays(object.vertexCount)
+\end{verbatim}
+\pause
+\begin{itemize}
+\item Примерно так будет выглядеть наш код
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{История графических API: OpenGL 3.0 (2008)}
+\begin{itemize}
+\item Огромная часть API объявлена deprecated
+\pause
+\begin{itemize}
+\item Immediate-mode рисование -- \verb|glBegin/glEnd|
+\item Хранение данных на CPU -- \verb|glVertexPointer, ...|
+\item Матрицы преобразований -- \verb|glLoadMatrix, ...|
+\end{itemize}
+\pause
+\item Transform feedback -- возможность записать результат работы шейдеров обратно в вершинный буфер
+\begin{itemize}
+\item Зачатки GPGPU
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{История графических API: OpenGL 3.1 (2009)}
+\begin{itemize}
+\item Объявленные deprecated возможности удалены
+\pause
+\item Instanced rendering -- нарисовать много копий одного объекта в разных местах одной командой
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{История графических API: OpenGL 3.2 (2009)}
+\begin{itemize}
+\item Механизм профилей
+\begin{itemize}
+\item Core profile
+\begin{itemize}
+\item Обязан поддерживаться
+\item Только функционал конкретной версии OpenGL
+\end{itemize}
+\item Compatibility profile
+\begin{itemize}
+\item Не обязан поддерживаться
+\item Функционал этой и всех предыдущих версий OpenGL
+\end{itemize}
+\pause
+\item Мы будем использовать core profile
+\end{itemize}
+\pause
+\item Геометрические шейдеры -- возможность менять тип геометрии и количество вершин на лету (используются для систем частиц, травы, etc)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{История графических API: OpenGL 4.0 (2010)}
+\begin{itemize}
+\item Шейдеры тесселяции -- увеличивают детализацию геометрии на лету
+\begin{itemize}
+\item Гораздо меньше возможностей, чем у геометрических шейдеров, зато быстрее
+\end{itemize}
+\pause
+\item Indirect drawing -- можно вычислять количество вершин и их расположение в памяти на лету на GPU, и использовать вычисленные значения для команд рисования
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{История графических API: OpenGL 4.1 - 4.7 (2010 - 2017)}
+\begin{itemize}
+\item Compute shaders -- настоящее GPGPU внутри OpenGL
+\item Проработка и детализация API
+\item Атомарные операции в шейдерах
+\item Вливание расширений в стандарт OpenGL
+\item \href{https://khronos.org/opengl/wiki/History_of_OpenGL}{\nolinkurl{khronos.org/opengl/wiki/History\_of\_OpenGL}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{История графических API: Vulkan 1.1 (2018)}
+\begin{itemize}
+\item 700 строк кода, чтобы нарисовать один треугольник
+\pause
+\item Крайне низкоуровневый API
+\item Последовательности команд для выполнения на GPU (command queues) в явном виде
+\begin{itemize}
+\item Можно распараллелить генерацию command queues на несколько CPU
+\end{itemize}
+\pause
+\item Похож на DirectX 12, Metal
+\item \href{https://vulkan-tutorial.com}{\nolinkurl{vulkan-tutorial.com}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Разновидности OpenGL}
+\begin{itemize}
+\item OpenGL
+\pause
+\item OpenGL ES (Embedded Systems)
+\begin{itemize}
+\item OpenGL ES 1.0 $\approx$ OpenGL 1.3
+\item OpenGL ES 2.0 $\approx$ OpenGL 2.0
+\item OpenGL ES 3.0 $\approx$ OpenGL 3.0
+\end{itemize}
+\pause
+\item WebGL
+\begin{itemize}
+\item WebGL 1.0 $\approx$ OpenGL ES 2.0
+\item WebGL 2.0 $\approx$ OpenGL ES 3.0
+\end{itemize}
+\pause
+\item OpenGL SC (Safety Critical)
+\begin{itemize}
+\item Убраны любые способы отстрелить себе ногу, в ущерб производительности
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Что такое OpenGL?}
+\begin{itemize}
+\item {\color{red}Не} библиотека
+\item Спецификация API (документ) на языке C
+\begin{itemize}
+\item Описание констант-перечислений (тэгов)
+\item Описание сигнатур функций и их семантики
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Что такое реализация OpenGL?}
+\pause
+\begin{itemize}
+\item Заголовочный файл, поставляемый системой или драйвером
+\begin{itemize}
+\item Определение типов, e.g. \verb|typedef unsigned int GLenum;|
+\item Определение констант, e.g. \verb|#define GL_TEXTURE_2D 0x0DE1|
+\item Объявление функций, e.g. \verb|void glBindTexture(GLenum target, GLuint texture);|
+\end{itemize}
+\pause
+\item Бинарная реализация объявленных функций (обычно - динамическая библиотека), поставляемая системой и/или драйвером
+\begin{itemize}
+\item Может содержать непосредственную реализацию OpenGL как часть драйвера и общаться с GPU
+\item Может быть промежуточным звеном, маршрутизирующим вызов до драйвера
+\item Может быть заглушкой
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Что такое реализация OpenGL?}
+\begin{itemize}
+\item Заголовочный файл
+\begin{itemize}
+\item Linux: \verb|GL/gl.h| - до OpenGL 1.3
+\pause
+\item Windows: \verb|GL/gl.h| - до OpenGL 1.1
+\pause
+\item MacOS: \verb|OpenGL/gl.h| - до OpenGL 2.1
+\begin{itemize}
+\item {\color{red}Не} \verb|OpenGL/OpenGL.h|
+\end{itemize}
+\item Все платформы: \verb|GL/glext.h| вместе с \verb|#define GL_GLEXT_PROTOTYPES| - до OpenGL 4.6
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Что такое реализация OpenGL?}
+\begin{itemize}
+\item Динамическая библиотека
+\begin{itemize}
+\item Linux: \verb|libGL.so|
+\item Windows: \verb|opengl32.dll|
+\item MacOS: \verb|OpenGL framework|
+\end{itemize}
+\pause
+\item Может не содержать функции всех версий OpenGL
+\begin{itemize}
+\item Под Linux обычно содержит
+\end{itemize}
+\item Остальные функции OpenGL нужно динамически загружать специфичными для платформы средствами
+\item $\Longrightarrow$ Библиотеки-загрузчики OpenGL
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Загрузчики OpenGL}
+\begin{itemize}
+\item С и C++ specific, для других языков обычно встроено в обёртку над OpenGL
+\item \href{https://khronos.org/opengl/wiki/OpenGL_Loading_Library}{\nolinkurl{khronos.org/opengl/wiki/OpenGL\_Loading\_Library}}
+\item Обычно содержат код, автоматически сгенерированный по XML-спецификации OpenGL
+\item Есть мой, основанный на \verb|glLoadGen| (который перестали поддерживать): \href{https://github.com/lisyarus/opengl-loader-generator}{github.com/lisyarus/opengl-loader-generator}
+\item Мы будем использовать \href{http://glew.sourceforge.net/}{\color{blue}\underline{GLEW}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Контекст OpenGL}
+\begin{itemize}
+\item Необходим для вызова любой функции OpenGL
+\item Привязан к конкретной реализации OpenGL
+\item Привязан к конкретным версии и профилю OpenGL
+\item Привязан к экрану / окну оконной системы / изображению в памяти
+\item Хранит текущее глобальное состояние OpenGL
+\item \href{https://khronos.org/opengl/wiki/OpenGL_Context}{\nolinkurl{khronos.org/opengl/wiki/OpenGL\_Context}}
+\item Создаётся специфичными для платформы средствами
+\item $\Longrightarrow$ Библиотеки, создающие контекст OpenGL
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Библиотеки, создающие контекст OpenGL}
+\begin{itemize}
+\item Обычно привязывают контекст к окну и умеют обрабатывать события оконной системы
+\item GLUT - устаревшая, плохой интерфейс
+\item GLFW
+\item {\color{blue}\underline{SDL2}} - умеет загружать изображения, выводить звук, и другое
+\item \href{https://open.gl/context}{\nolinkurl{open.gl/context}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как начать работать с OpenGL?}
+\begin{verbatim}
+window = createWindow(title)
+context = createGLContext(window, version, profile)
+context.makeCurrent()
+loadGLFunctions()
+// тут можно работать с OpenGL!
+\end{verbatim}
+\end{frame}
+
+\begin{frame}
+\frametitle{Литература, ссылки}
+\begin{itemize}
+\item Realtime графика
+\begin{itemize}
+\item Computer Graphics: Principles and Practice - книжка начального уровня
+\item Real-Time Rendering (4th edition) - обзор передовых алгоритмов индустрии
+\item \href{https://developer.nvidia.com/gpugems}{GPU Gems 1, 2, 3} - журнал про техники и алгоритмы
+\end{itemize}
+\item OpenGL
+\begin{itemize}
+\item \href{https://khronos.org/opengl/wiki}{\nolinkurl{khronos.org/opengl/wiki}} - подробное изложение всех аспектов OpenGL
+\item \href{http://docs.gl}{\nolinkurl{docs.gl}} - удобная документация по отдельным функциям
+\item \href{https://learnopengl.com}{\nolinkurl{learnopengl.com}} - уроки по отдельным темам
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\end{document}
