@@ -2,7 +2,7 @@ PDFLATEX=pdflatex -shell-escape -interaction=nonstopmode -halt-on-error
 
 .ONESHELL:
 
-all: pdf/lecture1.pdf
+all: pdf/lecture1.pdf pdf/practice1.pdf
 
 pdf/%.pdf: source/%/source.tex source/%/images/*.png
 	mkdir -p build/$(@F)
