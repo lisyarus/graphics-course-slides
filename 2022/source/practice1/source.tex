@@ -88,10 +88,13 @@ layout (location = 0) out vec4 out_color;
 
 void main()
 {
+    // vec4(R, G, B, A)
     out_color = vec4(1.0, 0.0, 0.0, 1.0);
 }
 )";
 \end{verbatim}
+\pause
+\item (цвет можно выбрать любой)
 \end{itemize}
 \end{frame}
 
@@ -164,6 +167,11 @@ GLuint create_program(GLuint vertex_shader,
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Задание 6}
+\slideimage{task_6.png}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Задание 7}
 \begin{itemize}
 \item Добавляем градиентное закрашивание
@@ -189,6 +197,11 @@ void main()
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Задание 7}
+\slideimage{task_7.png}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Задание 8}
 \begin{itemize}
 \item Запрещаем интерполяцию переменных
@@ -205,6 +218,11 @@ flat in vec3 color;
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Задание 8}
+\slideimage{task_8.png}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Задание 9*}
 \begin{itemize}
 \item Раскрашиваем треугольник в шахматном порядке
@@ -215,6 +233,11 @@ flat in vec3 color;
 \pause
 \item Функция \verb|floor| будет полезной
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 9}
+\slideimage{task_9.png}
 \end{frame}
 
 \end{document}
