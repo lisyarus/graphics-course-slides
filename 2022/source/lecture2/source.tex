@@ -446,6 +446,8 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{itemize}
 \pause
 \item Есть математические функции векторной алгебры: \verb|dot|, \verb|cross|, \verb|length|, \verb|normalize|, ...
+\pause
+\item Линейная и нелинейная интерполяция: \verb|mix|, \verb|smoothstep|
 \end{itemize}
 \end{frame}
 
@@ -914,7 +916,7 @@ p_z \\
 \begin{pmatrix}
 p_x \cos \theta - p_y \sin \theta \\
 p_x \sin \theta + p_y \cos \theta \\
-p_z
+p_z \\
 1
 \end{pmatrix}
 \end{math}
@@ -937,7 +939,7 @@ v_z \\
 \begin{pmatrix}
 v_x \cos \theta - v_y \sin \theta \\
 v_x \sin \theta + v_y \cos \theta \\
-v_z
+v_z \\
 0
 \end{pmatrix}
 \end{math}
