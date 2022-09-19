@@ -48,21 +48,17 @@
 GLuint create_shader(GLenum shader_type,
     const char * shader_source)
 \end{verbatim}
-\pause
 \item Нужно использовать:
 \begin{itemize}
 \item \verb|glCreateShader| -- создаёт и возвращает ID шейдера
 \item \verb|glShaderSource| -- задаёт исходный код шейдера (функция умеет принимать массив строк, но у нас она будет одна; в качестве длины можно указать \verb|NULL|)
 \item \verb|glCompileShader| -- компилирует шейдер
 \end{itemize}
-\pause
 \item Функция должна возвращать ID созданного шейдера (то, что вернула \verb|glCreateShader|)
-\pause
 \item Функция должна бросать исключение (например, \verb|std::runtime_error|), если компиляция шейдера провалилась
 \begin{itemize}
 \item \verb|glGetShaderiv| -- позволяет узнать параметры шейдера, в т.ч. статус компиляции (\verb|GL_COMPILE_STATUS|)
 \end{itemize}
-\pause
 \item Заведите строковую константу с любым значением, создайте фрагментный шейдер (\verb|shader_type = GL_FRAGMENT_SHADER|) с помощью вашей функции и убедитесь, что бросается исключение
 \item Это нужно делать где-то после \verb|glewInit()| и до начала основного цикла \verb|while (running)|
 \end{itemize}
@@ -72,7 +68,6 @@ GLuint create_shader(GLenum shader_type,
 \frametitle{Задание 2}
 \begin{itemize}
 \item Бросаемое исключение должно содержать текст ошибки компиляции шейдера
-\pause
 \begin{itemize}
 \item \verb|glGetShaderiv| -- позволяет узнать длину лога компиляции (\verb|GL_INFO_LOG_LENGTH|)
 \item \verb|glGetShaderInfoLog| -- позволяет получить сам текст компиляции (записывает его в указанное вами место в памяти!)
@@ -86,7 +81,6 @@ GLuint create_shader(GLenum shader_type,
 \frametitle{Задание 3}
 \begin{itemize}
 \item Пишем настоящий фрагментный (пиксельный) шейдер
-\pause
 \item Удобно использовать raw string literal из C++11:
 \begin{verbatim}
 const char fragment_source[] = R"(#version 330 core
@@ -100,7 +94,6 @@ void main()
 }
 )";
 \end{verbatim}
-\pause
 \item (цвет можно выбрать любой)
 \end{itemize}
 \end{frame}
@@ -110,7 +103,6 @@ void main()
 \fontsize{8pt}{8pt}\selectfont
 \begin{itemize}
 \item Пишем вершинный шейдер
-\pause
 \begin{verbatim}
 R"(#version 330 core
 
@@ -126,9 +118,7 @@ void main()
 }
 )";
 \end{verbatim}
-\pause
 \item Создаём вершинный шейдер (\verb|shader_type = GL_VERTEX_SHADER|) с этим кодом
-\pause
 \item Теперь у нас создано два шейдера: вершинный и фрагментный, каждый со своим кодом
 \end{itemize}
 \end{frame}
@@ -142,7 +132,6 @@ void main()
 GLuint create_program(GLuint vertex_shader,
     GLuint fragment_shader)
 \end{verbatim}
-\pause
 \item Программа = несколько скомпилированных шейдеров, слинкованных вместе
 \item Нужно использовать:
 \begin{itemize}
@@ -152,11 +141,8 @@ GLuint create_program(GLuint vertex_shader,
 \item \verb|glGetProgramiv| -- 2 раза: получить статус (\verb|GL_LINK_STATUS|) и длину лога линковки (\verb|GL_INFO_LOG_LENGTH|)
 \item \verb|glGetProgramInfoLog| -- получить текст лога линковки, если линковка не удалась
 \end{itemize}
-\pause
 \item Функция возвращает ID созданной программы (результат \verb|glCreateProgram|)
-\pause
 \item Аналогично \verb|create_shader|, функция должна бросать исключение с текстом ошибки, если линковка программы не удалась
-\pause
 \item Вызываем созданную функцию, чтобы создать программу, используя два созданных ранее шейдера
 \end{itemize}
 \end{frame}
@@ -167,11 +153,9 @@ GLuint create_program(GLuint vertex_shader,
 \item Создаём Vertex Array Object
 \item VAO содержит информацию о входных данных - расположение данных о вершинах, типы атттрибутов
 \item В нашем случае нужен только номинально, но без него ничего не будет рисоваться
-\pause
 \begin{itemize}
 \item \verb|glGenVertexArrays| -- создаёт Vertex Array (функция умеет создавать сразу несколько VAO, поэтому принимает количество и указатель на массив; нам хватит одного VAO)
 \end{itemize}
-\pause
 \item Рисуем треугольник, используя созданные программу и VAO: где-то в теле основного цикла, после \verb|glClear| и до \verb|SDL_GL_SwapBuffers|:
 \begin{itemize}
 \item \verb|glUseProgram| -- включаем использование созданной шейдерной программы
@@ -193,7 +177,6 @@ GLuint create_program(GLuint vertex_shader,
 \item Добавляем градиентное закрашивание
 \item Из вершинного шейдера во фрагментный можно передавать данные: они будут интерполироваться между вершинами
 \end{itemize}
-\pause
 \begin{verbatim}
 В вершинном шейдере:
 out vec3 color;
@@ -222,13 +205,11 @@ void main()
 \frametitle{Задание 8}
 \begin{itemize}
 \item Запрещаем интерполяцию переменных
-\pause
 \begin{verbatim}
 flat out vec3 color;
 
 flat in vec3 color;
 \end{verbatim}
-\pause
 \item Будет использоваться значение в последней вершине
 \item Можно настроить с помощью \verb|glProvokingVertex|
 \end{itemize}
@@ -243,11 +224,8 @@ flat in vec3 color;
 \frametitle{Задание 9*}
 \begin{itemize}
 \item Раскрашиваем треугольник в шахматном порядке
-\pause
 \item Делается во фрагментном шейдере
-\pause
 \item Нужно проинтерполировать какое-нибудь двумерное значение между вершинами
-\pause
 \item Функция \verb|floor| будет полезной
 \end{itemize}
 \end{frame}
