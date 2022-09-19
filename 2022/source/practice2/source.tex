@@ -116,10 +116,10 @@
 \begin{verbatim}
 float transform[16] =
 {
-    ?, ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?,
-    ?, ?, ?, ?,
+    ?, ?, ?, ?, // 1 строка
+    ?, ?, ?, ?, // 2 строка
+    ?, ?, ?, ?, // 3 строка
+    ?, ?, ?, ?, // 4 строка
 };
 \end{verbatim}
 \item Заполняем матрицу значениями, чтобы это была матрица применения поворота и масштабирования
@@ -172,7 +172,7 @@ float transform[16] = ...;
 \end{itemize}
 \item В теле основного цикла рендеринга
 \begin{itemize}
-\item Вычисляем \verb|aspect_ratio = width / height|
+\item Вычисляем \verb|aspect_ratio = width / height| (N.B.: если написать так, будет целочисленное деление; нам нужно деление во floating point)
 \item Создаём новую матрицу, которая делит x-координату на \verb|aspect_ratio|
 \begin{verbatim}
 float view[16] = ...;
