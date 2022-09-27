@@ -655,10 +655,46 @@ x/z \\ y/z \\ 1
 \begin{itemize}
 \item Хотим, чтобы диапазон \begin{math}z\in [near,far]\end{math} после применения матрицы проекции и perspective divide превратился в \begin{math}[-1,1]\end{math}
 \pause
+\item Матрицей можно применить к \begin{math}z\end{math} линейную функцию \begin{math}Az+B\end{math}:
+\begin{center}
+\begin{math}
+\begin{pmatrix}
+1 && 0 && 0 && 0 \\
+0 && 1 && 0 && 0 \\
+0 && 0 && A && B \\
+0 && 0 && 1 && 0 \\
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+x \\ y \\ z \\ 1
+\end{pmatrix}
+=
+\begin{pmatrix}
+x \\ y \\ Az+B \\ z
+\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\item С учётом perspective divide:
+\begin{center}
+\begin{math}
+\begin{matrix}
+z \mapsto \frac{Az + B}{z}
+\end{matrix}
+\end{math}
+\end{center}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Перспективная проекция: near \& far clip planes}
+\begin{itemize}
+\item С учётом perspective divide:
 \begin{center}
 \begin{math}
 \begin{matrix}
 z \mapsto \frac{Az + B}{z} \\ \\
+\pause
 near \mapsto \frac{A\cdot near + B}{near} = -1 \\ \\
 far \mapsto \frac{A\cdot far + B}{far} = 1
 \end{matrix}
@@ -754,8 +790,8 @@ B = \frac{-2 far \cdot near}{far - near}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
-\only<2>{1}\only<3->{C} & 0 & \only<2>{0}\only<3->{D} & 0 \\
-0 & \only<2>{1}\only<3->{E} & \only<2>{0}\only<3->{F} & 0 \\
+\only<2>{1}\only<3->{\color{red}C} & 0 & \only<2>{0}\only<3->{\color{red}D} & 0 \\
+0 & \only<2>{1}\only<3->{\color{red}E} & \only<2>{0}\only<3->{\color{red}F} & 0 \\
 0 & 0 & A & B \\
 0 & 0 & -1 & 0
 \end{pmatrix}
