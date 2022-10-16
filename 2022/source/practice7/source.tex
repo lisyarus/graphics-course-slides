@@ -1,0 +1,166 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 7: Освещение}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\slideimage{0.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Добавляем ambient освещение
+\begin{itemize}
+\item Во фрагментном шейдере заводим две новые uniform-переменные: \verb|vec3 albedo| и \verb|vec3 ambient_light|
+\item Перед рисованием устанавливаем их значения:
+\begin{itemize}
+\item Ambient light -- что-нибудь маленькое, например \verb|(0.2, 0.2, 0.2)|
+\item Albedo -- цвет объета, выберите сами
+\end{itemize}
+\item Во фрагментном шейдере делаем \verb|color = albedo * ambient_light|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Добавляем диффузное освещение от направленного источника света (`солнца')
+\begin{itemize}
+\item Во фрагментном шейдере заводим две новые uniform-переменные: \verb|vec3 sun_direction| и \verb|vec3 sun_color|
+\item Перед рисованием устанавливаем их значения:
+\begin{itemize}
+\item Sun direction -- какой-нибудь единичный вектор, направленный примерно вверх и вперёд
+\item Sun color -- цвет солнца, например \verb|(1.0, 0.9, 0.8)|
+\end{itemize}
+\item Во фрагментном шейдере заводим функцию \verb|vec3 diffuse(vec3 direction)|, которая вычисляет силу диффузного освещения от источника света в данном направлении:
+\begin{verbatim}
+    return albedo * max(0.0, dot(normal, direction));
+\end{verbatim}
+\item Используем её для вычисления освещения \verb|diffuse(sun_direction) * sun_color| и прибавляем это к результирующему цвету
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Добавляем точечный источник света
+\begin{itemize}
+\item Во фрагментном шейдере заводим три новые uniform-переменные: \verb|vec3 point_light_position|, \verb|vec3 point_light_color| и \verb|vec3 point_light_attenuation|
+\item Перед рисованием устанавливаем их значения:
+\begin{itemize}
+\item Position -- позиция, меняющаяся со временем
+\item Color -- цвет источника, выберите сами
+\item Attenuation -- коэффициенты затухания \begin{math}C_0, C_1, C_2\end{math}, например \verb|(1.0, 0.0, 0.01)|
+\end{itemize}
+\item Во фрагментном шейдере находим расстояние до источника света и вектор направления на него
+\item Используем функцию \verb|diffuse| для вычисления освещения аналогично солнцу, домножаем на коэффициент затухания и прибавляем это к результирующему цвету
+\item N.B. к этому моменту \verb|color| будет суммой трёх составляющих: ambient, солнце и точечный источник
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+Добавляем specular освещение
+\begin{itemize}
+\item Во фрагментном шейдере заводим две новые uniform-переменные: \verb|float glossiness| и \verb|float roughness|
+\item Перед рисованием устанавливаем их значения:
+\begin{itemize}
+\item Glossiness -- сила отражения, например \verb|5.0|
+\item Roughness -- `шершавость' поверхности, например \verb|0.1| (гладкая поверхность)
+\end{itemize}
+\item Во фрагментном шейдере добавляем функцию \verb|vec3 specular(vec3 direction)|, которая вычисляет specular составляющую (см. слайды лекции)
+\begin{verbatim}
+    return glossiness * albedo * pow(max(0.0,
+        dot(reflected, view_direction)), power);
+\end{verbatim}
+\item Прибавляем specular составляющую к вкладам обоих источников света, т.е. заменяем \verb|diffuse(direction)| на \verb|diffuse(direction) + specular(direction)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{4.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+Играем с прозрачностью
+\begin{itemize}
+\item Если переменная \verb|transparent| (она уже есть в коде, значение меняется по пробелу) имеет значение \verb|true|, включаем прозрачность:
+\begin{itemize}
+\item \verb|glEnable(GL_BLEND)|
+\item \verb|glBlendEquation|
+\item \verb|glBlendFunc|
+\end{itemize}
+\item Иначе выключаем прозрачность \verb|glDisable(GL_BLEND)|
+\item Не забудем записать в альфа-канал во фрагментном шейдере значение, отличное от 1 (например, 0.5)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{5.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6*}
+Рисуем несколько моделей с разными параметрами материала
+\begin{itemize}
+\item Рисуем модель девять раз квадратом 3x3 (в плоскости XY)
+\item У моделей должны отличаться параметры glossiness и roughness:
+\begin{itemize}
+\item Roughness принимает значения примерно от 0.1 до 0.5
+\item Glossiness нужно подобрать, что-нибудь в духе \verb|1.0 / (2.0 * roughness)|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{6.png}
+\end{frame}
+
+\end{document}
