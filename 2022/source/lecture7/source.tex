@@ -587,6 +587,8 @@
 \begin{itemize}
 \item Почти всегда происходит во фрагментном шейдере
 \pause
+\item Вычисления используют \verb|vec3| для работы с цветом в {\color{red}R}{\color{green}G}{\color{blue}B}
+\pause
 \item Входные данные:
 \begin{itemize}
 \item Нормаль к поверхности
@@ -755,6 +757,14 @@ void main() {
 \item Выводится формула для BRDF (обычно -- приближённая)
 \end{itemize}
 \slideimage{microfacet.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Microfacets}
+\begin{itemize}
+\item Oren-Nayar BRDF -- микрофасетная модель, в которой фасеты имеют диффузную BRDF
+\item Torrance-Sparrow BRDF -- микрофасетная модель, в которой фасеты -- идеальные зеркала
+\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
