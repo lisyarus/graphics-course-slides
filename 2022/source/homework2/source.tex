@@ -1,0 +1,187 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{tikz}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Домашнее задание 2: Визуализатор сцен с освещением и тенями}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание}
+\begin{itemize}
+\item Сделать визуализатор сцен в формате OBJ с текстурами и освещением по Фонгу
+\pause
+\item Путь до сцены задаётся, например, параметром командной строки
+\pause
+\item Два источника света: направленный (`солнце') и точечный, оба как-то двигаются со временем
+\pause
+\item От обоих источников света есть тени, построенные алгоритмом shadow mapping (+ PCF или VSM, с размытием)
+\pause
+\item Камера должна управляться пользователем (любым способом, главное -- чтобы можно было всё разглядеть)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сцена}
+Хорошая сцена:
+\begin{itemize}
+\item Порядка 100k-1kk треугольников в сумме
+\item Порядка 100-1000 различных объектов
+\item У большинства объектов есть текстура альбедо
+\end{itemize}
+Рекомендую тестировать на \textit{Crytek Sponza} и \textit{Rungholt}, обе сцены можно найти здесь: \href{https://casual-effects.com/data/index.html}{\nolinkurl{casual-effects.com/data/index.html}}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Crytek Sponza}
+\slideimage{crytek-sponza.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Crytek Sponza}
+\slideimage{sponza_real.jpeg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Crytek Sponza}
+\begin{itemize}
+\item Одна из самых популярных тестовых сцен в 3D графике
+\item Модель атриума дворца в Дубровнике (Хорватия)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Rungholt}
+\slideimage{rungholt.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Rungholt}
+\begin{itemize}
+\item Город, построенный в Minecraft, переведённый в формат OBJ
+\item Достаточно большая сцена (~6 миллионов треугольников)
+\item Также содержит небольшую модель дома (house.obj), на которой хорошо тестировать
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сцена: формат OBJ}
+Wavefront OBJ -- один из общепринятых форматов сцен
+\begin{itemize}
+\item Текстовый, достаточно простой для чтения
+\item Содержит координаты вершин, нормали и текстурные координаты
+\item Содержит индексы вершин, образующих треугольники
+\item Может содержать много объектов
+\item Может ссылаться на MTL-файл (Material Template Library), содержащий описания материалов
+\item MTL может в свою очередь ссылаться на текстуры (альбедо, нормали, и т.п.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сцена: формат OBJ}
+Что нужно из описания материалов:
+\begin{itemize}
+\item Текстура альбедо \verb|map_Ka|
+\item Тестура прозрачности \verb|map_d| (делаем discard, если в текстуре значение меньше 0.5)
+\item Коэффициент отражения (glossiness) \verb|Ks|
+\item Показатель отражения (power) \verb|Ns|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сцена: формат OBJ}
+\begin{itemize}
+\item Можно написать загрузчик руками (это несложно)
+\item Можно использовать какую-нибудь библиотеку, например Assimp или TinyOBJ
+\item Для загрузки текстур можно использовать какую-нибудь библиотеку, например SDL\_image, stb\_image или Boost.GIL
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Советы}
+\begin{itemize}
+\item Можно иметь один общий набор VAO + VBO + EBO, и для каждого объекта хранить только диапазон индексов
+\item Можно иметь по VAO + VBO + EBO на каждый объект
+\item Скорее всего, у вас будет 1 draw call (\verb|glDrawElements| или т.п.) на один объект
+\item Напоминание: для рендеринга VAO и EBO не нужны, только \verb|glBindVertexArray| и \verb|glDraw*|!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Советы}
+\begin{itemize}
+\item Для теней от точечного источника света можно использовать одну cubemap текстуру, а можно 6 обычных 2D текстур
+\item В любом случае, в сумме у вас будет 7 FBO: один для теней от солнца и 6 для теней от точечного источника
+\item Размер shadow map лучше взять побольше, если не будет тормозить (~4096x4096)
+\item Размывать тени можно прямо в результирующем шейдере, при чтении из shadow map
+\item Радиус размытия -- как можно больше, пока не начинает тормозить :)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Советы}
+\begin{itemize}
+\item При загрузке полезно посчитать bounding box сцены, чтобы потом по нему вычислять матрицы для теней
+\item Сцены могут быть разного размера \begin{math}\Rightarrow\end{math} полезно делать скорость движения камеры и движение источника света пропорциональными размерам сцены
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Баллы}
+\begin{itemize}
+\item 2 балл: геометрия сцены загружается и рисуется
+\item 2 балла: есть текстуры альбедо и прозрачности
+\item 1 балл: камера произвольно двигается
+\item 1 балл: есть ambient освещение + два источника света
+\item 2 балла: есть тени от направленного источника света
+\begin{itemize}
+\item +1 балл: PCF + blur
+\item либо +2 балла: VSM + blur
+\end{itemize}
+\item 3 балла: есть тени от точечного источника света
+\begin{itemize}
+\item +1 балл: PCF
+\item либо +2 балла: VSM
+\end{itemize}
+\end{itemize}
+Всего: 15 баллов
+
+Защита заданий на практике 7 ноября
+\end{frame}
+
+\end{document}
