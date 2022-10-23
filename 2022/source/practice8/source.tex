@@ -1,0 +1,190 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 8: Shadow mapping}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\slideimage{0.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+\fontsize{10pt}{10pt}
+Создаём и настраиваем shadow map и framebuffer
+\begin{itemize}
+\item Выбираем размер shadow map: например, \verb|shadow_map_size = 1024|
+\item Создаём текстуру для shadow map: min/mag фильтры -- \verb|GL_NEAREST|, размеры -- \verb|shadow_map_size x shadow_map_size|, internal format -- \verb|GL_DEPTH_COMPONENT24|, format -- \verb|GL_DEPTH_COMPONENT|, type -- \verb|GL_FLOAT|, в данных -- \verb|nullptr|
+\item Настраиваем ей параметры \verb|GL_TEXTURE_WRAP_S| и \verb|GL_TEXTURE_WRAP_T| в значение \verb|GL_CLAMP_TO_EDGE|
+\item Создаём framebuffer, присоединяем к нему нашу текстуру в качестве глубины (\verb|glFramebufferTexture|, \verb|GL_DEPTH_ATTACHMENT|), \verb|target| лучше использовать \verb|GL_DRAW_FRAMEBUFFER|
+\item Проверяем, что фреймбуффер настроен правильно (\verb|glCheckFramebufferStatus|)
+\item N.B. Экран будет чёрный, так как мы не сделали дефолтный фреймбуфер текущим :)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+\slideimage{1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+\fontsize{10pt}{10pt}
+Добавляем дебажный прямоугольник с собственной шейдерной программой, чтобы видеть содержимое нашей shadow map
+\begin{itemize}
+\item В начале рендеринга (перед \verb|glClear|) делаем текущим дефолтный фреймбуфер, чтобы снова увидеть сцену
+\item Создаём вершинный шейдер: выдаёт захардкоженные координаты вершин, используя \verb|gl_VertexID| (как в первой практике), и передаёт во фрагментный шейдер текстурные координаты (без каких-либо матриц)
+\begin{itemize}
+\item Должно быть 6 вершин -- два треугольника, образующих прямоугольник
+\item Координаты вершин должны быть где-то в нижнем левом углу экрана (например, [-1.0 .. -0.5] по обеим осям)
+\item Текстурные координаты должны быть [0.0 .. 1.0]
+\end{itemize}
+\item Фрагментный шейдер: читает цвет из переданной текстуры и выводит в \verb|out_color|, можно только красный канал: \verb|vec4(texture(...).r)|
+\item Создаём фиктивный VAO (без настройки атрибутов вершин)
+\item После рисования основной модели рисуем прямоугольник с помощью \verb|glDrawArrays(GL_TRIANGLES, 0, 6)| (не забываем сделать текущими VAO, программу и текстуру shadow map, а также выключить тест глубины)
+\item N.B. прямоугольник будет белым, так как shadow map пока пустой
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+\slideimage{2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+\fontsize{10pt}{10pt}
+Генерируем shadow map
+\begin{itemize}
+\item Выбираем проекцию для shadow map: для начала сгодится проекция `снизу-вверх' (как будто камера смотрит сверху)
+\item При рисовании кадра вычисляем оси проекции:
+\begin{itemize}
+\item \verb|light_Z = glm::vec3(0, -1, 0)|
+\item \verb|light_X = glm::vec3(1,  0, 0)|
+\item \verb|light_Y = glm::cross(light_X, light_Z)|
+\end{itemize}
+\item Матрица проекции: \begin{verbatim}glm::mat4(glm::transpose(
+    glm::mat3(light_X, light_Y, light_Z)))\end{verbatim}
+\item Пишем шейдерную программу для вычисления shadow map:
+\begin{itemize}
+\item Вершинный шейдер преобразует вершины (\verb|gl_Position = shadow_projection * model * ...|)
+\item Фрагментный шейдер ничего не делает (пустая функция \verb|main|)
+\end{itemize}
+\item Перед рисованием основного кадра: используем созданный ранее shadow framebuffer для рисования, настраиваем \verb|glViewport|, очищаем буфер глубины, включаем front-face culling, включаем depth test, рисуем нашу модель созданной шейдерной программой
+\item После этого не забываем вернуть back-face culling
+\item Модель должна появиться в нашем дебажном прямоугольнике
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+\slideimage{3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+\fontsize{10pt}{10pt}
+Используем shadow map
+\begin{itemize}
+\item Передаём текстуру shadow map и проекцию для неё в основную шейдерную программу
+\item Во фрагментном шейдере:
+\begin{itemize}
+\item Вычисляем ndc-координаты текущей точки после применения проекции: \verb|vec4 ndc = shadow_projection * vec4(position, 1.0)|
+\item Проверяем точку на попадание в видимую область shadow map (XY-координаты \verb|ndc| должны быть в диапазоне [-1..1])
+\item Если точка попала в shadow map, вычисляем её текстурные координаты для shadow map \verb|ndc.xy * 0.5 + 0.5| и глубину \verb|ndc.z * 0.5 + 0.5|
+\item Если значение в shadow map меньше глубины нашей точки, она в тени (к ней не нужно применять прямое освещение, но ambient остаётся)
+\end{itemize}
+\item Тень будет выглядеть так, будто свет падает сверху
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+\slideimage{4.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+\fontsize{10pt}{10pt}
+Вычисляем настоящую проекцию
+\begin{itemize}
+\item \verb|light_Z = -light_direction|
+\item \verb|light_X| -- любой вектор, ортогональный \verb|light_Z|
+\item \verb|light_Y = glm::cross(light_X, light_Z)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+\slideimage{5.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+\fontsize{10pt}{10pt}
+Включаем PCF
+\begin{itemize}
+\item Меняем min/mag фильтры shadow map на \verb|GL_LINEAR|
+\item Настраиваем текстуре shadow map опции \verb|GL_TEXTURE_COMPARE_MODE = GL_COMPARE_REF_TO_TEXTURE| и \verb|GL_TEXTURE_COMPARE_FUNC = GL_LEQUAL|
+\item Заменяем в основном фрагментном шейдере \verb|sampler2D shadow_map| на \verb|sampler2DShadow|
+\item Сравнение \verb|texture(shadow_map, texcoord) < depth| заменяется на один вызов \verb|texture(shadow_map, ndc * 0.5 + 0.5)| -- вернёт 0 или 1 (если в тени или не в тени, соответственно)
+\item N.B. дебажный прямоугольник перестанет работать :(
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+\slideimage{6.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 7*}
+\fontsize{10pt}{10pt}
+Добавляем размытие к PCF
+\begin{itemize}
+\item Во фрагментном шейдере, вместо однократного чтения shadow map \verb|texture(shadow_map, ndc * 0.5 + 0.5)| читаем значения из соседних пикселей (надо будет что-то прибавить к \verb|ndc|) и усредняем по Гауссу
+\item Тени должны получиться более размытыми
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 7}
+\slideimage{7.png}
+\end{frame}
+
+\end{document}
