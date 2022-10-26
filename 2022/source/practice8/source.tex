@@ -182,7 +182,7 @@
 \item Меняем min/mag фильтры shadow map на \verb|GL_LINEAR|
 \item Настраиваем текстуре shadow map опции \verb|GL_TEXTURE_COMPARE_MODE = GL_COMPARE_REF_TO_TEXTURE| и \verb|GL_TEXTURE_COMPARE_FUNC = GL_LEQUAL| (тоже через \verb|glTexParameteri|)
 \item Заменяем в основном фрагментном шейдере \verb|sampler2D shadow_map| на \verb|sampler2DShadow|
-\item Сравнение \verb|texture(shadow_map, shadow_texcoord) < shadow_depth| заменяется на один вызов \verb|texture(shadow_map, shadow_texcoord)| -- вернёт 0 или 1 (если в тени или не в тени, соответственно)
+\item Сравнение \verb|texture(shadow_map, shadow_texcoord) < shadow_depth| заменяется на один вызов \verb|texture(shadow_map, shadow_texcoord)| -- вернёт значение от 0 до 1 (если в тени или не в тени, соответственно)
 \item N.B. дебажный прямоугольник перестанет работать :(
 \end{itemize}
 \end{frame}
