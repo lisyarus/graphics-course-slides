@@ -1,0 +1,556 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 9: Вычисление проекции для shadow mapping, ESM, VSM, PSM, CSM, Ambient Occlusion}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Проекция для shadow map: точечный источник}
+\begin{itemize}
+\item 6 перспективных проекций для 6 граней cubemap-текстуры shadow map (одно рисование всей сцены на каждую из них)
+\pause
+\item Каждая проекция смотрит в направлении некоторой оси: \begin{math}\pm X, \pm Y, \pm Z\end{math}
+\pause
+\item Соответствующие грани cubemap-текстуры в OpenGL называются \verb|GL_TEXTURE_CUBE_MAP_POSITIVE_X|, \verb|GL_TEXTURE_CUBE_MAP_NEGATIVE_X| и т.д. (параметр \verb|glTexImage2D|, \verb|glFramebufferTexture2D|, etc)
+\pause
+\item Каждую проекцию нужно будет покрутить вокруг оси взгляда, чтобы она совпала с тем, как эта грань cubemap текстуры определена в OpenGL (проще всего -- подбором одного из четырёх вращений на \begin{math}90^\circ\end{math})
+\pause
+\item Угол видимой области -- \begin{math}90^\circ\end{math} по обеим осям (квадратная камера, aspect ratio = 1)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Проекция для shadow map: точечный источник}
+\begin{itemize}
+\item \verb|near| и \verb|far| -- максимальное (соответственно, минимальное), при котором не обрезается ничего лишнего
+\pause
+\begin{itemize}
+\item \verb|near| -- минимальное расстояние до вершин объектов сцены
+\item \verb|far| -- максимальное расстояние до вершин объектов сцены
+\end{itemize}
+\pause
+\item Например, \verb|far| можно посчитать как \begin{math}\max\limits_V |(V - C) \cdot D|\end{math}, где
+\begin{itemize}
+\item \begin{math}C\end{math} -- координаты центра проекции (источника света)
+\item \begin{math}D\end{math} -- единичный вектор направления взгляда проекции
+\item \begin{math}V\end{math} -- вершины объектов сцены
+\end{itemize}
+\pause
+\item Можно заранее вычислить bounding box сцены и вычислять максимум только по его вершинам
+\pause
+\item Аналогично минимум для \verb|near|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Проекция для shadow map: направленный источник}
+\begin{itemize}
+\item Одна ортографическая проекция: задаётся центром \begin{math}C\end{math} и осями \begin{math}X, Y, Z\end{math}
+\pause
+\item \begin{math}Z\end{math} параллельный направлению на источник света
+\pause
+\item \begin{math}X, Y\end{math} перпендикулярны \begin{math}Z\end{math} (и друг другу)
+\begin{itemize}
+\item Можно выбрать любые, перпендикулярные \begin{math}Z\end{math}
+\item Можно попробовать выбрать их так, чтобы максимизировать эффективное разрешение shadow map (т.е. чтобы одному пикселю shadow map соответствовала как можно меньшая область пространства) -- сводится к задаче OBB (oriented bounding box)
+\end{itemize}
+\pause
+\item Откуда взять \begin{math}C\end{math} и длины векторов \begin{math}X,Y,Z\end{math}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Проекция для shadow map: направленный источник}
+\begin{itemize}
+\item Вычислим bounding box всей сцены
+\pause
+\item В качестве \begin{math}C\end{math} возьмём центр bounding box'а сцены
+\pause
+\item Мы знаем направление вектора \begin{math}X\end{math}, нужно вычислить его длину
+\begin{itemize}
+\item Пусть \begin{math}\hat X\end{math} -- вектор направления (нормированный)
+\item Мы хотим, чтобы для всех вершин \begin{math}И\end{math} сцены выполнялось \begin{math}|(V - C) \cdot \hat X| \leq |X|\end{math}
+\pause
+\item Пройдёмся по всем восьми вершинам bounding box'а сцены и вычислим \begin{math}\max\limits_V |(V - C) \cdot \hat X|\end{math} -- это длина вектора \begin{math}X\end{math}
+\end{itemize}
+\pause
+\item Аналогично для \begin{math}Y, Z\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Проблемы shadow mapping}
+\begin{itemize}
+\item В базовом shadow mapping хорошо видны пиксели shadow map (квадратная лесенка на границе тени)
+\pause
+\begin{itemize}
+\item Тем хуже, чем больше сцена (пиксели становятся больше)
+\item Особенно плохо, если тень движется
+\end{itemize}
+\pause
+\item Хочется сгладить тени, убрав пиксели и сделав аппроксимацию мягких теней
+\pause
+\item Саму shadow map сглаживать (размывать / использовать линейную фильтрацию / mipmaps) нет смысла: получатся интерполированные значения глубин, сравнение с ними даёт видимые артефакты и ничего не улучшает
+\pause
+\item Встроенный PCF усредняет только по соседним 4 пикселям, иначе приходится делать размытие несепарабельным фильтром
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Пиксели shadow mapping}
+\slideimage{shadow_map_nearest.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Пиксели shadow mapping (с линейной фильтрацией)}
+\slideimage{shadow_map_linear.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{PCF}
+\slideimage{pcf.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{PCF + 7x7 размытие}
+\slideimage{pcf_gauss.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Filtered shadow maps}
+\begin{itemize}
+\item Хочется, чтобы shadow map содержал значения, которые имеет смысл интерполировать
+\pause
+\item Тогда можно применить весь арсенал работы с текстурами: линейную фильтрацию, mipmaps, размытие, etc.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Filtered shadow maps}
+\begin{itemize}
+\item Идея: рассматривать значение в одном пикселе shadow map как описывающем некое распределение вероятности
+\pause
+\item График уровня освещённости в зависимости от расстояния до источника света:
+\end{itemize}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[red,thick] (0.0, 0.0) -- (5.0, 0.0) -- (5.0, 1.0) -- (10.0, 1.0);
+
+\node[black] at (10.5, 0.0) {0};
+\node[red] at (10.5, 1.0) {1};
+\node[blue] at (5.0, -0.5) {\begin{math}Z_0\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Filtered shadow maps}
+\begin{itemize}
+\item Распределения вероятности можно усреднять: если \begin{math}F_1(z), F_2(z)\end{math} -- распределения вероятности, то \begin{math}F(z) = (1 - t) \cdot F_1(z) + t \cdot F_2(z)\end{math} -- тоже распределение вероятности
+\pause
+\item Есть много вариантов того, как представить распределение одним пикселем shadow map
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Exponential shadow maps (ESM)}
+\begin{itemize}
+\item Идея: функцию распределения можно аппроксимировать экспонентой \begin{math}F(z) = \min(1, \exp(C \cdot (z_0 - z))) = \min(1, \exp(-Cz)\exp(Cz_0))\end{math} (\begin{math}z\end{math} -- расстояние до освещаемого пикселя, \begin{math}z_0\end{math} -- расстояние до источника тени)
+\pause
+\item Интерполяция таких функций сводится к интерполяции \begin{math}\exp(Cz_0)\end{math}
+\pause
+\item Будем записывать в shadow map значение \begin{math}\exp(Cz_0)\end{math}
+\pause
+\item В шейдере будем умножать это значение на \begin{math}\exp(-Cz)\end{math}
+\pause
+\item Если результат больше единицы (\begin{math}z < z_0\end{math}), принимаем освещённость за единицу
+\pause
+\end{itemize}
+\slideimage{exp_plot.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{ESM с линейной фильтрацией}
+\slideimage{exp.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{ESM с линейной фильтрацией и 7x7 размытием по Гауссу}
+\slideimage{exp_gauss.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{ESM}
+\begin{itemize}
+\item {\color{green}+} Shadow map можно фильтровать (размывать, mipmaps, etc)
+\item {\color{green}+} Прост в реализации
+\item {\color{red}—} Требует floating-point буфер глубины или рендеринг в floating-point текстуру
+\item {\color{red}—} Константу \verb|C| приходится делать очень большой \begin{math}\Rightarrow\end{math} могут быть проблемы с точностью
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Variance shadow maps (VSM)}
+\begin{itemize}
+\item Идея: запишем в shadow map мат.ожидание глубины и её квадрата
+\pause
+\item Их можно усреднять:
+\begin{equation}
+\int z \left[(1-t)p_1(z) + tp_2(z)\right] dz = (1-t)\int z p_1(z) dz + t\int z p_2(z) dz
+\end{equation}
+\item (аналогично для \begin{math}z^2\end{math})
+\pause
+\item Моделируем пиксель как дискретное распределение с единственным значением \begin{math}\Rightarrow\end{math} мат.ожидание глубины совпадает с её значением (и аналогично для квадрата глубины)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Variance shadow maps (VSM)}
+\begin{itemize}
+\item По мат.ожиданию глубины (\begin{math}\mu\end{math}) и её квадрата можно вычислить дисперсию
+\begin{equation}
+\sigma^2 = \mathbb{E}[z^2] - \mathbb{E}[z]^2
+\end{equation}
+\pause
+\item По мат.ожиданию глубины и дисперсии можно оценить освещённость через \href{https://en.wikipedia.org/wiki/Cantelli%27s_inequality}{одностороннее неравенство Чебышёва (оно же -- неравенство Кантелли)}:
+\begin{equation}
+P(z) = \frac{\sigma^2}{\sigma^2 + (z - \mu)^2}
+\end{equation}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Variance shadow maps (VSM): алгоритм}
+\begin{itemize}
+\item В shadow map записываем глубину и её квадрат (нужна текстура с 2 компонентами)
+\pause
+\item По желанию с результирующей текстурой shadow map производим фильтрацию (например, размытие)
+\pause
+\item В шейдере читаем shadow map, вычисляем \begin{math}\mu\end{math} и \begin{math}\sigma^2\end{math}
+\pause
+\item Если глубина нашего пикселя меньше \begin{math}\mu\end{math}, освещённость равна 1
+\pause
+\item Иначе, вычисляем освещённость через неравенство Чебышёва
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Variance shadow maps (VSM): shadow bias}
+\begin{itemize}
+\item VSM позволяет элегантно включить shadow bias
+\pause
+\item Моделируем пиксель как параллелограмм с линейно меняющейся глубиной
+\pause
+\item Градиент глубины можно аппроксимировать с помощью \verb|dFdx| и \verb|dFdy| в шейдере
+\pause
+\item Итоговый квадрат глубины вычисляется как
+\begin{equation}
+z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\frac{\partial z}{\partial y}\right)^2\right]
+\end{equation}
+\pause
+\item Убирает \textit{почти} все артефакты shadow acne
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{VSM с линейной фильтрацией}
+\slideimage{vsm.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{VSM с линейной фильтрацией и 7x7 размытием по Гауссу}
+\slideimage{vsm_gauss.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{VSM}
+\begin{itemize}
+\item {\color{green}+} Shadow map можно фильтровать (размывать, mipmaps, etc)
+\item {\color{green}+} Достаточно прост в реализации
+\item {\color{red}—} Требует floating-point буфер глубины или рендеринг в floating-point текстуру
+\item {\color{red}—} Возникает артефакт light bleeding
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Light bleeding}
+\slideimage{vsm_light_bleeding.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Light bleeding}
+\begin{itemize}
+\item Обычно возникает, когда \begin{math}\sigma^2\end{math} оказывается слишком большим (в близкие пиксели попали очень далёкие объекты)
+\pause
+\item Можно исправить, трактуя маленькие значения коэффициента освещённости как нулевые, и преобразовав остальные значения в диапазон \begin{math}[0, 1]\end{math}
+\pause
+\item Конкретные значения нужно подбирать в зависимости от сцены
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Light bleeding}
+\slideimage{light_bleeding_scheme.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Convolution shadow maps (CSM)}
+\begin{itemize}
+\item Записывает в shadow map коэффициенты преобразования Фурье от функции распределения
+\pause
+\item {\color{green}+} Можно фильтровать (размывать, mipmaps, etc)
+\item {\color{red}—} Сложнее в реализации
+\item {\color{red}—} Требует многокомпонентных буферов (часто до 16 компонент на пиксель)
+\item {\color{red}—} Возникают ringing-артефакты (см. \href{https://en.wikipedia.org/wiki/Gibbs_phenomenon}{Gibbs phenomenon})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+\begin{itemize}
+\item \href{https://ogldev.org/www/tutorial42/tutorial42.html}{ogldev.org/www/tutorial42/tutorial42.html}
+\item \href{https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}{learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}
+\item \href{https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}{docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}
+\item \href{https://jankautz.com/publications/esm_gi08.pdf}{Оригинальная статья про ESM}
+\item \href{https://www.intel.com/content/dam/develop/external/us/en/documents/vsm-paper-182631.pdf}{Оригинальная статья про VSM}
+\item \href{https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps}{Улучшения VSM, включая более реалистичные мягкие тени}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени на больших сценах}
+\begin{itemize}
+\item Если сцена очень большая, даже огромных (8k) shadow map текстур с хорошим сглаживанием может не хватить
+\pause
+\item Классически есть два решения:
+\begin{itemize}
+\item Использовать неравномерное соответствие пикселей shadow map и объектов в мире
+\item Использовать более одной shadow map
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Perspective shadow maps (PSM)}
+\begin{itemize}
+\item При генерации shadow map помимо обычного преобразования вершин применяет ещё перспективное преобразование так, чтобы больше пикселей shadow map приходилось на близкие к камере объекты
+\end{itemize}
+\slideimage{psm.jpeg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Perspective shadow maps (PSM)}
+\begin{itemize}
+\item {\color{green}+} Часто решает проблему точности shadow map
+\item {\color{red}—} Сложен в реализации
+\item {\color{red}—} Очень много худших случаев (например, камера смотрит на источник света), в которых алгоритм почти не работает
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Cascaded shadow maps (CSM)}
+\begin{itemize}
+\item Будем использовать несколько shadow maps (cascades): одну -- для ближайших объектов, другую -- для объектов на среднем расстоянии, третью -- для далёких объектов, и т.п.
+\end{itemize}
+\slideimage{csm.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Cascaded shadow maps (CSM)}
+\begin{itemize}
+\item {\color{green}+} Прост в реализации
+\item {\color{green}+} Легко комбинировать с VSM/ESM/etc
+\item {\color{red}—} Большой расход памяти
+\item {\color{red}—} Нужно аккуратно обработать переход между разными каскадами
+\item Самый часто использующийся сегодня алгоритм, поддерживается большинством движков
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: ссылки}
+\begin{itemize}
+\item \href{https://www-sop.inria.fr/reves/Basilic/2002/SD02/PerspectiveShadowMaps.pdf}{Оригинальная статья про PSM}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch14.html}{PSM + улучшения}
+\item \href{https://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf}{Статья про CSM}
+\item \href{https://ogldev.org/www/tutorial49/tutorial49.html}{ogldev.org/www/tutorial49/tutorial49.html}
+\item \href{https://learnopengl.com/Guest-Articles/2021/CSM}{learnopengl.com/Guest-Articles/2021/CSM}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion}
+\begin{itemize}
+\item Ambient освещение светит `отовсюду' -- эвристическая аппроксимация многократных отражений в уравнении рендеринга
+\pause
+\item Это свет, значит от него может быть тень
+\pause
+\item Какие-то части сцены получают больше ambient света, какие-то -- меньше
+\pause
+\item Обычно затеняются углы, углубления, трещины, стыки объектов, и т.п.
+\pause
+\item Очень сильно увеличивает реализм изображения
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion (Crysis, 2007)}
+\slideimage{crysis-ao.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion}
+\slideimage{unity-ao.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion}
+\slideimage{artstation-ao.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion}
+\slideimage{birch-combined.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion: алгоритмы}
+\begin{itemize}
+\item Baking: предподсчитать ambient occlusion для модели, записать её в одноканальную текстуру и использовать в шейдере как множитель при ambient освещении
+\pause
+\begin{itemize}
+\item {\color{green}+} Быстро работает
+\item {\color{red}—} Не учитывает occlusion между разными объектами
+\item {\color{red}—} Не работает для анимированных объектов
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion}
+\slideimage{baked-ao.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Baking}
+\begin{itemize}
+\item Записывание предподсчитанных свойств объектов в текстуры в общем случае называется baking (запеканием)
+\pause
+\item Все 3D-редакторы умеют запекать нормали, ambient occlusion, и многое другое
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient occlusion: алгоритмы}
+\begin{itemize}
+\item Вычислять ambient occlusion на лету, используя какие-нибудь эвристики (алгоритмы SSAO, HBAO, HBAO+, HDAO, VXAO, ...)
+\pause
+\begin{itemize}
+\item {\color{green}+} Работает с любыми сценами
+\item {\color{red}—} Сложнее в реализации
+\item {\color{red}—} Медленее работает
+\item {\color{red}—} Обычно требуют подгона параметров под сцену
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SSAO (Crytek, 2007)}
+\begin{itemize}
+\item Screen-space ambient occlusion (SSAO) -- один из первых real-time алгоритмов для генерации ambient occlusion
+\pause
+\item Термин `screen-space' означает, что алгоритм использует только те данные, которые попадают на экран в процессе рендеринга (т.е. не использует саму исходную геометрию, не использует рендеринг в текстуру с другого ракурса, и т.п.)
+\pause
+\item Идея: вычислим пересечение полусферы некоторого радиуса в освещаемой точке с окружающей геометрией, объём этого пересечения -- аппроксимация ambient occlusion (чем больше вокруг пикселя других объектов, тем слабее он освещён)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SSAO (Crytek, 2007)}
+\slideimage{crysis-ao.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SSAO}
+\begin{itemize}
+\item Вычислять настоящее пересечение -- дорого, вместо этого аппроксимируем его монте-карло интегрированием: возьмём набор случайных точек в полусфере вокруг освещаемой точки и сравним их глубину со значением из Z-буффера
+\pause
+\item Обычно набор случайных точек фиксирован, передаётся в виде небольшой текстуры, где в цветах пикселей записаны координаты точек (относительно исходной точки)
+\pause
+\item Использование везде одного и того же набора точек приводит к \textit{banding}-у
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SSAO banding}
+\begin{itemize}
+\item Banding -- ситуация, когда хорошо видна дискретизация цветов
+\pause
+\item В SSAO источник banding'а -- монте-карло интегрирование: отношение \begin{math}\frac{K}{N}\end{math} (K -- количество видимых точек, N -- всех точек) может принимать небольшой набор (N+1) дискретных значений
+\pause
+\item Можно вращать набор случайных точек вокруг нормали освещаемой точки на угол, случайный для каждого освещаемого пикселя (угол тоже передаётся какой-нибудь текстурой)
+\pause
+\item Приводит к `шуму' в изображении, который менее заметен и который можно размыть
+\pause
+\item Разменять banding на шум -- классический приём real-time графики
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SSAO banding}
+\slideimage{ssao.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SSAO: ссылки}
+\begin{itemize}
+\item \href{https://artis.inrialpes.fr/Membres/Olivier.Hoel/ssao/nVidiaHSAO/ScreenSpaceAO.pdf}{Оригинальная статья про SSAO}
+\item \href{https://learnopengl.com/Advanced-Lighting/SSAO}{learnopengl.com/Advanced-Lighting/SSAO}
+\end{itemize}
+\end{frame}
+
+\end{document}
