@@ -1,0 +1,154 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 9: Shadow mapping 2}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\slideimage{0.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{itemize}
+\item В этой практике мы рисуем front-facing грани в shadow map, а не back-facing грани!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Подбираем shadow bias
+\begin{itemize}
+\item Нужно прибавить в шейдере константу (bias) к значению, прочитанному из shadow map
+\item Слишком большое значение приведёт к заметному peter panning (тень будет съезжать в сторону от модели)
+\item Слишком маленького значения будет недостаточно, чтобы убрать shadow acne
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Вычисляем хорошую матрицу проекции для shadow map
+\begin{itemize}
+\item Нужно найти центр видимой области и оси \begin{math}X, Y, Z\end{math}
+\item Направления осей \begin{math}\hat X, \hat Y, \hat Z\end{math} уже посчитаны, нужно только вычислить их длину
+\item После чтения сцены из файла нужно посчитать её bounding box (min/max по всем кординатам вершин), её центр \begin{math}C\end{math} -- центр видимой области
+\item Пройдясь по всем 8 вершинам \begin{math}V\end{math} bounding box'а сцены, можно посчитать модуль скалярного произведения \begin{math}|(V - C) \cdot \hat X|\end{math}, максимум таких значений -- длина вектора \begin{math}X\end{math}
+\item Аналогично для \begin{math}Y\end{math} и \begin{math}Z\end{math}
+\item Используя \begin{math}X,Y,Z,C\end{math} можно построить матрицу ортографической проекции (см. слайды 4ой лекции)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+\fontsize{10pt}{10pt}
+Variance shadow maps
+\begin{itemize}
+\item Включаем для shadow map линейную фильтрацию
+\item Устанавливаем текстуре shadow map internal format в \verb|GL_RG32F| (format и type не принипиальны, можно \verb|GL_RGBA| и \verb|GL_FLOAT|)
+\item Добавляем shadow map к фреймбуферу как \verb|GL_COLOR_ATTACHMENT0| вместо \verb|GL_DEPTH_ATTACHMENT|
+\item Создаём renderbuffer (и выделяем ему память через \verb|glRenderbufferStorage|), который будет использоваться как буфер глубины при рисовании shadow map, и добавляем его как \verb|GL_DEPTH_ATTACHMENT| фреймбуфера
+\item Во фрагментном шейдере, рисующем shadow map, добавляем out-переменную и пишем в неё \verb|vec4(z, z * z, 0.0, 0.0)| (\verb|z| можно достать из \verb|gl_FragCoord|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+\fontsize{10pt}{10pt}
+Variance shadow maps
+\begin{itemize}
+\item В основном фрагментном шейдере читаем данные из shadow map и используем неравенство Чебышёва для вычисления освещённости:
+\begin{verbatim}
+vec2 data = texture(shadow_map, shadow_pos.xy).rg;
+float mu = data.r;
+float sigma = data.g - mu * mu;
+float z = shadow_pos.z;
+float factor = (z < mu) ? 1.0
+    : sigma / (sigma + (z - mu) * (z - mu));
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{4.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+Исправляем артефакты
+\begin{itemize}
+\item Добавляем наклон поверхности к среднему значению квадрата глубины при генерации shadow map:
+\begin{itemize}
+\item Через \verb|dFdx(z)| и \verb|dFdy(z)| можно получить градиент глубины по X и Y
+\item К квадрату глубины добавляем \begin{math}\frac{1}{4}\left[\left(\frac{\partial Z}{\partial X}\right)^2 + \left(\frac{\partial Z}{\partial Y}\right)^2\right]\end{math}
+\end{itemize}
+\item Добавляем shadow bias (вычитаем константу из значения \verb|z|, использующегося для вычисления освещённости)
+\item Значение, получающееся из формулы неравенства Чебышёва, преобразуем: диапазон \begin{math}[0, \delta]\end{math} переходит в \begin{math}0\end{math}, а диапазон \begin{math}[\delta, 1]\end{math} переходит в \begin{math}[0, 1]\end{math} (\begin{math}\delta\end{math} -- некое фиксированное значение, например, \verb|0.125|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{5.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+Размываем shadow map
+\begin{itemize}
+\item Вместо чтения одного пикселя из shadow map, читаем набор значений из соседних пикселей и усредняем по Гауссу
+\item Полученный двумерный вектор используем для вычисления освещённости через неравенство Чебышёва
+\item Размываем не результат вычисления освещённости, а сами данные из shadow map!
+\item {\color{red}N.B.}: по-хорошему это размытие нужно делать отдельными проходами с отдельными шейдерами и отдельным размытием по X и Y (см. \textit{separable Gaussian blur})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{6.png}
+\end{frame}
+
+\end{document}
