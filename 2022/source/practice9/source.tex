@@ -72,7 +72,8 @@
 \item После чтения сцены из файла нужно посчитать её bounding box (min/max по всем кординатам вершин), её центр \begin{math}C\end{math} -- центр видимой области
 \item Пройдясь по всем 8 вершинам \begin{math}V\end{math} bounding box'а сцены, можно посчитать модуль скалярного произведения \begin{math}|(V - C) \cdot \hat X|\end{math}, максимум таких значений -- длина вектора \begin{math}X\end{math}
 \item Аналогично для \begin{math}Y\end{math} и \begin{math}Z\end{math}
-\item Используя \begin{math}X,Y,Z,C\end{math} можно построить матрицу ортографической проекции (см. слайды 4ой лекции)
+\item Используя \begin{math}X,Y,Z,C\end{math} можно построить матрицу \verb|transform| ортографической проекции (см. слайды 4ой лекции)
+\item N.B.: старый код вычисления матрицы (цикл \verb|for| + параметр \verb|shadow_scale|) нужно убрать
 \end{itemize}
 \end{frame}
 
@@ -88,8 +89,10 @@ Variance shadow maps
 \item Включаем для shadow map линейную фильтрацию
 \item Устанавливаем текстуре shadow map internal format в \verb|GL_RG32F| (format и type не принипиальны, можно \verb|GL_RGBA| и \verb|GL_FLOAT|)
 \item Добавляем shadow map к фреймбуферу как \verb|GL_COLOR_ATTACHMENT0| вместо \verb|GL_DEPTH_ATTACHMENT|
-\item Создаём renderbuffer (и выделяем ему память через \verb|glRenderbufferStorage|), который будет использоваться как буфер глубины при рисовании shadow map, и добавляем его как \verb|GL_DEPTH_ATTACHMENT| фреймбуфера
+\item Создаём renderbuffer (и выделяем ему память через \verb|glRenderbufferStorage|, тип пикселя -- \verb|GL_DEPTH_COMPONENT24|), который будет использоваться как буфер глубины при рисовании shadow map, и добавляем его как \verb|GL_DEPTH_ATTACHMENT| фреймбуфера
 \item Во фрагментном шейдере, рисующем shadow map, добавляем out-переменную и пишем в неё \verb|vec4(z, z * z, 0.0, 0.0)| (\verb|z| можно достать из \verb|gl_FragCoord|)
+\item Во фрагментном шейдере дебажного прямоугольника читаем все компоненты текстуры, например \verb|out_color = texture(shadow_map, ...)|
+\item Перед очисткой (\verb|glClear|) фреймбуфера для генерации shadow map нужно поставить правильный цвет очистки: \verb|glClearColor(1.f, 1.f, 0.f, 0.f)|
 \end{itemize}
 \end{frame}
 
@@ -137,7 +140,7 @@ float factor = (z < mu) ? 1.0
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Задание 6}
+\frametitle{Задание 6*}
 Размываем shadow map
 \begin{itemize}
 \item Вместо чтения одного пикселя из shadow map, читаем набор значений из соседних пикселей и усредняем по Гауссу
