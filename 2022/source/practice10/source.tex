@@ -109,7 +109,7 @@
 \item Вычисляем текстурную координату для environment map:
 \begin{verbatim}
 x = atan(dir.z, dir.x) / PI * 0.5 + 0.5;
-y = -atan(dir.y, length(dir.xz)) / PI * 0.5 + 0.5;
+y = -atan(dir.y, length(dir.xz)) / PI + 0.5;
 \end{verbatim}
 \item В качестве значения итогого цвета берём среднее между старым цветом (\verb|albedo * lightness|) и значением из environment map
 \end{itemize}
