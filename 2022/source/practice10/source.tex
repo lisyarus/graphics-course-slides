@@ -116,6 +116,14 @@ y = -atan(dir.y, length(dir.xz)) / PI * 0.5 + 0.5;
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Задание 5}
+Добавляем reflection mapping
+\begin{itemize}
+\item N.B.: если отражения слишком сильно искажаются картой нормалей, можно слегка подвинуть нормаль: \verb|real_normal = normalize(mix(normal, real_normal, 0.5))|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \slideimage{5.png}
 \end{frame}
 
