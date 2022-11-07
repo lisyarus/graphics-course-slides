@@ -412,7 +412,7 @@
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Несколько источников света}
+\frametitle{Как обрабатывать много источников света?}
 \begin{itemize}
 \item Сколько источников света можно так обработать?
 \pause
@@ -421,6 +421,18 @@
 \item В варианте 3 \verb|vec3| на источник (position, color, attenuation) -- около 113 источников света
 \pause
 \item Чем больше источников, тем больше вычислений в шейдере, тем больше нагрузка на GPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как обрабатывать много источников света?}
+\begin{itemize}
+\item Вместо массивов uniform-переменных можно использовать:
+\begin{itemize}
+\item Uniform buffer objects (UBO) -- обычно 16K
+\item Buffer textures -- от 64K
+\item Shader storage buffer objects (SSBO, OpenGL 4.3) -- от 128M
+\end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -533,6 +545,35 @@
 \item {\color{green}+} Позволяет рисовать прозрачные освещённые объекты
 \item {\color{red}—} Вычисляет освещение и для объектов, скрытых другими объектами
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени от многих источников света}
+\begin{itemize}
+\item Для каждого источника придётся рисовать shadow map
+\pause
+\item Как хранить много shadow map?
+\pause
+\item Array texture
+\begin{itemize}
+\item {\color{green}+} Удобный доступ (слой = номер источника)
+\item {\color{red}—} Все shadow map будут одинакового размера \begin{math}\Rightarrow\end{math} нельзя сэкономить на тенях далёких источников
+\end{itemize}
+\pause
+\item Shadow atlas: использовать одну большую текстуру, в кусках которой хранятся shadow maps всех источников
+\begin{itemize}
+\item {\color{green}+} Можно варьировать размер shadow map для каждого источника
+\item {\color{red}—} Сложнее доступ к shadow map
+\item {\color{red}—} Нужно аккуратно работать с текстурными координатами, чтобы не залезть в чужой shadow map
+\item {\color{red}—} Нужен алгоритм упаковки многих текстур в одну
+\item Самый распространённый способ
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow atlas}
+\slideimage{shadow_atlas.png}
 \end{frame}
 
 \begin{frame}[fragile]
