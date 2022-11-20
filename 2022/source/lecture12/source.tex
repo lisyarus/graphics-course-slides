@@ -1,0 +1,707 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 12: Anti-aliasing, multisampling, volume rendering equation, scattering, volume slicing, raymarching}
+\date{2022}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+\begin{frame}[fragile]
+\frametitle{Aliasing}
+\begin{itemize}
+\item Термин из обработки сигналов: артефакт, возникающий при восстановлении сигнала по недостаточно большому количеству измерений
+\pause
+\item В графике: `лесенка' из пикселей на границе объекта
+\end{itemize}
+\slideimage{aliasing.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Anti-aliasing: методы}
+\begin{itemize}
+\item Вручную сглаживать градиентом (2D, карты, UI)
+\pause
+\item Supersampling (SSAA): рисовать увеличенную (x4) картинку в текстуру, затем уменьшать размер до требуемого, усредняя значения пикселей
+\begin{itemize}
+\item Работает приемлемо, но очень дорого
+\end{itemize}
+\pause
+\item Multisampling (MSAA)
+\pause
+\item Пост-обработка (FXAA, SMAA, TAA)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Multisampling}
+\begin{itemize}
+\item Алиасинг обычно возникает на границе треугольников (проблемы внутри решаются mipmap'ами текстур)
+\pause
+\item Идея:
+\begin{itemize}
+\item Выберем набор случайных точек (семплов) внутри пикселя (обычно от 2 до 16), будем хранить в каждом пикселе цвет каждой точки
+\item Запустим фрагментный шейдер один раз на пиксель
+\item Запишем результат в те точки, которые покрывает треугольник
+\item При выводе на экран усредним значения в точках
+\end{itemize}
+\end{itemize}
+\slideimage{multisampling.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Multisampling в OpenGL}
+\begin{itemize}
+\item Тестура с \verb|target = GL_TEXTURE_2D_MULTISAMPLE| (данные инициализируются через \verb|glTexImage2DMultisample|, позволяет задать количество семплов)
+\begin{itemize}
+\item Нет mipmap'ов и фильтрации, читать из шейдера можно только через \verb|glTexelFetch| (позволяет прочитать конкретный семпл)
+\end{itemize}
+\pause
+\item Renderbufer: \verb|glRenderbufferStorageMultisample|
+\pause
+\item Рисование во фреймбуфер с такими текстурами/renderbuffer'ами будет автоматически делать multisampling
+\pause
+\item Вывести multisampled текстуру/renderbuffer на экран (multisample resolve) можно с помощью \verb|glBlitFramebuffer|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{FXAA, SMAA, TAA}
+\begin{itemize}
+\item FXAA (Fast approXimate Anti-Aliasing): специальный шейдер пост-обработки, на основе эвристик вычисляющий места, в которых нужно сгладить изображение
+\begin{itemize}
+\item Недорогой алгоритм, приемлемо работает
+\end{itemize}
+\pause
+\item SMAA (Subpixel Morphological Anti-Aliasing): как FXAA, но больше эвристик
+\begin{itemize}
+\item Дороже чем FXAA, результат лучше
+\end{itemize}
+\pause
+\item TAA (Temporal Anti-Aliasing): усредняем значение пикселя со значением этого же пикселя на предыдущем кадре с учётом изменившегося положения камеры (temporal reprojection)
+\begin{itemize}
+\item Нужны эвристики чтобы отличить тот же пиксель с предыдущего кадра от случайно туда попавшего пикселя
+\item Нужно знать скорость движения пикселей для движущихся объектов, чтобы правильно работал temporal reprojection
+\item Приводит к лёгкому размытию при движении (из-за чего его часто ругают)
+\item Обычно используется в крупных движках
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Anti-aliasing: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Multisampling}{\nolinkurl{khronos.org/opengl/wiki/Multisampling}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Anti-Aliasing}}
+\item \href{https://www.digitaltrends.com/computing/what-is-anti-aliasing}{Статья про разные методы антиалиасинга}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering}
+\begin{itemize}
+\item Рендеринг объектов, заданных распределением свойств в пространстве:
+\pause
+\begin{itemize}
+\item Цвет
+\item Прозрачность
+\item Параметры рассеивания
+\end{itemize}
+\pause
+\item Медицина: КТ-сканы, МРТ-сканы
+\item Физика: атмосфера, космические объекты (туманности), жидкости и газы
+\item Аппроксимации, основанные на теории volume рендеринга: дым, туман, облака, небо, subsurface scattering
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume-rendering черепа}
+\slideimage{volume-skull.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Небо (Nishita model)}
+\slideimage{sky.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Дым}
+\slideimage{smoke.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Свет, попавший в некую трёхмерную среду, может:
+\pause
+\begin{itemize}
+\item Поглотиться (absorption)
+\pause
+\item Рассеяться (scattering), т.е. изменить направление
+\pause
+\item Пройти насквозь
+\end{itemize}
+\pause
+\item Кроме того, среда может сама излучать свет (emission)
+\pause
+\item Absorption + scattering = extinsion
+\pause
+\item Распространение света в такой среде описывается интегро-дифференциальным уравнением для точки (как меняется свет, идущий через точку в таком-то направлении) либо интегральным уравнением для отрезка (как меняется свет, идущий из одной точки в другую точку)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: теория}
+\begin{itemize}
+\item Коэффициенты поглощения \begin{math}k_a\end{math}, рассеяния \begin{math}k_s\end{math} и излучения \begin{math}k_e\end{math} могут зависеть от
+\pause
+\begin{itemize}
+\item Точки пространства
+\pause
+\item Направления движения света
+\pause
+\item Длины волны
+\pause
+\item Угла (рассеяние)
+\end{itemize}
+\pause
+\item \begin{math}k_a\end{math} и \begin{math}k_s\end{math} обычно задаются в единицах м\textsuperscript{-1}: отношение количества поглощённого/рассеянного света к длине пройденного пути (для бесконечно малых отрезков)
+\pause
+\item Аналогично, \begin{math}k_e\end{math} задаётся в единицах люкс\begin{math}\cdot\end{math}м\textsuperscript{-1}
+\pause
+\begin{itemize}
+\item N.B.: часто как \begin{math}k_e = k_a + k_s\end{math} обозначают коэффициент исчезновения (extinsion)
+\end{itemize}
+\pause
+\item Эти параметры могут также задаваться на единицу плотности вещества (тогда при использовании их надо домножить на плотность)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: absorption}
+\begin{itemize}
+\item Пусть есть среда с постоянным коэффициентом поглощения \begin{math}k_a\end{math}
+\pause
+\begin{itemize}
+\item Вдоль бесконечно малого расстояния \begin{math}\Delta x\end{math} поглотится \begin{math}k_a \Delta x\end{math} света
+\end{itemize}
+\pause
+\item Как много света \begin{math}I(p,\omega)\end{math}, выходящего из некой точки \begin{math}p\end{math} в направлении \begin{math}\omega\end{math}, поглотится на отрезке длины \begin{math}L\end{math}, т.е. на отрезке \begin{math}[p, p + L\omega]\end{math}?
+\pause
+\item Разобьём отрезок на \begin{math}N\end{math} частей равной длины \begin{math}\Delta x = \frac{L}{N}\end{math}
+\pause
+\item На первом отрезке поглотится \begin{math}k_a \frac{L}{N}\end{math} света, т.е. останется \begin{math}1 - k_a\frac{L}{N}\end{math}. На втором поглотится \begin{math}k_a \frac{L}{N}\end{math} от того, что осталось после первого отрезка, и всего останется \begin{math}\left(1 - k_a\frac{L}{N}\right)^2\end{math}
+\pause
+\item Всего после \begin{math}N\end{math} отрезков останется \begin{math}\left(1 - k_a\frac{L}{N}\right)^N\end{math} света
+\pause
+\item В пределе: \begin{math}\lim\limits_{N \rightarrow \infty} \left(1 - k_a\frac{L}{N}\right)^N = \exp(- k_a L)\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: absorption}
+\begin{itemize}
+\item В пределе: \begin{math}I(p + L\omega, \omega) = \exp(- k_a L) I(p, \omega)\end{math}
+\pause
+\begin{itemize}
+\item При \begin{math}L, k_a \in [0, \infty)\end{math} имеем \begin{math}\exp(-k_a L) \in (0, 1]\end{math}
+\item Если \begin{math}L = 0\end{math}, то весь свет останется (ничего не поглотится)
+\item Если \begin{math}L \rightarrow \infty\end{math} и \begin{math}k_a > 0\end{math}, то весь свет поглотится
+\end{itemize}
+\pause
+\item Если \begin{math}k_a\end{math} не постоянна, получим \begin{math}\exp\left(-\int\limits_0^L k_a(p+t\omega)dt\right)\end{math}
+\pause
+\item К тому же результату можно прийти, написав диффенерциальное уравнение: \begin{math}\frac{d}{dt}I(p+t\omega,\omega) = -k_a(p+t\omega) I(p+t\omega,\omega)\end{math}
+\pause
+\item Величина \begin{math}\int\limits_0^L k_a(p+t\omega)dt\end{math} называется \textit{оптической глубиной (optical depth)}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: emission}
+\begin{itemize}
+\item Пусть есть среда с постоянным коэффициентом излучения \begin{math}k_e\end{math}, т.е. для бесконечно малого расстояния \begin{math}\Delta x\end{math} излучится \begin{math}k_e \Delta x\end{math} света
+\pause
+\item Как много света излучится на отрезке длины \begin{math}[p, p + L\omega]\end{math} в направлении \begin{math}\omega\end{math}?
+\pause
+\item \begin{math}I(p+L\omega,\omega) = I(p,\omega) + k_e L\end{math}
+\pause
+\item Если \begin{math}k_e\end{math} не постоянна: \begin{math}I(p+L\omega,\omega) = I(p,\omega) + \int\limits_0^L k_e(p+t\omega)dt\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: absorption + emission}
+\begin{itemize}
+\item Пусть есть среда с постоянным коэффициентом поглощения \begin{math}k_a\end{math} и излучения \begin{math}k_e\end{math}, т.е. для бесконечно малого расстояния \begin{math}\Delta x\end{math} излучится \begin{math}k_e \Delta x\end{math} и поглотится \begin{math}k_a \Delta x\end{math} света
+\pause
+\item Как много света излучится на отрезке длины \begin{math}L\end{math}?
+\pause
+\item Разобьём отрезок на \begin{math}N\end{math} частей равной длины \begin{math}\Delta x = \frac{L}{N}\end{math}
+\pause
+\item На первом отрезке излучится \begin{math}k_e \Delta x\end{math} света. На втором отрезке излучится \begin{math}k_e \Delta x\end{math} света, плюс \begin{math}(1 - k_a \Delta x) k_e \Delta x\end{math} от первого отрезка, в сумме \begin{math}\left(1 + (1 - k_a \Delta x)\right) k_e \Delta x\end{math}
+\pause
+\item На третьем отрезке в сумме \begin{math}\left(1 + (1 - k_a \Delta x) + (1 - k_a \Delta x)^2\right) k_e \Delta x\end{math}
+\pause
+\item На \begin{math}N\end{math} отрезках: \begin{math}\frac{1 - (1 - k_a \Delta x)^N}{k_a \Delta x} k_e \Delta x = \frac{1 - (1 - k_a \Delta x)^N}{k_a} k_e\end{math}
+\pause
+\item В пределе: \begin{math}\lim\limits_{N \rightarrow \infty} \frac{1 - (1 - k_a \Delta x)^N}{k_a} k_e = \frac{1 - \exp(-k_a L)}{k_a} k_e\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: absorption + emission}
+\begin{itemize}
+\item \begin{math}I(p+L\omega,\omega) = \frac{1 - \exp(-k_a L)}{k_a} k_e\end{math}
+\pause
+\item Сингулярность при \begin{math}k_a = 0\end{math}, в пределе \begin{math}k_a \rightarrow 0\end{math} получим \begin{math}L k_e\end{math}
+\pause
+\item В пределе при \begin{math}L \rightarrow \infty\end{math} получим \begin{math}\frac{k_e}{k_a}\end{math}
+\pause
+\item Если \begin{math}k_a\end{math} и \begin{math}k_e\end{math} не постоянны, получим \begin{math}I(p+L\omega,\omega) = \int\limits_0^L k_e(p+t\omega) \exp\left( -\int\limits_t^L k_a(p+s\omega)ds \right)dt\end{math}
+\pause
+\item Соответствующее диффенерциальное уравнение: \begin{math}\frac{d}{dt}I(p+t\omega,\omega) = k_e(p+t\omega) - k_a(p+t\omega) I(p+t\omega,\omega)\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: absorption + emission}
+\begin{itemize}
+\item Если \begin{math}I(p,\omega) \neq 0\end{math}, то \begin{math}I(p+L\omega,\omega) = \exp(-k_a L)I(p,\omega) + (1 - \exp(-k_a L))\frac{k_e}{k_a}\end{math}
+\pause
+\item Если коэффициенты не постоянны, то \begin{multline}I(p+L\omega,\omega) = I(p,\omega)\exp\left(-\int\limits_0^L k_a(p+t\omega)\right) +\\
++ \int\limits_0^L k_e(p+t\omega) \exp\left( -\int\limits_t^L k_a(p+s\omega)ds \right)dt\end{multline}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: absorption + emission}
+\begin{itemize}
+\item \begin{math}\exp(-k_a L)I(p,\omega) + (1 - \exp(-k_a L))\frac{k_e}{k_a}\end{math} можно интерпретировать как линейную интерполяцию между \begin{math}I(p,\omega)\end{math} и \begin{math}\frac{k_e}{k_a}\end{math} с коэффициентом \begin{math}1 - \exp(-k_a L)\end{math}
+\pause
+\item Формализует полупрозрачность:
+\begin{itemize}
+\item \begin{math}I(p,\omega)\end{math} -- свет, приходящий сзади объекта в сторону камеры
+\item \begin{math}k_e / k_a\end{math} -- цвет (излучение) самого объекта
+\item \begin{math}\exp(-k_a L)\end{math} -- непрозрачность (opacity)
+\item \begin{math}1 - \exp(-k_a L)\end{math} -- прозрачность (transparency)
+\end{itemize}
+\pause
+\item Формализует туман:
+\begin{itemize}
+\item \begin{math}k_e / k_a\end{math} -- цвет тумана
+\item \begin{math}k_a\end{math} -- коэффициент `густоты' тумана (чем больше, тем сильнее туман)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Туман: код шейдера}
+\begin{verbatim}
+vec3 color = ...;
+vec3 fog_color = ...;
+float fog_absorption = ...;
+
+float camera_distance = length(camera_position - position);
+float optical_depth = camera_distance * fog_absorption;
+float fog_factor = 1 - exp(-optical_depth);
+color = mix(color, fog_color, fog_factor);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: рассеяние (scattering)}
+\begin{itemize}
+\item Любая среда не только поглощает и излучает свет, но и \textit{рассеивает} его, т.е. меняет направление его движения
+\pause
+\item Рассеяние описывается фазовой функцией (phase function): \begin{math}f(p, \theta)\end{math} -- количество света, рассеянное на угол \begin{math}\theta\end{math} в точке \begin{math}p\end{math}
+\pause
+\item Аналог BRDF для volume rendering'а
+\pause
+\item Вид функции зависит от конкретных составляющих среды, часто выводится из решения уравнений Максвелла
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рассеяние Релея (Rayleigh)}
+\begin{itemize}
+\item Рассеяние света частицами намного меньшими длины волны (например, молекулами газов N\textsubscript{2} и O\textsubscript{2})
+\pause
+\item \begin{math}f \cong \frac{1+\cos(\theta)^2}{\lambda^4}\end{math}
+\pause
+\item Больше рассеяния вперёд и назад, чем в стороны
+\pause
+\item Короткие волны (e.g. синие) рассеиваются намного больше длинных (e.g. красных)
+\pause
+\item Главный эффект, ответственный за цвет неба:
+\pause
+\begin{itemize}
+\item Свет, проходящий сквозь атмосферу, рассеивается в основном в синем диапазоне, поэтому небо синее
+\pause
+\item Свет, идущий от солнца на закате/восходе, дольше идёт через атмосферу и теряет весь синий свет и часть зелёного, поэтому выглядит оранжевым или красным
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рассеяние Релея: phase function}
+\slideimage{rayleigh-phase.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рассеяние Релея: цвет неба}
+\slideimage{sky.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рассеяние Ми (Mie)}
+\begin{itemize}
+\item Рассеяние света частицами сравнимыми по размеру с длиной волны (например, каплями воды)
+\pause
+\item Точная формула -- разложение в ряд по сферическим гармоникам
+\pause
+\item Обычно для рендеринга используются аппроксимации
+\pause
+\item Влияет на цвет неба (частицы воды, аэрозоли) и облаков
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Henyey-Greenstein phase function (1941)}
+\begin{math}f(\theta) = \frac{1}{4\pi}\frac{1-g^2}{\left(1+g^2 - 2g\cos\theta\right)^(3/2)}\end{math}
+\begin{itemize}
+\item g -- настраиваемый параметр (средний косинус угла рассеяния)
+\item Часто используется как аппроксимация вместо более сложных функций
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: рассеяние}
+\begin{itemize}
+\item Значительно усложняет уравнения: свет, пришедший из любого направления, может рассеяться в сторону камеры в любой точке
+\pause
+\item При рассчёте рассеяния различают
+\begin{itemize}
+\item Zero scattering: рассеяние не учитывается
+\item Single scattering: учитывается свет, пришедший из источника света и рассеявшийся сразу в направлении камеры (самое часто используемое приближение)
+\item Multiple scattering: свет, пришедший из источника света, может рассеяться много раз и в итоге прийти в камеру
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: применения}
+\begin{itemize}
+\item Для визуализации трёхмерных данных (МРТ-сканы и т.п.) обычно игнорируют рассеяние, и считают среду полупрозрачной и излучающей свет
+\pause
+\begin{itemize}
+\item Вместо \begin{math}k_a\end{math} часто хранят некую "непрозрачность" (как значение альфа-канала), не имеющую физического смысла
+\pause
+\item Цвет излучаемого света может храниться в текстуре, а может зависеть от значения альфа-канала (transfer function)
+\end{itemize}
+\pause
+\item Для визуализации неба, облаков и т.д. рассеяние -- обязательная составляющая, коэффициенты часто берут из реальных данных
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: представление данных}
+\begin{itemize}
+\item 3D текстура
+\pause
+\item Явная функция
+\pause
+\item Интерполяция по сетке из кубов/тетраэдров/etc
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: методы}
+\begin{itemize}
+\item Slicing
+\item Splatting
+\item Raymarching
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: slicing}
+\begin{itemize}
+\item Объект "разрезается" набором равноудалённых плоскостей, перпендикулярных направлению на камеру (чем больше, тем дороже и точнее)
+\pause
+\item Каждый слой (slice) рисуется как текстурированный многоугольник, читая данные из 3D текстуры или из явной фукнции, задающей объект
+\pause
+\item Слои накладываются друг на друга с blending'ом
+\pause
+\item Нужно отсортировать слои от дальнего к ближнему (back-to-front) или наоборот (front-to-back), об этого будет зависеть режим blending'а
+\pause
+\item В значении альфа-канала нужно учесть расстояние между слоями
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: slicing}
+\slideimage{slicing.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: slicing}
+\begin{itemize}
+\item Нужно обновлять геометрию slice'ов при каждом изменении камеры\pause (это проще, чем звучит)
+\pause
+\item Использует встроенный механизм (blending) \begin{math}\Rightarrow\end{math} работает достаточно быстро
+\pause
+\item Тяжело учесть освещение/рассеяние
+\pause
+\item Часто применяется в медицине
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: splatting}
+\begin{itemize}
+\item Объект рисуется как набор частиц (splats) внутри объёма объекта
+\pause
+\item Частицы рисуются как прямоугольники, перпендикулярные направлению на камеру (billboards), с gaussian-текстурой и значениями цвета/прозрачности, взятыми из центра частицы
+\pause
+\item Так же, как в slicing'е, нужно отсортировать частицы, правильно настроить blending и значение альфа-канала
+\pause
+\item Не нужно менять геометрию каждый кадр, но нужно сортировать частицы
+\pause
+\item Сложнее добиться красивой картинки при малом числе частиц
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: splatting}
+\slideimage{splatting-scheme.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Ray*}
+Есть несколько алгоритмов, название которых звучит как ray-<глагол>:
+\pause
+\begin{itemize}
+\item Raycasting -- алгоритм, использовавшийся в старых 3D играх: находится пересечение луча из камеры в конкретном направлении в плоскости XZ со стенами сцены; по расстоянию до пересечения можно вычислить, как рисовать целый столбец пикселей с одинаковой экранной X-координатой
+\pause
+\item Raytracing -- алгоритм, использующийся для фотореалистичного рендеринга: находится пересечение луча из камеры с ближайшим объектом сцены (обычно используюя вспомогательные структуры данных для ускорения), после чего из точки пересечения рекурсивно бросаются новые лучи
+\pause
+\item Raymarching -- алгоритм, использующийся для volume рендеринга, screen-space отражений, SDF, и подобного: вдоль луча из камеры выбирается дискретный набор точек (часто - с фиксированным шагом), в этих точках вычисляются значения некоторой функции и (в случае volume рендеринга) по этим точкам вычисляется искомый интеграл
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raycasting}
+\slideimage{raycasting.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\begin{itemize}
+\item Рисуется некая грубая оболочка объекта, часто -- AABB (axis-aligned bounding box), на неё удобно накладывать 3D-текстуру
+\begin{itemize}
+\item Можно с \textbf{front-face culling}, чтобы алгоритм работал даже в случае, если камера находится внутри объекта
+\end{itemize}
+\pause
+\item Во фрагментный шейдер передаются координаты точки объекта; по ней вычисляется луч из камеры в точку объекта: \begin{math}c + d\cdot t\end{math}, где \verb|c| -- позиция камеры, \verb|d| -- единичный вектор направления
+\pause
+\item Вычисляется пересечение луча с AABB -- отрезок значений \begin{math}[t_{min}, t_{max}]\end{math}, для которых соответствующие точки луча лежат внутри AABB
+\begin{itemize}
+\item Если \begin{math}t_{min} < 0\end{math}, нужно сделать его равным 0, иначе в рендеринг попадут точки, находящиеся сзади камеры
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\begin{itemize}
+\item Выбирается количество частей N разбиения отрезка \begin{math}[t_{min}, t_{max}]\end{math} (фиксированное, или в зависимости от длины отрезка)
+\pause
+\item Вдоль отрезка вычисляется аппроксимация интеграла \begin{math}\int\limits_0^L \exp\left(-\int\limits_x^L k_a(s) ds\right) k_e(t) dt\end{math} в виде \begin{math}\sum\limits_{i=0}^{N-1} \exp\left(-\sum\limits_{j=i}^{N-1} k_a(t_j) \Delta t\right) k_e(t_i) \Delta t\end{math}
+\pause
+\item В качестве \begin{math}t_i\end{math} лучше брать центр i-ого отрезка
+\pause
+\item Важно следить за направлением: интеграл выводился для луча идущего \textbf{в направлении камеры}, а интегрирование мы можем делать как \textbf{в направлении камеры} (back-to-front, от \begin{math}t_{max}\end{math} к \begin{math}t_{min}\end{math}), так и \textbf{в направлении от камеры} (front-to-back, от \begin{math}t_{min}\end{math} к \begin{math}t_{max}\end{math})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\slideimage{raymarching-1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\begin{itemize}
+\item Для учёта рассеяния/освещения можно посылать дополнительные лучи, обрабатываемые тем же алгоритмом
+\pause
+\item Например, послать луч в сторону источника света, вычислить вдоль него optical depth, и по ней получить значение освещённости в точке как количество света, которое не поглотилось и не рассеялось (в GLSL это будет цикл внутри внешнего цикла)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: raymarching}
+\slideimage{raymarching-2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raymarching (только absorption): алгоритм}
+\begin{verbatim}
+dt = (t_max - t_min) / N
+opt_depth = 0
+for i in 0..N-1:
+    t = t_min + (i + 0.5) * dt
+    p = start + t * direction
+    opt_depth += k_a(p) * dt
+abs_factor = exp(-opt_depth)
+color = back_color * abs_factor
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raymarching (только absorption): альтернативный алгоритм}
+\begin{verbatim}
+dt = (t_max - t_min) / N
+color = back_color
+for i in 0..N-1:
+    t = t_min + (i + 0.5) * dt
+    p = start + t * direction
+    color *= exp(- k_a(p) * dt)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raymarching (absorption+emission): front-to-back алгоритм}
+\begin{verbatim}
+dt = (t_max - t_min) / N
+opt_depth = 0
+color = back_color
+for i in 0..N-1:
+    t = t_min + (i + 0.5) * dt
+    p = start + t * direction
+    opt_depth += k_a(p) * dt
+    color += exp(-opt_depth) * k_e(p) * dt
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raymarching (absorption+emission): альтернативный front-to-back алгоритм}
+\begin{verbatim}
+dt = (t_max - t_min) / N
+color = back_color
+for i in 0..N-1:
+    t = t_min + (i + 0.5) * dt
+    p = start + t * direction
+    color += k_e(p) * dt
+    color *= exp(- k_a(p) * dt)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raymarching (+single scattering в направлении света): front-to-back алгоритм}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+dt = (t_max - t_min) / N
+color = back_color
+for i in 0..N-1:
+    t = t_min + (i + 0.5) * dt
+    p = start + t * direction
+
+    light_opt_depth = 0
+    // [s_min .. s_max] - пересечение луча
+    // в направлении света с AABB объекта
+    ds = (s_max - s_min) / M
+    for j in 0..M-1:
+         s = s_min + (j + 0.5) * ds
+         q = p + s * light_direction
+         light_opt_depth += (k_a(q) + k_s(q)) * ds
+         
+    color += light_color * exp(-light_opt_depth)
+        * k_s(p) * dt
+        * phase_f(p, light_direction, direction)
+
+    color += k_e(p) * dt
+    color *= exp(- (k_a(p) + k_s(p)) * dt)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: оптимизации}
+\begin{itemize}
+\item Для хорошего качества нужно довольно много шагов вдоль луча (десятки, сотни)
+\pause
+\item С учётом внутреннего цикла для рассеяния/освещённости получается ещё на порядок больше
+\pause
+\item Работает очень медленно
+\pause
+\item Типичные оптимизации:
+\begin{itemize}
+\item Использовать mipmap'ы 3D текстуры для хранения максимальной (вместо усреднённой) полупрозрачности; модифицировать алгоритм, чтобы он пропускал большие полностью прозрачные куски
+\pause
+\item Заканчивать алгоритм при front-to-back проходе, когда текущий вычисленный цвет уже имеет непрозрачность выше некого порогового значения (напр. 0.99)
+\pause
+\item Рисовать объект в меньшем разрешении
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Volume rendering: ссылки}
+\begin{itemize}
+\item \href{https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-39-volume-rendering-techniques}{GPU Gems, Chapter 39. Volume Rendering Techniques}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-16-accurate-atmospheric-scattering}{GPU Gems 2, Chapter 16. Accurate Atmospheric Scattering}
+\item \href{https://www.codeproject.com/Articles/352270/Getting-Started-with-Volume-Rendering-using-OpenGL}{Туториал по slicing (старый OpenGL!)}
+\item \href{https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/simulating-sky/simulating-colors-of-the-sky}{Подробнее про цвет неба}
+\item \href{https://sebh.github.io/publications/egsr2020.pdf}{A Scalable and Production Ready Sky and Atmosphere Rendering Technique (статья 2020 года)}
+\item \href{https://www.youtube.com/watch?v=DxfEbulyFcY}{Видео-туториал про рендеринг атмосферы}
+\end{itemize}
+\end{frame}
+
+\end{document}
