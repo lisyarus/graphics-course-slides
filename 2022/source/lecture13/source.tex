@@ -1,0 +1,678 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 13: Анимации, easing functions, keyframes, bitmap-анимации, кватернионы, иерархии объектов, скелетная анимация, форматы 3D моделей}
+\date{2022}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Анимация}
+\begin{itemize}
+\item Анимация (в общем смысле) -- что угодно, меняющееся со временем
+\pause
+\begin{itemize}
+\item Двигающийся объект
+\item Анимированный элемент интерфейса
+\item Анимированная модель
+\item Движущаяся камера
+\item etc.
+\end{itemize}
+\pause
+\item Сводится к вопросу о том, что и как мы меняем в зависимости от времени
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация}
+\begin{itemize}
+\item Зачем нужна анимация?
+\pause
+\begin{itemize}
+\item Часто в ней заключается суть (напр. 3D шутер от первого лица)
+\pause
+\item Анимация выглядит приятнее и понятнее, чем дискретное изменение состояния
+\end{itemize}  
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация: общие идеи}
+\begin{itemize}
+\item Вычисление анимаций лучше привязывать к реальному времени, а не к номеру кадра (напр. \verb|state += speed * dt| а не \verb|state += speed|)
+\begin{itemize}
+\item Будет лучше работать при выключенном VSync
+\item Будет лучше работать, когда CPU/GPU не справляются с нагрузкой
+\end{itemize}
+\pause
+\item В общем случае анимация -- это зависимость какой-то величины от времени \begin{math}x = f(t)\end{math}
+\pause
+\item Как задать функцию \begin{math}f(t)\end{math}?
+\pause
+\begin{itemize}
+\item Явной формулой
+\item Склеить из кусочков (сплайн)
+\item Вычислять неявно на основе текущего состояния
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация: неявное вычисление}
+\begin{itemize}
+\item Пусть, у нас есть некая величина \verb|x|, и мы хотим анимированно поменять её значение на \verb|new_x|
+\pause
+\item Как это анимировать?
+\pause
+\item Вариант 1: запомнить старое и новое значения, интерполировать между ними учитывая прошедшее время \verb|x = lerp(old_x, new_x, time)|
+\pause
+\begin{itemize}
+\item {\color{green}+} Легко настраивать форму интерполяции (easing functions)
+\item {\color{red}---} Нужно обрабатывать ситуацию, когда новое значение изменилось в процессе анимации
+\end{itemize}
+\pause
+\item Вариант 2: обновлять \verb|x| \textit{только} на основе нового значения: \verb|x = lerp(x, new_x, speed * dt)|
+\begin{itemize}
+\item Если \verb|dt > 1/speed|, возникнет нестабильность
+\item Более точная, стабильная формула: \verb|x = lerp(x, new_x, exp(- speed * dt))|
+\item Соответствует численному решению уравнения \begin{math}\dot x = speed \cdot (x_{new} - x)\end{math}
+\item Удобно для анимации камеры, элементов интерфейса
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимации: easing functions}
+\begin{itemize}
+\item При временнóй интерполяции между двумя значениями вместо линейной интерполяции \verb|x = lerp(old_x, new_x, t)| можно использовать т.н. easing functions
+\pause
+\item Применяются к параметру интерполяции \begin{math}t \in [0, 1]\end{math} и сглаживают анимацию: \verb|x = lerp(old_x, new_x, easing(t))|
+\pause
+\item Примеры easing functions:
+\begin{itemize}
+\item \begin{math}f(t) = t\end{math}
+\item \begin{math}f(t) = 3t^2-2t^3\end{math}
+\item \begin{math}f(t) = t^2\end{math}
+\item \begin{math}f(t) = 1 - (1-t)^2\end{math}
+\item \begin{math}f(t) = \sqrt{t}\end{math}
+\item Больше примеров: \href{https://easings.net}{easings.net}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация: easing functions}
+\slideimage{easing.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация: сплайны}
+\begin{itemize}
+\item Часто значения интерполируют, используя сплайны: кривые, позволяющие удобно настраивать зависимость некой величины от параметра \verb|t|
+\pause
+\item Обычно сплайн строится по набору значений в точках (keyframes) и, возможно, значений производных в этих точках
+\pause
+\item Виды сплайнов:
+\begin{itemize}
+\item Сплайны Безье
+\item Кубические сплайны
+\item B-сплайны
+\item NURBS
+\item etc.
+\end{itemize}
+\pause
+\item N.B.: спектр применения сплайнов не ограничивается анимациями!
+\begin{itemize}
+\item Curve fitting
+\item Представление сложных геометрических форм (напр. зданий, шрифтов)
+\item etc.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация: сплайны}
+\slideimage{spline-editing.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Bitmap-анимации}
+\begin{itemize}
+\item Меняющееся со временем изображение
+\pause
+\item 3D текстура
+\begin{itemize}
+\item Номер кадра -- 3я текстурная координата (нормированная)
+\item Интерполирует между кадрами
+\end{itemize}
+\pause
+\item 2D array текстура
+\begin{itemize}
+\item Номер кадра -- 3я текстурная координата (\textbf{не} нормированная)
+\item \textbf{Не} интерполирует между кадрами
+\end{itemize}
+\pause
+\item 2D текстурный атлас -- текстура, хранящая несколько изображений бок о бок
+\begin{itemize}
+\item По номеру кадра вычисляются настоящие текстурные координаты
+\item \textbf{Не} интерполирует между кадрами
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Текстура-атлас с анимацией}
+\slideimage{atlas1.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Текстура-атлас с анимацией}
+\slideimage{atlas2.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимирование вращений}
+\begin{itemize}
+\item Обычно мы представляли вращения матрицами:
+\begin{itemize}
+\item Матрица \begin{math}3x3\end{math} -- 9 значений, это много
+\pause
+\item Применить матрицу к вектору -- минимум операций сложения и умножения
+\pause
+\item Композиция вращений -- произведение матриц, довольно быстрая операция
+\pause
+\item Интерполяция между двумя матрицами вращения -- почти всегда \textbf{не} матрица вращения
+\end{itemize}
+\pause
+\item Вращения образуют 3х-мерную группу, т.е. описываются 3мя параметрами, например углами Эйлера
+\pause
+\begin{itemize}
+\item Применить вращение, выраженное через углы Эйлера -- много тригонометрических функций, медленно
+\pause
+\item Композиция таких вращений -- очень сложная операция, много тригонометрических функций
+\end{itemize}
+\pause
+\item Хочется компромисс между сложностью, объёмом хранения, удобством использования
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кватернионы}
+\begin{itemize}
+\item Кватернионы \begin{math}\mathbb H\end{math} -- четырёхмерная \textit{некоммутативная} алгебра над вещественными числами с тремя мнимыми единицами \begin{math}i, j, k\end{math}
+\item Каждый элемент \begin{math}q\in \mathbb H\end{math} представляется в виде \begin{math}q = a + bi + cj + dk\end{math}, где \begin{math}a, b, c, d \in \mathbb R\end{math} -- коэффициенты кватерниона
+\pause
+\item Правила умножения:
+\begin{itemize}
+\item \begin{math}i^2=j^2=k^2=-1\end{math}
+\item \begin{math}ij=-ji=k\end{math}
+\item \begin{math}jk=-kj=i\end{math}
+\item \begin{math}ki=-ik=j\end{math}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кватернионы}
+\begin{itemize}
+\item Сопряжённый кватернион определяется как \begin{math}\overline q = a - bi - cj - dk\end{math}
+\item Норма кватерниона: число \begin{math}q \cdot \overline q = a^2 + b^2 + c^2 + d^2 = |q|^2\end{math}
+\item Обратный кватернион: \begin{math}q^{-1} = \frac{1}{|q|^2} \overline q\end{math}
+\item Единичный кватернион: \begin{math}|q| = 1\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кватернионы: альтернативное представление}
+\begin{itemize}
+\item Для кватерниона \begin{math}q = a + bi + cj + dk\end{math} назовём его скалярной частью число \begin{math}a\end{math}, а векторной частью -- вектор \begin{math}v = (b, c, d)\end{math}
+\item Кватернион -- пара скаляр + вектор: \begin{math}q = (a, v)\end{math}
+\pause
+\item Сопряжённый кватернион: \begin{math}(a, -v)\end{math}
+\pause
+\item Произведение кватернионов: \begin{math}(a_1, v_1) \cdot (a_2, v_2) = (a_1 \cdot a_2 - v_1 \cdot v_2, a_1 v_2 + a_2 v_1 + v_1 \times v_2)\end{math}
+\pause
+\item В таком виде кватернионы удобно реализовывать в шейдерах
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кватернионы: вращения}
+\begin{itemize}
+\item Представим произвольный трёхмерный вектор \begin{math}v\end{math} как кватернион с нулевой скалярной частью \begin{math}(0, v)\end{math}
+\pause
+\item Вращение вокруг оси \begin{math}w\end{math} (единичный вектор) на угол \begin{math}\theta\end{math} можно реализовать как \begin{math}q \cdot (0, v) \cdot q^{-1}\end{math}, где \begin{math}q = (\cos \frac{\theta}{2}, w \cdot \sin \frac{\theta}{2})\end{math}
+\pause
+\item N.B.: \begin{math}|q| = 1\end{math}
+\item N.B.: \begin{math}q^{-1} = (\cos \frac{\theta}{2}, - w \cdot \sin \frac{\theta}{2})\end{math}
+\pause
+\item Любое вращение представляется единичным кватернионом, и любой единичный кватернион описывает вращение
+\item N.B: единичные кватернионы образуют трёхмерную сферу (вложенную в четырёхмерное пространство)
+\item N.B.: \begin{math}q\end{math} и \begin{math}-q\end{math} описывают одно и то же вращение (и только они)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кватернионы: вращения}
+\begin{itemize}
+\item Для вращения нужны только алгебраические операции \begin{math}\Rightarrow\end{math} быстро!
+\pause
+\item Композиция вращений \textendash{} произведение кватернионов: \begin{math}{\color{blue}q_2} \cdot ({\color{red}q_1} \cdot (0, v) \cdot {\color{red}q_1^{-1}}) \cdot {\color{blue}q_2^{-1}} = ({\color{blue}q_2} \cdot {\color{red}q_1}) \cdot (0, v) \cdot ({\color{red}q_1^{-1}} \cdot {\color{blue}q_2^{-1}}) = ({\color{blue}q_2}{\color{red}q_1}) \cdot (0, v) \cdot ({\color{blue}q_2}{\color{red}q_1})^{-1}\end{math}
+\pause
+\item Стандартный способ представления вращений объектов в 3D движках
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сферическая интерполяция}
+\begin{itemize}
+\item Линейная интерполяция двух единичных кватернионов -- почти всегда \textbf{не} единичный кватернион
+\pause
+\item Можно отнормировать результат, но это не будет соответствовать равномерной интерполяции
+\pause
+\item Правильный способ: использовать геодезическую кривую на поверхности сферы
+\pause
+\item Эта операция называется \verb|slerp| (spherical linear interpolation), имеет явную формулу и реализована в большинстве математических библиотек (в т.ч. \verb|glm|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кватернионы: представление в коде}
+\begin{itemize}
+\item Есть два варианта представить кватернион \begin{math}q = w + xi + yj + zk\end{math}:
+\pause
+\begin{itemize}
+\item Как четырёхмерный вектор \verb|[w, x, y, z]| -- логичнее с математической точки зрения
+\item Как четырёхмерный вектор \verb|[x, y, z, w]| -- удобнее работать в GLSL
+\end{itemize}
+\pause
+\item Общепринятого варианта нет
+\item В библиотеке \verb|glm| -- \verb|[w, x, y, z]| (есть наполовину сломанная поддержка \verb|[x, y, z, w]|)
+\item Формат моделей \verb|glTF| описывает вращения как \verb|[x, y, z, w]|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кватернионы: ссылки}
+\begin{itemize}
+\item \href{https://en.wikipedia.org/wiki/Quaternion}{\nolinkurl{en.wikipedia.org/wiki/Quaternion}}
+\item \href{https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation}{\nolinkurl{en.wikipedia.org/wiki/Quaternions\_and\_spatial\_rotation}}
+\item \href{https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions}{\nolinkurl{en.wikipedia.org/wiki/Rotation\_formalisms\_in\_three\_dimensions}}
+\item \href{https://en.wikipedia.org/wiki/Slerp}{\nolinkurl{en.wikipedia.org/wiki/Slerp}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Преобразования объектов}
+\begin{itemize}
+\item Часто для задания преобразования, применяемого к объекту, нам не нужна целиком матрица аффинного преобразования
+\item Обычно это поворот + масштабирование + сдвиг
+\pause
+\item Поворот -- кватернион \begin{math}q\end{math}
+\item Масштабирование -- число \begin{math}s\end{math} (изотропное масштабирование) или три числа (разный масштаб по разным осям)
+\item Сдвиг -- вектор сдвига \begin{math}t\end{math}
+\pause
+\item Преобразование вершин: \begin{math}v \mapsto s \cdot qvq^{-1} + t\end{math}
+\pause
+\item Преобразование нормалей: \begin{math}n \mapsto qnq^{-1}\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Иерархия объектов}
+\begin{itemize}
+\item Часто объекты сцены/мира образуют иерархическую структуру (шапка на человеке, человек в машине, машина на корабле)
+\pause
+\item Удобно описывать полное преобразование объекта (позиция + поворот + масштабирование) не относительно центра сцены/мира, а относительно родительского объекта
+\begin{itemize}
+\item N.B.: обычно в такой ситуации есть один корневой объект -- сцена
+\end{itemize}
+\pause
+\item Нужно уметь вычислять итоговое преобразование объекта, т.е. композицию всех преобразований от корня до нашего объекта
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Композиция аффинных преобразований}
+\begin{multline}
+({\color{blue}t_2},{\color{blue}s_2},{\color{blue}q_2}) \cdot ({\color{red}t_1},{\color{red}s_1},{\color{red}q_1}) \cdot v = {\color{blue}s_2}{\color{blue}q_2}({\color{red}s_1}{\color{red}q_1}v{\color{red}q_1^{-1}} + {\color{red}t_1}){\color{blue}q_2^{-1}} + {\color{blue}t_2} = \\
+= {\color{blue}s_2}{\color{red}s_1} ({\color{blue}q_2}{\color{red}q_1}) v ({\color{blue}q_2}{\color{red}q_1})^{-1} + {\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2} = \\
+({\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2}, {\color{blue}s_2}{\color{red}s_1}, {\color{blue}q_2}{\color{red}q_1}) \cdot v
+\end{multline}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация трёхмерных моделей}
+\begin{itemize}
+\item Анимация положения объекта в пространстве -- неплохо, но скучно
+\item Хочется анимировать саму модель, т.е. двигать её вершины
+\pause
+\item 2 способа:
+\begin{itemize}
+\item Покадровая анимация (morph-target animation)
+\item Скелетная анимация (skeletal animation)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Покадровая анимация моделей}
+\begin{itemize}
+\item Анимируются в явном виде все вершины по отдельности
+\pause
+\item Анимация хранится в виде `кадров': фиксированных состояний модели (наборов координат вершин)
+\pause
+\item Вершинный шейдер принимает два набора атрибутов позиций вершин и интерполирует между ними
+\begin{itemize}
+\item N.B.: интерполяция может использовать easing
+\end{itemize}
+\pause
+\item Фактически, это сплайн, значение которого -- набор координат всех вершин
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Покадровая анимация моделей}
+\slideimage{keyframes.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Покадровая анимация моделей}
+\begin{itemize}
+\item Много вариантов реализации:
+\begin{itemize}
+\item При смене кадра анимации загружать в VBO новые данные
+\item При смене кадра менять VBO/VAO
+\item Хранить кадры отдельно (например, в buffer textures), передавать в шейдер только номер кадра
+\end{itemize}
+\pause
+\item Много проблем:
+\pause
+\begin{itemize}
+\item {\color{red}---} Сложно модифицировать: нужно двигать \textit{все} вершины модели
+\pause
+\item {\color{red}---} Сложно добавлять процедурную анимацию (напр. поворачивать голову в нужную сторону)
+\pause
+\item {\color{red}---} Требует много памяти
+\pause
+\item {\color{red}---} Для хорошего качества нужно много кадров, иначе будут артефакты интерполяции (напр. модель начнёт пересекать саму себя)
+\end{itemize}
+\pause
+\item Обычно \textbf{не} используется для 3D моделей
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация моделей}
+\begin{itemize}
+\item Модель привязывается к виртуальному `скелету'
+\pause
+\item Скелет -- иерархия виртуальных `костей'
+\pause
+\item Каждая вершина привязана к одной или (чаще) нескольким костям
+\pause
+\item Каждой паре вершина-кость соответствует некоторый вес: насколько эта кость влияет на эту вершину (сумма весов для одной вершины должна равняться 1)
+\pause
+\item Кадры анимации задаются только для скелета (исходная модель существует в одном экземпляре)
+\pause
+\item Интерполируются только преобразования костей (костей гораздо меньше, чем вершин \begin{math}\Rightarrow\end{math} это не страшно делать даже на CPU)
+\pause
+\item В вершинном шейдере вычисляется итоговое преобразование для вершины как среднее между преобразованиями связанных с ней костей
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация моделей}
+\slideimage{skeletal.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация моделей}
+\begin{verbatim}
+uniform mat4x4 bones[16];
+
+layout (location = 0) in vec4 in_position;
+layout (location = 1) in ivec2 in_joints;
+layout (location = 2) in vec2 in_weights;
+
+void main()
+{
+  gl_Position =
+      in_weights.x * bones[in_joints.x] * in_position
+    + in_weights.y * bones[in_joints.y] * in_position;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация моделей}
+\begin{itemize}
+\item К нормалям тоже нужно применять преобразования (но не сдвиги!)
+\pause
+\item Кости обычно тоже выстроены в иерархию \begin{math}\Rightarrow\end{math} перед применением нужно вычислить суммарное преобразование (композицию)
+\pause
+\item Преобразования костей часто заданы в локальной для кости системе координат для удобства \begin{math}\Rightarrow\end{math} перед применением нужно умножить на преобразование, переводящее из системы координат модели в локальную систему координат кости (\textit{inverse bind matrix} в формате \verb|glTF|)
+\pause
+\item Нужно быть внимательным к особенностям задания преобразований и системам координат в разных редакторах и форматах!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация моделей}
+\begin{itemize}
+\item Обычно вычисление преобразования для кости выглядит как
+\begin{verbatim}
+...
+    * bone.parent.parent.local_transform
+    * bone.parent.local_transform *
+    * bone.local_transform
+    * bone.inverse_bind_matrix
+\end{verbatim}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация моделей}
+\begin{itemize}
+\item {\color{green}+} Удобно и интуитивно модифицировать (все 3D-редакторы имеют поддержку скелетных анимаций)
+\pause
+\item {\color{green}+} Небольшой расход памяти (модель не дублируется)
+\pause
+\item {\color{green}+} Легко добавлять процедурную анимацию
+\pause
+\item Самый распространённый способ анимировать модели
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация}
+\begin{itemize}
+\item Откуда брать скелетную анимацию?
+\pause
+\begin{itemize}
+\item Сплайны -- так обычно описываются анимации в 3D редакторах (отдельный сплайн для вращения, масштаба и сдвига каждой кости)
+\pause
+\item Процедурная анимация -- код, генерирующий анимацию на лету
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Inverse kinematics}
+\begin{itemize}
+\item Вычисление координат вершины по известным преобразованиям костей называется \textit{forward kinematics}
+\pause
+\item Часто хочется уметь решать обратную задачу: по финальному положению вершины вычислить подходящие преобразования костей
+\pause
+\begin{itemize}
+\item Повернуть голову, чтобы она смотрела в нужном направлении
+\pause
+\item Поставить ногу на ландшафт с неизвестным заранее наклоном
+\pause
+\item Повернуть руку так, чтобы кисть схватила нужный объект
+\end{itemize}
+\pause
+\item Удобно при формировании анимации в редакторе, необходимо для нетривиальных анимаций в динамическом мире
+\pause
+\item Эта (обратная) задача называется \textit{inverse kinematics (IK)}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Inverse kinematics}
+\begin{itemize}
+\item Финальное положение точки -- функция от преобразований отдельных костей
+\pause
+\item Часто кости могут только вращаться (напр. тело человека), но не сдвигаться или масштабироваться
+\pause
+\item Тогда положение точки -- функция углов \begin{math}p = f(\theta_1, \theta_2, \dots \theta_n)\end{math}
+\pause
+\item \begin{math}p\end{math} известна, \begin{math}\{\theta_i\}\end{math} неизвестны \begin{math}\Rightarrow\end{math} IK сводится к задаче решения нелинейной системы уравнений
+\pause
+\item В некоторых простых частных случаях можно решить явно (напр. поровот головы -- \verb|atan2| от вектора направления)
+\pause
+\item В общем случае решается итеративными методами (напр. многомерным методом Ньютона)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация}
+\begin{itemize}
+\item Если для модели задано несколько анимаций (ходьба, бег, прыжок, поворот, и т.д.) нужно уметь между ними переключаться
+\pause
+\item Обычно достаточно интерполировать \verb|local_transform| каждой кости от первой ко второй анимации
+\pause
+\item Не все переходы имеют смысл (люди обычно не переходят в лежачее положение сразу из бега или прыжка) \begin{math}\Rightarrow\end{math} часто используют state-машины анимаций с настраиваемыми переходами между состояниями
+\pause
+\item В современности почти всегда используется комбинированный подход: state-машина для переходов между заранее подготовленными анимациями + специфичная для ситуации процедурная анимация
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{State-машина для анимации}
+\slideimage{state-machine.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация}
+\begin{itemize}
+\item Есть способы для некоторых ситуаций полностью процедурно генерировать анимацию
+\pause
+\item Анимация передвижения пауков: \href{https://www.youtube.com/watch?v=e6Gjhr1IP6w}{\nolinkurl{youtube.com/watch?v=e6Gjhr1IP6w}}
+\pause
+\item Оффлайн генерация анимации движения для двуногих: \href{https://www.youtube.com/watch?v=pgaEE27nsQw}{\nolinkurl{youtube.com/watch?v=pgaEE27nsQw}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация: ссылки}
+\begin{itemize}
+\item \href{https://en.wikipedia.org/wiki/Skeletal_animation}{\nolinkurl{en.wikipedia.org/wiki/Skeletal\_animation}}
+\item \href{https://en.wikipedia.org/wiki/Inverse_kinematics}{\nolinkurl{en.wikipedia.org/wiki/Inverse_kinematics}}
+\item \href{https://learnopengl.com/Guest-Articles/2020/Skeletal-Animation}{\nolinkurl{learnopengl.com/Guest-Articles/2020/Skeletal-Animation}}
+\item \href{https://ogldev.org/www/tutorial38/tutorial38.html}{\nolinkurl{ogldev.org/www/tutorial38/tutorial38.html}}
+\item \href{https://www.youtube.com/watch?v=f3Cr8Yx3GGA}{Видео-туториал по скелетной анимации}
+\item \href{https://www.youtube.com/watch?v=R-T3Mk5oDHI}{Видео про графы анимаций в крупных движках}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Форматы 3D моделей}
+\begin{itemize}
+\item Существует колоссально много форматов для 3D-моделей
+\pause
+\item Они отличаются
+\pause
+\begin{itemize}
+\item Набором атрибутов вершин (вторые текстурные координаты, весы для анимации)
+\pause
+\item Поддержкой материалов и их сложностью
+\pause
+\item Поддержкой иерархии объектов и сцен
+\pause
+\item Поддержкой анимаций
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Форматы 3D моделей}
+\begin{itemize}
+\fontsize{8pt}{8pt}
+\selectfont
+\item \verb|.x| -- устаревший формат, часто использовавшийся вместе с DirectX
+\pause
+\item \verb|.3ds| -- устаревший формат, использовавшийся в девяностых и нулевых, не поддерживал анимацию и нормали
+\pause
+\item \verb|.obj| -- текстовый формат, использующийся из-за своей простоты, не поддерживает нестандартных атрибутов и анимацию
+\pause
+\item \verb|.dae (COLLADA)| -- распространённый современный XML-формат, поддерживает почти всё
+\pause
+\begin{itemize}
+\fontsize{8pt}{8pt}
+\selectfont
+\item Из-за многословности XML формат занимает очень много памяти; обычно используется как промежуточный перед конвертацией в специфичный для движка бинарный формат
+\end{itemize}
+\pause
+\item \verb|.gltf| -- современный JSON-формат, разработанный Khronos Group; поддерживает нетривиальные атрибуты, материалы и анимацию; в JSON хранится логическое описание данных, а сами бинарные данные (вершины, индексы, анимации) могут храниться в отдельных файлых; очень удобен для загрузки и использования в OpenGL
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Форматы 3D моделей: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/collada}{Документация по COLLADA}
+\item \href{https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html}{Документация по glTF}
+\item \href{https://en.wikipedia.org/wiki/List_of_file_formats#3D_graphics}{Список 3D форматов}
+\end{itemize}
+\end{frame}
+
+\end{document}
