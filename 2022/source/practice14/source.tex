@@ -1,0 +1,150 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 14: Timer queries, instancing, frustum culling, LOD}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\slideimage{0.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\begin{itemize}
+\item В этой практике имеет смысл делать Release сборку проекта
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Задание 1}
+Замеряем время рисования кадра с помощью timer queries
+\begin{itemize}
+\item Заводим \verb|std::vector| для ID query объектов и ещё один для запоминания, свободен объект или нет
+\item В начале каждого кадра находим индекс первого свободного query объекта, или, если такого нет, создаём новый и добавляем в массив (и помечаем как свободный)
+\item Помечаем выбранный query объект как занятый, и вставляем \verb|glBeginQuery(GL_TIME_ELAPSED, id)| в начало кадра (перед \verb|glClear|) и соответствующий \verb|glEndQuery| в конец кадра (перед \verb|SwapBuffers|)
+\item В конце кадра проверяем каждый query объект на то, готовы ли его данные: если готовы -- достаём их и логируем (лучше разделить на 10\textsuperscript{6} или 10\textsuperscript{9} чтобы получить миллисекунды или секунды, соответственно; делить нужно во floating-point), и помечаем как свободный
+\item В дальнейших заданиях имеет смысл смотреть на это значение и сравнивать с предыдущими заданиями (всё-таки мы занимаемся оптимизацией)
+\item В конце программы можно залогировать размер массива \verb|query| объектов: это примерное отставание (в кадрах) GPU от CPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Задание 1}
+\slideimage{0.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Рисуем 1024 копии объекта
+\begin{itemize}
+\item В цикле рисуем копии объекта, например, сеткой, с координатами в диапазоне \verb|[-16 .. 16)| с шагом в 1 по X и Z
+\item Для сдвига можно использовать model-матрицу (она уже есть в коде, нужно только обновлять значение через \verb|glUniformMatrix4fv|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Задание 2}
+\slideimage{2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\selectfont
+\frametitle{Задание 3}
+Рисуем 1024 копии объекта, используя instancing
+\begin{itemize}
+\item В вершинном шейдере заводим новый атрибут вершины для позиции instance (\verb|vec3|, \verb|location = 3|) и прибавляем к \verb|in_position| перед применением матриц
+\item Заводим массив \verb|std::vector| сдвигов \verb|glm::vec3|, использовавшихся в предыдущем задании, и заполняем при старте программы
+\item Заводим VBO для этих сдвигов и загружаем в него этот массив (так же, как в обычный VBO)
+\item Настраиваем атрибут с \verb|index = 3|, беря данные из нового VBO, и делаем \verb|glVertexAttribDivisor(3, 1)| (чтобы этот атрибут менялся один раз на instance, а не на вершину)
+\begin{itemize}
+\fontsize{10pt}{10pt}
+\selectfont
+\item В коде есть несколько VAO, настроить нужно каждый!
+\item Перед \verb|glVertexAttribPointer| нужно будет сделать текущим ваш новый VBO
+\end{itemize}
+\item Вместо цикла по 1024 объектам делаем один вызов \verb|glDrawElementsIsntanced|
+\item Model-матрицу меняем обратно на единичную
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Задание 3}
+\slideimage{2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Задание 4}
+Добавляем frustum culling
+\begin{itemize}
+\item Каждый кадр создаём объект \verb|frustum| (из \verb|frustum.hpp|), передавая ему матрицу \verb|projection * view|
+\item Вместо задания массива instance на старте, мы пересоздаём его на каждрый кадр
+\item В цикле прохода по всем объектам (который теперь снова в цикле рисования) создаём объект типа \verb|aabb| (из \verb|aabb.hpp|), используя bbox модели (\verb|input_model.meshes[0].min/max|) и прибавляя offset текущего объекта
+\item Если \verb|aabb| объекта пересекает \verb|frustum| (функция \verb|intersect| из \verb|intersect.hpp|), добавляем его в массив instance'ов
+\item Обновляем VBO с позициями instance'ов
+\item Логируем число нарисованных объектов (если вы не меняли начальные параметры камеры, на старте будет 500 объектов)
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Задание 4}
+\slideimage{2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Задание 5*}
+Добавляем LOD
+\begin{itemize}
+\item Вместо одного массива instance заводим 6 штук -- по одному на каждый уровень детализации
+\item Для каждого объекта вычисляем его номер LOD (например, как расстояние до камеры, делённое на фиксированное значение) и кладём в соответствующий массив
+\item После frustum culling'а делаем цикл по всем LOD \verb|[0..5]|, где
+\begin{itemize}
+\item Загружаем массив instance для данного LOD в ваш VBO для данных instance
+\item Рисуем модель \verb|input_model.meshes[lod]| используя VAO \verb|vaos[lod]|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Задание 5*}
+\slideimage{5.png}
+\end{frame}
+
+\end{document}
