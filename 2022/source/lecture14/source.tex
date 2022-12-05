@@ -207,7 +207,7 @@ while (true) {
 \begin{itemize}
 \item \verb|glBeginQuery/glEndQuery| -- статистика будет собрана для команд между этими вызовами
 \pause
-\item \textbf{Не могут} быть вложенными
+\item Query одного типа \textbf{не могут} быть вложенными
 \end{itemize}
 \pause
 \begin{verbatim}
@@ -216,11 +216,11 @@ glGenQueries(1, &query_id);
 
 ...
 
-glBegin(GL_TIME_ELAPSED, query_id);
+glBeginQuery(GL_TIME_ELAPSED, query_id);
 
 // что-нибудь рисуем
 
-glEnd(GL_TIME_ELAPSED);
+glEndQuery(GL_TIME_ELAPSED);
 \end{verbatim}
 \end{frame}
 
@@ -313,7 +313,7 @@ glGetQueryObjectiv(query_id,
 \item Упростим до предела вершинный шейдер (напр. вернём фиксированные координаты)
 \pause
 \begin{itemize}
-\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком тяжёлый фрагментный шейдер
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком тяжёлый вершинный шейдер
 \end{itemize}
 \pause
 \item Уменьшим число вершин (параметр \verb|count| в \verb|glDraw*|)
@@ -507,7 +507,7 @@ glGetQueryObjectiv(query_id,
 \begin{itemize}
 \item Вызвать instanced rendering: \verb|glDrawArraysInstanced|
 \begin{itemize}
-\item Параметры -- те же, что у \verb|glDrawArrays|, плюс последний параметр -- количество instance'ов (значения \verb|instanceID| будут в диапазоне \verb|0 .. isntance_count-1|)
+\item Параметры -- те же, что у \verb|glDrawArrays|, плюс последний параметр -- количество instance'ов (значения \verb|instanceID| будут в диапазоне \verb|0 .. instance_count-1|)
 \end{itemize}
 \pause
 \item Аналогично есть \verb|glDrawElementsInstanced|
@@ -614,6 +614,7 @@ layout (std140) uniform Bones
 
 \begin{frame}<1-2>[fragile,label=frustum_culling]
 \fontsize{10pt}{10pt}
+\selectfont
 \frametitle{Frustum culling}
 \begin{itemize}
 \item Давайте не рисовать то, что заведомо не попадёт в камеру
@@ -624,6 +625,8 @@ layout (std140) uniform Bones
 \pause
 \item Оболочка должна:
 \begin{itemize}
+\fontsize{10pt}{10pt}
+\selectfont
 \item Как можно плотнее прилегать к объекту
 \pause
 \item Быть дешёвой для вычисления
@@ -635,6 +638,8 @@ layout (std140) uniform Bones
 \pause
 \item Варианты оболочки:
 \begin{itemize}
+\fontsize{10pt}{10pt}
+\selectfont
 \item Выпуклая оболочка -- плотно прилегает, но дорого вычислять и много вершин
 \pause
 \item Ограничивающая сфера/эллипсоид -- может неплотно прилегать, легко вычислять, средний алгоритм пересечения (сложнее для эллипсоидов)
@@ -779,16 +784,16 @@ bool intersect_along(Body b1, Body b2, vec3 n) {
 
 bool intersect(Body b1, Body b2) {
   for (n : b1.edge_normals) {
-    if (intersect_along(b1, b2, n))
-      return true;
+    if (!intersect_along(b1, b2, n))
+      return false;
   }
 
   for (n : b2.edge_normals) {
-    if (intersect_along(b1, b2, n))
-      return true;
+    if (!intersect_along(b1, b2, n))
+      return false;
   }
 
-  return false;
+  return true;
 }
 \end{verbatim}
 \end{frame}
@@ -824,24 +829,24 @@ bool intersect_along(Body b1, Body b2, vec3 n) {
 
 bool intersect(Body b1, Body b2) {
   for (n : b1.face_normals) {
-    if (intersect_along(b1, b2, n))
-      return true;
+    if (!intersect_along(b1, b2, n))
+      return false;
   }
 
   for (n : b2.face_normals) {
-    if (intersect_along(b1, b2, n))
-      return true;
+    if (!intersect_along(b1, b2, n))
+      return false;
   }
 
   for (e1 : b1.edges) {
     for (e2 : b2.edges) {
       vec3 n = cross(e1, e2);
-      if (intersect_along(b1, b2, n))
-        return true;
+      if (!intersect_along(b1, b2, n))
+        return false;
     }
   }
 
-  return false;
+  return true;
 }
 \end{verbatim}
 \end{frame}
