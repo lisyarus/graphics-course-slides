@@ -1,0 +1,585 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 15: рендеринг текста, bitmap-шрифты, векторные шрифты, (M)SDF-шрифты, чем заняться дальше}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг текста}
+\begin{itemize}
+\item Текст -- очень сложная штука
+\pause
+\item Слева направо (латиница, кириллица), справа налево (арабский, иврит), сверху вниз (хангыль, старомонгольское письмо)
+\pause
+\item Иероглифы (кандзи), слоговое письмо (катакана, хирагана), консонантное письмо (арабский), консонантно-вокалическое письмо (латиница, кириллица)
+\pause
+\item Одна \textit{графема} может представлять один или несколько звуков или слогов
+\pause
+\item Могут быть сложные правила по соединению символов между собой (арабский, лигатуры в латинице)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Алфавиты}
+\slideimage{alphabet.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Корейская письменность}
+\slideimage{korean.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Арабская письменность}
+\slideimage{arabic.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Этапы рендеринга текста}
+\begin{itemize}
+\item Абстрактный текст
+\pause
+\item + кодировка \begin{math}\Rightarrow\end{math} машинное представление текста
+\pause
+\item + шрифт + настройки шейпинга (shaping) \begin{math}\Rightarrow\end{math} набор глифов (изображений символов) и их координат
+\pause
+\item + алгоритм рендеринга \begin{math}\Rightarrow\end{math} нарисованный текст
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кодировки}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item Описывают машинное представление текста, т.е. соответствие \textbf{последовательностей} символов и \textbf{последовательностей} бит
+\pause
+\item ASCII: 7 бит (обычно дополняется нулевым старшим битом до 8 бит), первые 32 символа - управляющие (\verb|\r|, \verb|\n|, tab, ...), остальные 96 -- буквы английского алфавита (большие и маленькие) и прочие символы (различные скобки, арифметические операции, пунктуация, пробел, ...)
+\pause
+\begin{itemize}
+\item Многие кодировки совпадают с ASCII в диапазоне 0-127 или 32-127
+\end{itemize}
+\pause
+\item Огромное количество в основном 8-битных кодировок для разных алфавитов и систем:
+\begin{itemize}
+\item ISO/IEC 8859 -- 15 разных вариантов (ISO/IEC 8859-5 для русского языка)
+\item Code page XXX -- много разных кодировок для DOS (Code page 866 для русского языка)
+\item Windows code pages (Windows-1251 для русского языка)
+\item KOI-8 и вариации -- для русского языка
+\item etc.
+\end{itemize}
+\pause
+\item Unicode-кодировки
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Unicode}
+\begin{itemize}
+\item Unicode -- стандарт, описывающий соответствие абстрактных символов целочисленным кодам (\textit{code points}) в диапазоне \verb|0..10FFFFh| исключая \verb|D800h..DFFFh| для суррогатных пар в UTF-16 (итого 1112064 code point'а), и рекомендации по их интерпретации и визуализации
+\pause
+\item На сегодняшний день описывает 149186 символов (в прошлом году было 144697)
+\pause
+\item Сам unicode -- \textbf{не кодировка}, но есть основанные на нём кодировки:
+\pause
+\begin{itemize}
+\item UTF-8: от 1 до 4 байт на символ, совпадает с ASCII в диапазоне \verb|0..7Fh|, самая распространённая сегодня кодировка (95\% интернета)
+\pause
+\item UCS-2: устаревшая, 2 байта на символ, не поддерживает весь unicode
+\pause
+\item UTF-16: 2 или 4 байта на символ
+\pause
+\item UTF-32: 4 байта на символ
+\pause
+\item GB 18030: специальная кодировка для китайских иероглифов (но тоже поддерживает весь unicode)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Code points, глифы и графемы}
+\begin{itemize}
+\item Code point -- один unicode элемент (абстрактный символ)
+\pause
+\item Глиф -- одно изображение в шрифте
+\pause
+\item Графема -- один визуальный символ (один или несколько глифов)
+\pause
+\item В общем случае один code point \textbf{не соответствует} одному глифу или одной графеме
+\pause
+\item Примеры:
+\begin{itemize}
+\item Два символа \verb|ff| могут быть представлены двумя глифами или одним глифом (лигатурой) ff
+\pause
+\item Символ \verb|Ò| может быть одним или двумя code point'ами и одним или двумя (\verb|O + `|) глифами, но считается одной графемой
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Шрифты}
+\begin{itemize}
+\item Содержит набор \textit{глифов} (изображений символов в каком-либо виде) и правил их использования
+\pause
+\item Виды шрифтов:
+\pause
+\begin{itemize}
+\item Bitmap-шрифты: глиф -- готовое изображение (bitmap)
+\pause
+\item Векторные шрифты: глиф описывается как геометрическая фигура
+\pause
+\item (M)SDF-шрифты: глиф описывается с помощью \textit{signed distance field} (SDF)
+\end{itemize}
+\pause
+\item Современные форматы шрифтов (\verb|.ttf| -- TrueType, \verb|.otf| -- OpenType) -- векторные, описывают границу глифа как набор отрезков и квадратичных кривых Безье (т.е. 2-ого порядка)
+\pause
+\item Bitmap и SDF шрифты часто строятся по векторным шрифтам
+\pause
+\item \textbf{FreeType} -- самая распространённая библиотека для чтения векторных шрифтов; умеет растеризовать в bitmap и (с версии 2.11.0, июль 2021) в SDF
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Шейпинг (shaping)}
+\begin{itemize}
+\item Процесс преобразования последовательности символов в набор отпозиционированных глифов
+\pause
+\item Может включать в себя:
+\pause
+\begin{itemize}
+\item Настройки: направление (слева-направо, справа-налево, сверху-вниз, снизу-вверх), размер шрифта, межбуквенное расстояние, стиль (жирный, курсив, и т.п.)
+\pause
+\item Hinting: сдвиг глифов, чтобы они были лучше выровнены по пиксельной сетке
+\pause
+\item Kerning: изменение расстояния между соседними глифами для лучшего восприятия
+\pause
+\item Лигатуры: последовательность несвязанных символов, представленная одним глифом (ff, fi, <=>)
+\end{itemize}
+\pause
+\item Для простых моноширинных шрифтов шейпинг может сводиться к расположению глифов на равных расстояниях друг от друга
+\pause
+\item \textbf{harfbuzz} -- одна из самых распространённых библиотек для шейпинга текста, используется всеми на свете
+\item FreeType позволяет сделать шейпинг, но хуже, чем harfbuzz
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Hinting}
+\slideimage{hinting.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Kerning}
+\slideimage{kerning.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Лигатуры}
+\slideimage{ligatures.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг bitmap-шрифтов}
+\begin{itemize}
+\item Обычно представлены в виде texture atlas: одна текстура, содержащая все глифы шрифта
+\pause
+\item Содержит информацию о расположении глифов в текстуре (текстурные координаты левого верхнего и правого нижнего пикселя)
+\pause
+\item Плохо ведёт себя при масштабировнии (как увеличении, так и уменьшении), mipmap'ы не особо помогают
+\pause
+\item Очень прост в реализации
+\pause
+\item Часто используется для дебажного текста, инди-игр, и т.п.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Bitmap-шрифт}
+\slideimage{bitmap-font.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Bitmap-шрифт: описание в коде}
+\begin{verbatim}
+struct bitmap_font
+{
+  GLuint texture_id;
+
+  struct glyph
+  {
+    vec2 top_left;
+    vec2 bottom_right;
+  };
+
+  std::unordered_map<std::char32_t, glyph> glyphs;
+};
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг векторных шрифтов}
+\begin{itemize}
+\item Глиф описывается как набор геометрических фигур (фигура может описывать `дырку' в другой фигуре, как дырка в букве `О'), граница фигуры -- набор отрезков и квадратичных кривых Безье
+\pause
+\item Много разных способов рендеринга:
+\pause
+\begin{itemize}
+\item Аппроксимация набором треугольников
+\pause
+\item Запаковка фигур в текстуру + шейдер, который честно вычисляет площадь пересечения фигуры и пикселя
+\pause
+\item Полигональная аппроксимация глифа (рисуется с использованием stencil буфера) + треугольник со специальным шейдером для каждой кривой Безье
+\pause
+\item Slug algorithm (запатентован)
+\end{itemize}
+\pause
+\item Обычно легко переносит масштабирование
+\pause
+\item Сложен в реализации
+\pause
+\item Используется для текста максимально возможного качества
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Векторный глиф}
+\slideimage{vector-glyph.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Slug algorithm}
+\slideimage{slug.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Signed distance field (SDF)}
+\begin{itemize}
+\item Описание двумерного или трёхмерного объекта/фигуры \textit{функцией расстояния} до границы объекта
+\pause
+\item Обычно положительна снаружи объекта и отрицательна внутри (поэтому \textit{signed}), \begin{math}f(p) = 0\end{math} -- граница объекта
+\pause
+\item SDF может быть представлена явной формулой (напр. \begin{math}f(p) = \|p - O\| - R\end{math} -- расстояние до сферы радиуса \begin{math}R\end{math} с центром в точке \begin{math}O\end{math}) или текстурой
+\pause
+\item SDF-сцены часто используются для экспериментального рендеринга и удобны для raymarching'а
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг SDF-шрифтов (Valve, 2007)}
+\begin{itemize}
+\item Описывается так же, как bitmap-шрифт, но текстура хранит значения SDF для глифов
+\pause
+\item Фрагментный шейдер читает значение SDF из текстуры шрифта: если оно меньше 0, то пиксель находится внутри глифа (e.g. чёрный пиксель), иначе -- нет (e.g. прозрачный пиксель)
+\pause
+\item Прост в реализации
+\pause
+\item Требует чуть больше места под глифы, но менее требователен к разрешению
+\pause
+\item Неплохо масштабируется (есть артефакты, но менее серьёзные, чем для bitmap-шрифтов)
+\pause
+\item Один из самых распространённых способов рендеринга шрифтов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт}
+\slideimage{sdf-font.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт: артефакты при magnification}
+\slideimage{sdf-artifacts.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-текстура}
+\begin{itemize}
+\item Тестуры позволяют хранить значения от 0 до 1
+\pause
+\item Мы хотим хранить произвольные, но не очень большие по модулю числа (расстояние в пикселях)
+\pause
+\item \begin{math}\Rightarrow\end{math} В текстуре придётся хранить что-то в духе \begin{math}0.5 + sdf / scale\end{math}, где \verb|scale| -- максимальное представимое расстояние
+\pause
+\item Лучше включить для этой текстуры анизотропную фильтрацию, чтобы текст хорошо выглядел `сбоку'
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рендеринг SDF-шрифтов}
+\begin{itemize}
+\item Можно легко реализовать много дополнительных эффектов:
+\pause
+\begin{itemize}
+\item Сглаживание: вместо жёсткой границы плавно меняем прозрачность пикселя в зависимости от значения SDF
+\pause
+\item Сглаживание с учётом перспективы: по \verb|dFfx,dFfy| можно вычислить диапазон значений SDF, чтобы сглаживание было ровно в 1 пиксель в экранных координатах
+\pause
+\item Обводка текста другим цветом: рисуем цвет обводки, если \begin{math}0 \leq f(p) \leq \varepsilon\end{math}
+\pause
+\item Псевдотрёхмерный текст: по градиенту SDF можно восстановить нормаль к глифу
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт с эффектами}
+\slideimage{sdf-effects.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF-шрифт: фрагментный шейдер}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform sampler2D sdfTexture;
+uniform float sdfScale;
+uniform vec3 textColor;
+
+in vec2 texcoord;
+
+layout (location = 0) out vec4 out_color;
+
+void main()
+{
+  float sdfTextureValue = texture(sdfTexture, texcoord).r;
+  float sdfValue = sdfScale * (sdfTextureValue - 0.5);
+  // сглаживание
+  float alpha = smoothstep(-0.5, 0.5, sdfValue);
+  out_color = vec4(textColor, alpha);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{MSDF (Chlumský, 2015)}
+\begin{itemize}
+\item У SDF-текста есть типичные артефакты: острые углы сглаживаются, из-за чего приходится брать SDF-текстуру большого разрешения
+\pause
+\item Идея: билинейная интерполяция не портит прямые линии \begin{math}\Rightarrow\end{math} представим глиф \textit{пересечением} нескольких объектов, чтобы острые углы (представленные пересечением нескольких прямых) не сглаживались
+\pause
+\item В текстуре есть 4 канала (RGBA) \begin{math}\Rightarrow\end{math} можем сохранить сразу 4 разных SDF в одной текстуре!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{MSDF}
+\begin{itemize}
+\item \begin{math}\Rightarrow\end{math} MSDF: Multi-channel signed distance field
+\pause
+\item На практике оказывается, что хватает 3 каналов, т.е. трёх различных SDF
+\item Вместо пересечения (т.е. минимума из трёх значений SDF) лучше брать \textit{медиану} (т.е. значение посередине между двумя другими)
+\pause
+\item Есть инструменты (программа, библиотека, сайт) для генерации таких текстур по шрифту
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{MSDF-шрифт}
+\slideimage{msdf-font.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{MSDF: сравнение с SDF}
+\slideimage{msdf.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{MSDF: пример кода}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform sampler2D sdfTexture;
+uniform float sdfScale;
+uniform vec3 textColor;
+
+in vec2 texcoord;
+
+layout (location = 0) out vec4 out_color;
+
+float median(vec3 v) {
+    return max(min(v.r, v.g), min(max(v.r, v.g), v.b));
+}
+
+void main()
+{
+  float sdfTextureValue =
+    median(texture(sdfTexture, texcoord).rgb);
+  float sdfValue = sdfScale * (sdfTextureValue - 0.5);
+  // сглаживание
+  float alpha = smoothstep(-0.5, 0.5, sdfValue);
+  out_color = vec4(textColor, alpha);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Шрифты и шейпинг: ссылки}
+\begin{itemize}
+\item \href{https://freetype.org}{FreeType}
+\item \href{https://harfbuzz.github.io}{harfbuzz}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Векторные и bitmap-шрифты: ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/In-Practice/Text-Rendering}{Туториал по рендерингу bitmap-шрифтов}
+\item \href{https://wdobbie.com/post/gpu-text-rendering-with-vector-textures}{Один способ рендеринга векторных шрифтов}
+\item \href{https://medium.com/@evanwallace/easy-scalable-text-rendering-on-the-gpu-c3f4d782c5ac}{Другой способ рендеринга векторных шрифтов}
+\item \href{https://jcgt.org/published/0006/02/02}{Slug algorithm}
+\item \href{https://sluglibrary.com}{Slug library}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{SDF и MSDF-шрифты: ссылки}
+\begin{itemize}
+\item \href{https://steamcdn-a.akamaihd.net/apps/valve/2007/SIGGRAPH2007_AlphaTestedMagnification.pdf}{Статья от Valve про SDF-текст}
+\item \href{https://blog.mapbox.com/drawing-text-with-signed-distance-fields-in-mapbox-gl-b0933af6f817}{Туториал по рендерингу SDF-шрифтов}
+\item \href{https://evanw.github.io/font-texture-generator/}{SDF font generator}
+\item \href{https://github.com/Chlumsky/msdfgen}{Репозиторий с генератором MSDF-шрифтов от автора этой техники}
+\item \href{https://github.com/Chlumsky/msdfgen/files/3050967/thesis.pdf}{Shape Decomposition for Multi-channel Distance Fields (Chlumský, 2015)}
+\item \href{https://msdf-bmfont.donmccurdy.com/}{MSDF font generator}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Чем заняться дальше?}
+\begin{itemize}
+\item Очень много источников света
+\item Очень много объектов
+\item Очень большая сцена
+\item Сложные объекты
+\item Другие API
+\item Raytracing
+\item Статьи и конференции
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Очень много источников света}
+\begin{itemize}
+\item Deferred shading
+\item Tiled/Clustered shading
+\item Compute shaders (OpenGL 4.3 или расширение)
+\item \href{https://learnopengl.com/Guest-Articles/2022/Area-Lights}{Площадные источники света}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Очень много объектов}
+\begin{itemize}
+\item Batching
+\item Frustum culling
+\item Occlusion culling
+\item LOD
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Очень большая сцена (e.g. планета)}
+\begin{itemize}
+\item LOD (e.g. для ландшафта)
+\item Проблемы с точностью (\verb|float| не хватает; нужно рисовать относительно некой anchor-точки в \verb|double|)
+\item Проблемы с буфером глубины (\href{https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/}{reversed z})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сложные объекты}
+\begin{itemize}
+\item Вода: отражение + преломление (по Френелю) + `туман' в плотности воды + \href{https://en.wikipedia.org/wiki/Trochoidal_wave}{волны Герстнера}
+\item Растительность (vegetation): трава, кусты, деревья
+\item Облака + небо (volume rendering)
+\item Сложные BRDF
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Другие API}
+\begin{itemize}
+\item OpenGL 4.0+: compute shaders, indirect rendering, direct state access
+\item Vulkan: \href{https://vulkan-tutorial.com}{\nolinkurl{vulkan-tutorial.com}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Raytracing + real-time GI}
+\begin{itemize}
+\item \href{https://raytracing.github.io/books/RayTracingInOneWeekend.html}{Ray Tracing in One Weekend} (\textbf{не} real-time)
+\item \href{https://developer.nvidia.com/rtx/raytracing/vkray}{Vulkan raytracing tutorial}
+\item \href{https://research.nvidia.com/sites/default/files/publications/GIVoxels-pg2011-authors.pdf}{Voxel cone tracing}
+\item \href{https://www.ea.com/seed/news/siggraph21-global-illumination-surfels}{Surflet-based GI}
+\item \href{https://research.nvidia.com/publication/2021-06_restir-gi-path-resampling-real-time-path-tracing}{ReSTIR GI}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Статьи и конференции}
+\begin{itemize}
+\item \href{https://developer.nvidia.com/gpugems}{GPU Gems 1, 2, 3}
+\item SIGGRAPH (e.g. \href{https://kesen.realtimerendering.com/sig2022.html}{2022})
+\item \href{GDC}{https://www.gdcvault.com/free/}
+\item \href{https://www.jendrikillner.com/tags/weekly/}{Graphics Programming Weekly}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{В заключение}
+\begin{itemize}
+\item Область real-time рендеринга очень активно развивается
+\item О рисовании любого объекта/эффекта можно найти десятки статей и даже PhD
+\item Есть тысячи туториалов по всему на свете
+\item Не бойтесь гуглить и читать непонятные статьи, со временем станет понятнее
+\item Не бойтесь писать мне :)
+\end{itemize}
+\end{frame}
+
+\end{document}
