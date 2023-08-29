@@ -1,4 +1,4 @@
-PDFLATEX=pdflatex -shell-escape -interaction=nonstopmode -halt-on-error
+PDFLATEX=lualatex -shell-escape -interaction=nonstopmode -halt-on-error
 
 .ONESHELL:
 
