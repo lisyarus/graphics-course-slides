@@ -1,0 +1,827 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 7: Распространение света, уравнение рендеринга, модели освещения}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\begin{itemize}
+\item ~90\% информации человек воспринимает через зрение
+\item Зрение воспринимает то, как \textit{освещены} окружающие объекты
+\pause
+\item Человек с рождения учится воспринимать мир освещённым
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1>[fragile,label=why]
+\frametitle{Почему важно освещение}
+\begin{itemize}
+\item Помогает понять форму объектов
+\pause
+\item Помогает понять соотношение между объектами в пространстве
+\pause
+\item Помогает понять материал объектов
+\pause
+\item Помогает создать атмосферу
+\pause
+\item Помогает сделать объекты более привычными человеку
+\pause
+\item \begin{math}\Rightarrow\end{math} Какой бы графикой вы ни занималось, полезно добавить освещение
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{suzanne.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{suzanne-lit.png}
+\end{frame}
+
+\againframe<1-2>{why}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{suzanne-box.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{suzanne-box-lit.png}
+\end{frame}
+
+\againframe<2-3>{why}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{suzanne-material.png}
+\end{frame}
+
+\againframe<3-4>{why}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{zelda.png}
+\end{frame}
+
+\againframe<4-5>{why}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{win31.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Почему важно освещение}
+\slideimage{zelda2.jpg}
+\end{frame}
+
+\againframe<5-6>{why}
+
+\begin{frame}[fragile]
+\frametitle{Что такое свет}
+\begin{itemize}
+\item Свет -- электромагнитная волна
+\item Пара векторных полей (электрическое \begin{math}\mathbf{E}\end{math} и магнитное \begin{math}\mathbf{B}\end{math}), описываемых уравнениями Максвелла
+\begin{center}
+\begin{math}
+\begin{matrix}
+\nabla \cdot \mathbf{E} = 4 \pi \rho \\
+\nabla \cdot \mathbf{B} = 0 \\
+\nabla \times \mathbf{E} = -\frac{1}{c} \frac{\partial \mathbf B}{\partial t} \\
+\nabla \times \mathbf{B} = \frac{1}{c} \left(4 \pi \mathbf J + \frac{\partial \mathbf E}{\partial t} \right)
+\end{matrix}
+\end{math}
+\end{center}
+\pause
+\item Раскладывается в сумму волн фиксированной длины волны \begin{math}\lambda\end{math} (монохроматические волны)
+\item Много нетривиальных эффектов: интерференция, дифракция, поляризация, сложное взаимодействие с веществом
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Свет}
+\begin{itemize}
+\item В графике обычно достаточно геометрической оптики -- предела при \begin{math}\lambda\rightarrow 0\end{math}
+\pause
+\item Свет распространяется прямыми лучами (исключение -- граница раздела сред или неоднородные среды)
+\item Свет распространяется бесконечно быстро (\begin{math}c \rightarrow \infty\end{math})
+\item Луч света разбивается в сумму монохроматических лучей, каждая имеет свою амплитуду (количество света)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Фиолетовый цвет}
+\slideimage{blue-red-spectrum.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Видимый спектр}
+\slideimage{visible-spectrum.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Столкновение света с поверхностью}
+\begin{itemize}
+\item Что происходит, когда луч света сталкивается с некой поверхностью?
+\pause
+\item Зависит от её \textit{материала}:
+\pause
+\begin{itemize}
+\item Абсолютно чёрное тело: поглощает свет
+\pause
+\item Зеркало: отражает свет в строго определённом направлении
+\pause
+\item Старое, плохо отполированное зеркало / лакированная поверхность: отражает свет примерно в определённом направлении
+\pause
+\item Диффузная (ламбертова) поверхность: отражает свет во все стороны равномерно
+\pause
+\item Стекло: преломляет свет
+\pause
+\item Вода: частично отражает, частично преломляет (закон Френеля)
+\pause
+\item Воск: частично отражает, частично преломляет, но свет заходит неглубоко (subsurface scattering)
+\end{itemize}
+\pause
+\item \begin{math}\Rightarrow\end{math} Свет, выходящий в каком-то направлении, складывается из света, пришедшего из \textit{всех} направлений
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Абсолютно чёрное тело}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Зеркало}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.5, 0.5) -- (2.0, 3.0);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (1.5, 3.5) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Старое зеркало / лакированная поверхность}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.5, 0.5) -- (2.0, 3.0);
+\draw[magenta,thick,-stealth] (4.64, 0.6) -- (3.5, 2.5);
+\draw[magenta,thick,-stealth] (4.78, 0.67) -- (4.5, 1.5);
+\draw[magenta,thick,-stealth] (4.4, 0.36) -- (2.5, 1.5);
+\draw[magenta,thick,-stealth] (4.33, 0.22) -- (3.5, 0.5);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (1.5, 3.5) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Диффузная поверхность}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.387627564304205, 0.35355339059327373) -- (1.3257653858252327, 2.121320343559642);
+\draw[magenta,thick,-stealth] (4.646446609406726, 0.6123724356957946) -- (2.878679656440357, 3.674234614174767);
+\draw[magenta,thick,-stealth] (5.0, 0.7071067811865476) -- (5.0, 4.242640687119285);
+\draw[magenta,thick,-stealth] (5.353553390593274, 0.6123724356957946) -- (7.121320343559642, 3.6742346141747673);
+\draw[magenta,thick,-stealth] (5.612372435695795, 0.35355339059327373) -- (8.674234614174768, 2.121320343559642);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (1.5, 3.5) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Стекло}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[blue,thick,-stealth] (8.0, 3.0) -- (5.5, 0.5);
+\draw[magenta,thick,-stealth] (4.646446609406726, -0.6123724356957944) -- (2.878679656440356, -3.6742346141747655);
+
+\node[] at (5.0, 0.0) {\begin{math}\bullet\end{math}};
+\node[] at (5.0, -0.5) {\begin{math}p\end{math}};
+\node[blue] at (8.5, 3.5) {\begin{math}\vec\omega_{in}\end{math}};
+\node[magenta] at (2.5251262658470814, -4.28660704987056) {\begin{math}\vec\omega_{out}\end{math}};
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга (Kajiya, 1986)}
+\begin{equation*}
+\hspace*{-0.5cm}
+{\color{magenta}I_{out}}(p, {\color{magenta}\vec\omega_{out}}, \lambda) = I_{e}(p, {\color{magenta}\vec\omega_{out}}, \lambda)+\int\limits_{\mathbb S^2} {\color{blue}I_{in}}(p, {\color{blue}\vec\omega_{in}}, \lambda) \cdot {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) \cdot ({\color{blue}\vec\omega_{in}} \cdot \vec{n}) d{\color{blue}\vec\omega_{in}}
+\end{equation*}
+\pause
+\begin{itemize}
+\item Уравнение для конкретной точки \begin{math}p\end{math} и длины волны \begin{math}\lambda\end{math}
+\pause
+\item \begin{math}{\color{magenta}I_{out}}\end{math} -- количество света, выходящего из точки \begin{math}p\end{math} в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math} с длиной волны \begin{math}\lambda\end{math}
+\pause
+\item \begin{math}I_{e}\end{math} -- количество света, излучаемого поверхностью из точки \begin{math}p\end{math} в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math} с длиной волны \begin{math}\lambda\end{math}
+\pause
+\item \begin{math}{\color{blue}I_{in}}\end{math} -- количество света, приходящего в точку \begin{math}p\end{math} из направления \begin{math}{\color{blue}\vec\omega_{in}}\end{math} с длиной волны \begin{math}\lambda\end{math}
+\pause
+\item \begin{math}{\color{green}f}\end{math} -- функция, определяющая, сколько света с длиной волны \begin{math}\lambda\end{math}, пришедшего из направления \begin{math}{\color{blue}\vec\omega_{in}}\end{math}, отразится в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math}
+\pause
+\item \begin{math}\vec n\end{math} -- нормаль (перпендикуляр) к поверхности в точке \begin{math}p\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Косинус угла падения}
+\begin{itemize}
+\item Откуда взялся \begin{math}{\color{blue}\vec\omega_{in}} \cdot \vec{n}\end{math}?
+\pause
+\item На поверхность площадью \begin{math}A\end{math} падает световой поток с площадью поперечного сечения \begin{math}{\color{blue} \Phi}\end{math} под углом \begin{math}\color{red}\theta\end{math}
+\item Тогда \begin{math}{\color{blue} \Phi} = A \cdot {\color{red} \cos \theta}\end{math}
+\item \begin{math}\Rightarrow\end{math} На единицу площади приходится \begin{math}{\color{red}\cos \theta}\end{math} от общей плотности потока
+\end{itemize}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[black,thick] (4.5, 0.0) -- (8.5, 4.0);
+\draw[black,thick] (5.5, 0.0) -- (9.0, 3.5);
+\draw[black,thick] (4.5, -0.25) -- (4.5, 0.25);
+\draw[black,thick] (5.5, -0.25) -- (5.5, 0.25);
+\draw[blue,thick] (7.5, 3.0) -- (8.0, 2.5);
+\draw[red,thick] (5.5, 0.25) arc (90:45:0.25);
+
+\node[black] at (5.0, -0.5) {A};
+\node[blue] at (8.0, 3.0) {\begin{math}\Phi\end{math}};
+\node[red] at (5.75, 0.5) {\begin{math}\theta\end{math}};
+
+\only<3->{
+  \draw[black,thick,-stealth] (5.0, 3.0) -- (5.0, 3.5);
+  \draw[blue,thick,-stealth] (5.0, 3.0) -- (5.35, 3.35);
+
+  \node[black] at (5.0, 4.0) {\begin{math}\vec{n}\end{math}};
+  \node[blue] at (5.7, 3.7) {\begin{math}\vec{\omega}_{in}\end{math}};
+
+  \node[] at (2.0, 2.0) {\begin{math}{\color{red} \cos\theta} = \vec{n} \cdot {\color{blue} \vec{\omega}_{in}}\end{math}};
+}
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Материал}
+\begin{itemize}
+\item \begin{math}{\color{green}f}\end{math} определяет \textit{материал} объекта
+\pause 
+\item Абсолютно чёрное тело: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = 0\end{math}
+\pause
+\item Идеальное зеркало: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \delta({\color{blue}\vec\omega_{in}} - {\color{magenta}\vec\omega_{out}})\end{math}
+\pause
+\item Старое зеркало: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \left(R_{\vec n}({\color{blue}\vec\omega_{in}})\cdot{\color{magenta}\vec\omega_{out}}\right)^7\end{math}
+\begin{itemize}
+\item \begin{math}R\end{math} -- отраженный вектор: \begin{math}R_{\vec n}(\vec \omega) = 2\vec n \cdot (\vec n \cdot \vec \omega) - \vec \omega\end{math}
+\end{itemize}
+\pause
+\item Диффузная поверхность: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = 1\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Цвет}
+\begin{itemize}
+\item Зависимость \begin{math}{\color{green}f}\end{math} от \begin{math}\lambda\end{math} обеспечивает цвет объектов
+\pause
+\item Мы видим свет, отражённый объектом
+\item Объект синего цвета не отражает красный цвет (кажется чёрным при освещении красным светом)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{BRDF, BTDF, BSDF}
+\begin{itemize}
+\item Если \begin{math}{\color{green}f}\end{math} только отражает свет, её называют BRDF: Bidirectional Reflectance Distribution Function
+\pause 
+\item Если \begin{math}{\color{green}f}\end{math} только преломляет свет, её называют BTDF: Bidirectional Transmittance Distribution Function
+\pause 
+\item В общем случае её называют BSDF: Bidirectional Scattering Distribution Function
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{BSDF}
+\begin{itemize}
+\item BSDF неотрицательна: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda)\geq 0\end{math}
+\pause
+\item Обычно BSDF предполагается нормированной: тело не может отразить больше света, чем пришло
+\begin{equation*}
+\int\limits_{\mathbb S^2} {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda)({\color{blue}\vec\omega_{in}} \cdot \vec{n}) d{\color{blue}\vec\omega_{in}} \leq 1
+\end{equation*}
+\pause
+\item Helmholtz reciprocity:
+\begin{equation*}
+{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = {\color{green}f}(p, {\color{magenta}\vec\omega_{out}}, {\color{blue}\vec\omega_{in}}, \lambda)
+\end{equation*}
+\pause
+\item Комбинация набора BSDF \begin{math}\{{\color{green}f_i}\}\end{math} -- тоже BSDF:
+\begin{equation*}
+{\color{green}\mu_i} \geq 0, \sum {\color{green}\mu_i} \leq 1 \Rightarrow \sum {\color{green}\mu_i f_i}
+\end{equation*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга}
+\begin{itemize}
+\item Откуда взять \begin{math}{\color{blue}I_{in}}\end{math}? \pause Ответ: это чей-то \begin{math}{\color{magenta}I_{out}}\end{math} 
+\end{itemize}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick] (0.0, 0.0) -- (10.0, 0.0);
+\draw[black,thick] (0.0, 0.0) -- (0.0, 6.0);
+
+\node[] at (0.0, 3.0) {\begin{math}{\color{magenta}\bullet}\end{math}};
+\node[] at (6.0, 0.0) {\begin{math}{\color{blue}\bullet}\end{math}};
+
+\node[] at (-0.5, 3.0) {\begin{math}{\color{magenta}I_{out}}\end{math}};
+\node[] at (0.5, 3.5) {\begin{math}{\color{magenta}\vec\omega_{out}}\end{math}};
+\node[] at (6.0, -0.5) {\begin{math}{\color{blue}I_{in}}\end{math}};
+\node[] at (6.5, 0.5) {\begin{math}{\color{blue}\vec\omega_{in}}\end{math}};
+
+\draw[magenta,thick,-stealth] (0.5, 2.75) -- (2.0, 2.0);
+\draw[blue,thick,-stealth] (4.0, 1.0) -- (5.5, 0.25);
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга}
+\begin{itemize}
+\item Интегральное уравнение для каждой точки каждой поверхности сцены
+\pause
+\item Включает зависимость от материала объектов в каждой точке
+\pause
+\item Геометрия сцены связывает уравнения для разных точек
+\pause
+\item Обычно вместо всех возможных значений \begin{math}\lambda\end{math} берут дискретный набор ({\color{red}красный}, {\color{green}зелёный}, {\color{blue}синий})
+\pause
+\item Задача решения этого уравнения называется Global Illumination (GI)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Уравнение рендеринга}
+\begin{itemize}
+\item Как описывать геометрию?
+\pause
+\item Как описывать материал (BRDF)?
+\pause
+\item Как решать само уравнение?
+\pause
+\item Как это выглядит в коде?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как описывать геометрию}
+\begin{itemize}
+\item Зависит от используемого метода решения уравнения
+\pause
+\item Самый частый вариант -- триангуляция поверхности
+\pause
+\item Параметрическая поверхность, сплайны, NURBS
+\pause
+\item Неявная поверхность \begin{math}f(p) = 0\end{math}, по \begin{math}\nabla f\end{math} можно получить нормаль к поверхности
+\pause
+\item Подвид неявных поверхностей -- signed distance function/field (SDF) -- функция \begin{math}f(p)\end{math} возвращающая расстояние до поверхности, удобна для некоторых алгоритмов (raymarching)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{NURBS}
+\slideimage{nurbs.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как решать уравнение рендеринга: radiosity}
+\begin{itemize}
+\item Взять в качестве переменных среднюю освещённость в каждой вершине сцены, интерполировать освещённость в треугольниках, свести к системе линейных уравнений
+\pause
+\item Требует вычислить влияние каждого треугольника на каждый с учётом видимости
+\pause
+\item Обычно решается итеративными методами (Якоби, Гаусса-Зейделя)
+\item Каждая итерация учитывает ещё одно возможное отражение света (bounce) перед попаданием в камеру
+\pause
+\item Плохо подходит для динамических и real-time сцен
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как решать уравнение рендеринга: raytracing + monte-carlo integration}
+\fontsize{8pt}{8pt}
+\begin{itemize}
+\item Посылать лучи из камеры, симулируя обратное распространение света (raytracing)
+\item В точке пересечения луча с объектом сцены аппроксимировать интеграл, пуская отражённые лучи в случайном направлении (monte-carlo integration)
+\pause
+\item Основной алгоритм, использующийся при offline рендеринге
+\pause
+\item Требует как-то ограничить количество отражений (bounces)
+\pause
+\item Требует построить некую структуру данных (bounding volume hierarchy -- BVH) для ускорения поиска пересечений лучей со сценой (RTX делают именно это)
+\pause
+\item Картинка получается очень шумной (зернистой) из-за случайности, очень много исследований направлено на борьбу с шумом (importance sampling, resampling, reservoir sampling)
+\pause
+\item Хочется переиспользовать результаты вычислений между кадрами \begin{math}\Rightarrow\end{math} нужно эти результаты сохранять в
+\begin{itemize}
+\item Пикселях
+\item Точках поверхностей (surflets)
+\item Точках пространства (voxels)
+\end{itemize}
+\pause
+\item Использование для real-time -- предмет активного исследования (напр. ReSTIR GI)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{ReSTIR GI}
+\slideimage{restir.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как решать уравнение рендеринга: real-time подход}
+\begin{itemize}
+\item Набор эвристических аппрокцимаций
+\pause
+\item Прямое освещение: \begin{math}\color{blue}\vec\omega_{in}\end{math} -- направление на источник света, \begin{math}\color{magenta}\vec\omega_{out}\end{math} -- направление на камеру
+\pause
+\item Тени: учитывается, `виден' ли объект источником света, или находится в тени
+\pause
+\item Отражения (точные / размытые)
+\pause
+\item Непрямое освещение (многократно отражённый свет) почти всегда игнорируется или эмулируется:
+\begin{itemize}
+\item Ambient освещение -- свет, приходящий `отовсюду' (с неба, отражённый от стен, и т.п.)
+\item Ambient occlusion (AO) -- затенение частей объекта, куда доходит меньше ambient света
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Только источник света}
+\slideimage{two_balls_only_emissive.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Только прямое освещение}
+\slideimage{two_balls_no_shadow.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Прямое освещение и тени}
+\slideimage{two_balls_no_diffuse.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Прямое и непрямое освещение, тени}
+\slideimage{two_balls_full.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Прозрачность и отражение}
+\slideimage{two_balls_ref.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Откуда взять материал (BRDF)}
+\begin{itemize}
+\item Эвристические формулы (Phong)
+\pause
+\item Вывод из предположений о структуре поверхности (microfacets)
+\pause
+\item Прямое измерение (MERL 100)
+\pause
+\item Симуляция
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как описать материал (BRDF)}
+\begin{itemize}
+\item Явная формула (точная, или аппроксимация) с набором параметров материала
+\pause
+\item Набор предподсчитанных значений, как-то записанных в текстуру
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расчёт освещения}
+\begin{itemize}
+\item Почти всегда происходит во фрагментном шейдере
+\pause
+\item Вычисления используют \verb|vec3| для работы с цветом в {\color{red}R}{\color{green}G}{\color{blue}B}
+\pause
+\item Входные данные:
+\begin{itemize}
+\item Нормаль к поверхности
+\item Параметры материала (цвет, гладкость, и т.п.)
+\item Источники света
+\end{itemize}
+\pause
+\item Полная освещённость = ambient освещение + вклад от каждого источника света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ambient освещение}
+\begin{itemize}
+\item Свет, приходящий `отовсюду'
+\begin{itemize}
+\item На улице: небо
+\item В помещении: диффузное отражение от стен, пола, потолка, других объектов
+\end{itemize}
+\pause
+\item Задаётся своим цветом
+\item Обычно добавляется чтобы точки, куда не попал свет, не выглядели совсем чёрными
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Источники света}
+\begin{itemize}
+\item Два самых часто используемых типа: направленные и точечные
+\pause
+\item Направленные:
+\begin{itemize}
+\item Задаются направлением и яркостью
+\item Моделируют удалённые источники -- солнце, луна
+\end{itemize}
+\pause
+\item Точечные:
+\begin{itemize}
+\item Задаются расположением и функцией зависимости яркости от расстояния
+\item Моделируют (относительно) близкие источники -- костёр, свеча, лампа
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Точечный источник света}
+\begin{itemize}
+\item Яркость убывает с расстоянием
+\item Часто берут такую функцию затухания (attenuation):
+\end{itemize}
+\begin{equation*}
+\frac{1}{C_0 + C_1 r + C_2 r^2}
+\end{equation*}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Диффузная (ламбертова) BRDF}
+\begin{equation*}
+{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \frac{C(\lambda)}{\pi}
+\end{equation*}
+\begin{itemize}
+\item Отражает свет во всех направлениях одинаково
+\item \begin{math}C(\lambda) \in [0, 1]\end{math} -- `альбедо', определяет цвет
+\item \begin{math}\pi\end{math} -- нормировочный множитель, часто входит в \begin{math}C(\lambda)\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Отражающая (зеркальная, specular) BRDF}
+\begin{equation*}
+{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = C(\lambda) \left(R_{\vec n}({\color{blue}\vec\omega_{in}})\cdot{\color{magenta}\vec\omega_{out}}\right)^{power}
+\end{equation*}
+\begin{itemize}
+\item Отражает больше света в направлении отражённого луча: \begin{math}R_{\vec n}(\vec \omega) = 2\vec n \cdot (\vec n \cdot \vec \omega) - \vec \omega\end{math}
+\item Параметр \begin{math}power\end{math} определяет `размытость' отражения: чем больше, тем более точное отражение
+\begin{itemize}
+\item Часто вычисляется на основе более удобного параметра \verb|roughness|, например \begin{math}power = \frac{1}{roughness^2}-1\end{math}
+\end{itemize}
+\item Сложно правильно нормировать
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Фонга (Phong)}
+\begin{itemize}
+\item Вклад источника света = diffuse + specular
+\item Полная освещённость = ambient + diffuse + specular
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Фонга (Phong)}
+\slideimage{phong.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Фонга + направленный источник света}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+uniform vec3 ambient_light_color;
+uniform vec3 light_direction;
+uniform vec3 light_color;
+uniform vec3 view_direction;
+
+in vec3 normal;
+in vec3 ambient_albedo;
+in vec3 diffuse_albedo;
+in vec3 specular_albedo;
+in float specular_power;
+
+layout (location = 0) out vec4 out_color;
+
+void main() {
+  float cosine = dot(normal, light_direction);
+  float light_factor = max(0.0, cosine);
+  vec3 reflected_direction = 2.0 * normal * cosine - light_direction;
+
+  vec3 ambient = ambient_light_color * ambient_albedo;
+  vec3 diffuse = diffuse_albedo * light_color * light_factor;
+  vec3 specular = specular_albedo * pow(max(0.0, dot(reflected_direction,
+    view_direction)), specular_power);
+
+  vec3 result_color = ambient + diffuse + specular;
+  out_color = vec4(result_color, 1.0);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Гуро}
+\begin{itemize}
+\item То же самое, что и модель Фонга, но в вершинном шейдере
+\item Результирующий цвет интерполируется между пикселями
+\item Выглядит плохо, в современности почти не используется
+\end{itemize}
+\slideimage{gourand.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Блинна-Фонга (Blinn-Phong, modified Phong)}
+\begin{itemize}
+\item Как модель Фонга, но по-другому вычисляется specular составляющая
+\pause
+\item \begin{math}h = \frac{{\color{blue}\vec\omega_{in}} + {\color{magenta}\vec\omega_{out}}}{\|{\color{blue}\vec\omega_{in}} + {\color{magenta}\vec\omega_{out}}\|}\end{math} -- т.н. \textit{halfway vector} (часто встречается в моделях освещения)
+\begin{equation*}
+{\color{green}f_{specular}}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = C(\lambda) \left(h \cdot n\right)^{power}
+\end{equation*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Phong vs Blinn-Phong}
+\slideimage{blinn-phong.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Microfacets}
+\begin{itemize}
+\item Чтобы честно вывести формулу для BRDF \textit{(physically-based BRDF)}, нужно предположение о микроструктуре поверхности (microsurface) \pause \begin{math}\Rightarrow\end{math} микрофасеты (microfacets)
+\item Предполагается, что поверхность состоит из маленьких площадок (микрофасетов)
+\pause
+\item Задаётся распределение ориентаций (нормалей) этих площадок
+\pause
+\item Задаётся материал площадок
+\pause
+\item Выводится формула для BRDF (обычно -- приближённая)
+\end{itemize}
+\slideimage{microfacet.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Microfacets}
+\begin{itemize}
+\item Oren-Nayar BRDF -- микрофасетная модель, в которой фасеты имеют диффузную BRDF
+\item Torrance-Sparrow BRDF -- микрофасетная модель, в которой фасеты -- идеальные зеркала
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модель Кука-Торренса (Cook-Torrance)}
+\begin{equation*}
+{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = ({\color{blue}\vec\omega_{in}} \cdot n)
+\left[ (1-s) C_d(\lambda) + s C_s(\lambda) R\right]
+\end{equation*}
+\begin{equation*}
+R = \frac{D \cdot G \cdot F}{4 \cdot ({\color{blue}\vec\omega_{in}} \cdot n) \cdot ({\color{magenta}\vec\omega_{out}} \cdot n)}
+\end{equation*}
+\pause
+\begin{itemize}
+\item \begin{math}C_d(\lambda), C_s(\lambda)\end{math} -- диффузное и отражающее альбедо (цвет)
+\item \begin{math}s\end{math} -- насколько сильно поверхность отражает свет (интерполизует между диффузной и specular BRDF)
+\item \begin{math}D\end{math} -- плотность распределения (distribution) нормалей микрофасетов
+\item \begin{math}G\end{math} -- коэффициент затенения геометрии (geometry) самой себя
+\item \begin{math}F\end{math} -- коэффициент Френеля (Fresnel)
+\item Конкретный вид функций \begin{math}D, G, F\end{math} может варьироваться (см. ссылки)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Disney principled BRDF (2012)}
+\begin{itemize}
+\item Основывается на микрофасетных моделях
+\item Не влезет на слайд :)
+\item Даёт огромное количество параметров для тонкой настройки, и потому удобна для художников
+\item Её вариации используют почти все крупные движки и программы (Unity, Unreal, Blender, ...)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blender principled BRDF}
+\slideimage{principled.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+Туториалы по освещению:
+\begin{itemize}
+\item \href{https://learnopengl.com/Lighting/Basic-Lighting}{\nolinkurl{learnopengl.com/Lighting/Basic-Lighting}}
+\item \href{http://www.opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}{\nolinkurl{opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}}
+\item \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial/point-lights}{\nolinkurl{lighthouse3d.com/tutorials/glsl-tutorial/point-lights}}
+\end{itemize}
+Сложные BRDF:
+\begin{itemize}
+\item \href{http://www.cemyuksel.com/research/papers/CGI2020_ConstantTimeEnergyNormalizationForThePhongSpecularBRDFs.pdf}{Нормировка Phong BRDF}
+\item \href{https://github.com/TwoTailsGames/Unity-Built-in-Shaders/blob/master/CGIncludes/UnityStandardBRDF.cginc}{Стандартная BRDF в Unity}
+\item \href{https://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf}{Описание Disney BRDF}
+\item \href{https://graphicscompendium.com/references/cook-torrance}{Описание Cook-Torrance BRDF и примеры функций D, G, F}
+\end{itemize}
+Raytracing:
+\begin{itemize}
+\item \href{https://raytracing.github.io/books/RayTracingInOneWeekend.html}{Книжка Raytracing in one weekend}
+\item \href{https://www.youtube.com/watch?v=gsZiJeaMO48}{Видео про ReSTIR GI}
+\end{itemize}
+\end{frame}
+
+\end{document}

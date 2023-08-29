@@ -1,0 +1,181 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Практика 11: Система частиц}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\slideimage{0.png}
+\end{frame}
+
+\begin{frame}[fragile]
+N.B: Камеру можно крутить и двигать стрелочками
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Рисуем частицы как квадраты
+\begin{itemize}
+\item В структуру \verb|particle| добавляем параметр \verb|float size|, инициализируем его в случайное значение (например, от \verb|0.2| до \verb|0.4|)
+\item Добавляем соответствующий атрибут для VAO и в вершинном шейдере
+\item Вершинный шейдер просто передаёт значение (\verb|out float size|) в геометрический шейдер (где оно принимается как \verb|in float size[]| -- геометрический шейдер обрабатывает сразу целый примитив, т.е. несколько вершин, поэтому нужен массив)
+\item В геометрическом шейдере меняем тип выходной геометрии: \verb|triangle_strip|, \verb|max_vertices = 4|
+\item В геометрическом шейдере вместо генерации одной вершины генерируем 4 вершины с координатами \begin{math}center + (\pm size, \pm size, 0)\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 2}
+Добавляем текстурные координаты
+\begin{itemize}
+\item В геометрическом шейдере генерируем для вершин текстурные координаты (от 0 до 1 по каждой оси)
+\item В геометрическом шейдере \verb|out vec2 texcoord|
+\item Во фрагментном шейдере, как обычно, \verb|in vec2 texcoord|
+\item Во фрагментном шейдере используем текстурные координаты в качестве цвета: \verb|vec4(texcoord, 0.0, 1.0)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Поворачиваем частицы в сторону камеры
+\begin{itemize}
+\item В геометрическом шейдере вычисляем X, Y, Z оси для частицы:
+\begin{itemize}
+\item Z -- направление из центра частицы на камеру
+\item X, Y -- любые, перпендикулярные Z и друг другу
+\end{itemize}
+\item Вычисляем координаты вершин частицы так, чтобы она была параллельна плоскости XY
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+Cимулируем физику частиц
+\begin{itemize}
+\item Добавляем частице поле `скорость' типа \verb|vec3| (как атрибут в шейдере оно не нужно), инициализируем его чем-то случайным
+\item На каждый кадр, перед обновлением VBO, для каждой частицы, при условии \verb|if (!paused)|:
+\begin{itemize}
+\item Увеличиваем Y-составляющую скорости на некую величину \verb|velocity.y += dt * A|
+\item Интегрируем скорость \verb|position += velocity * dt|
+\item Можно добавить трение \verb|velocity *= exp(- C * dt)|
+\item Можно уменьшать размер частицы \verb|size *= exp(- D * dt)|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{4.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+Вращаем частицы
+\begin{itemize}
+\item Добавляем частице атрибут `угол поворота' типа \verb|float| (поле в структуру, входной параметр вершинного шейдера, настройка атрибута для VAO)
+\item В геометрическом шейдере поворачиваем оси X, Y на этот угол
+\item Добавляем частице поле `угловая скорость' типа \verb|float| (как атрибут в шейдере оно не нужно), инициализируем его чем-то случайным
+\item На каждый кадр, перед обновлением VBO, для каждой частицы, при условии \verb|if (!paused)|:
+\begin{itemize}
+\item Интегрируем угловую скорость \verb|rotation += angular_velocity * dt|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{5.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 6}
+Создаём emitter частиц
+\begin{itemize}
+\item На каждый кадр, перед обновлением VBO, при условии \verb|if (!paused)|:
+\begin{itemize}
+\item Создаём частицы не разом, а по одной в кадр, пока их не станет 256
+\item Пересоздаём частицы с новыми случайными параметрами, если выполняется какое-то условие (например, Y-координата больше некого порогового значения, или размер меньше некого порогового значения)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{6.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 7}
+Текстурируем частицы
+\begin{itemize}
+\item Загружаем изображение \verb|particle.png| из файла в директории с проектом (путь до него уже есть в коде)
+\item Создаём текстуру и загружаем в неё это изображение: internal format = \verb|GL_RGBA8|, format = \verb|GL_RGBA|, type = \verb|GL_UNSIGNED_BYTE|, настраиваем линейную фильтрацию с mipmaps, генерируем mipmaps
+\item Используем эту текстуру во фрагментном шейдере: текстура в оттенках серого, берём только первую координату цвета (\verb|texture(...).r|) и используем как альфа-канал результирующего цвета (сам цвет можно сделать, например, белым)
+\item Включаем аддитивный блендинг (blend func = \verb|GL_SRC_ALPHA, GL_ONE|) и выключаем тест глубины
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{7.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 8*}
+Раскрашиваем частицы
+\begin{itemize}
+\item Создаём одномерную текстуру с цветовой палитрой: \verb|GL_TEXTURE_1D|, линейная фильтрация (без mipmaps), несколько вручную описанных пикселей (например, чёрный, оранжевый, жёлтый, белый), данные загружаются через \verb|glTexImage1D|
+\item Передаём эту текстуру во врагментный шейдер используя texture unit 1 (\verb|GL_TEXTURE1|), в шейдере тип sampler'а -- \verb|sampler1D|
+\item Используем значение из первой текстуры (оно же -- альфа-канал результирующего цвета) для индексации в текстуру с палитрой, результирующий цвет = цвет из палитры + альфа-канал из первой текстуры
+\item Можно дополнительно умножить текстурную координату для палитры (оно же -- значение альфа) на некую функцию от размера частицы (чтобы маленькие частицы были темнее; размер придётся передать во фрагментный шейдер)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{8.png}
+\end{frame}
+
+\end{document}

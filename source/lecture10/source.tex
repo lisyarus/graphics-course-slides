@@ -1,0 +1,589 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+}
+
+\title{Компьютерная графика}
+\subtitle{Лекция 10: Normal mapping, material mapping, environment mapping, отражения, несколько источников света}
+\date{2022}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\begin{itemize}
+\item Хотим высокую детализацию поверхности объекта
+\end{itemize}
+\slideimage{orange.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\begin{itemize}
+\item Можно взять очень много вершин
+\pause
+\item Очень дорого, особенно когда объектов много
+\end{itemize}
+\slideimage{orange-mesh.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\begin{itemize}
+\item Наблюдение: высокая детализация даёт 2 вещи
+\begin{itemize}
+\item Детализацию координат вершин -- слабо заметна
+\item Детализацию нормалей вершин -- сильно заметна, так как влияет на освещение
+\end{itemize}
+\pause
+\item Давайте откажемся от детализации координат!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\slideimage{orange-normal-map.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\begin{itemize}
+\item Normal mapping: используем текстуру, в которой закодированы нормали в точках объекта
+\pause
+\item Вместо нормалей, приходящих в вершинах, достаём нормали из текстуры во фрагментном шейдере (используя те же текстурные координаты, что и для цвета)
+\pause
+\item При этом можно использовать слабо детализированную геометрию
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\slideimage{orange-normals.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\slideimage{bricks-normal-map.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\slideimage{bricks-normals.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping}
+\slideimage{pupil-normals.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping: система координат}
+\begin{itemize}
+\item В какой системе координат хранить нормали в текстуре?
+\pause
+\item В системе координат объекта
+\begin{itemize}
+\item {\color{green}+} Нет лишних операций, просто читаем нормаль из текстуры (и, возможно, применяем model матрицу)
+\item {\color{red}—} Неудобно при подготовке данных: любое изменение модели (напр. слегка повернули часть объекта) нужно пересчитывать текстуру нормалей
+\end{itemize}
+\pause
+\item В локальной системе координат пикселя, учитывая геометрию объекта
+\begin{itemize}
+\item {\color{red}—} Нужно восстанавливать локальную систему координат в шейдере (используя атрибуты вершины)
+\item {\color{green}+} Можно сэкономить и хранить только две координаты нормали
+\item {\color{green}+} Обычно такая текстура с нормалями легче воспринимается на глаз
+\item Наиболее  распространённый способ
+\item Такие текстуры часто выглядят синими, потому что направление Z считается нормалью вершины
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping: TBN}
+\begin{itemize}
+\item Для второго способа (локальная система координат пикселя) нужно восстановить эту систему координат
+\pause
+\item Она задаётся ортонормированным базисом из трёх векторов -- tangent, bitangent, normal (TBN):
+\pause
+\begin{itemize}
+\item Tangent -- смотрит в направлении роста первой текстурной координаты вдоль поверхности
+\item Bitangent -- смотрит в направлении роста второй текстурной координаты вдоль поверхности
+\item Normal -- перпендикуляр к поверхности
+\end{itemize}
+\pause
+\item Обычно их хранят в атрибутах вершин
+\item Достаточно любых двух векторов (обычно -- normal + tangent), так как третий восстанавливается через векторное произведение
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping: формат хранения}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item Как хранить нормали в текстуре?
+\pause
+\item Нормаль -- 3х-компонентный нормированный вектор
+\pause
+\item Floating-point текстуры (\verb|GL_RGB32F| или \verb|GL_RGB16F|)
+\begin{itemize}
+\item {\color{red}—} Занимают много места (3x16-bit = 6 байт на пиксель)
+\item {\color{red}—} Излишняя точность
+\item {\color{red}—} Значительная часть возможных значений (координаты больше 1 по модулю) вообще не используется
+\end{itemize}
+\pause
+\item Signed normalized текстуры (\verb|GL_RGB8_SNORM|)
+\begin{itemize}
+\item {\color{green}+} Компактные
+\item {\color{green}+} Достаточно точности
+\item {\color{red}—} Форматы изображений обычно не умеют работать с signed пикселями
+\end{itemize}
+\pause
+\item Обычные unsigned normalized текстуры (\verb|GL_RGB8|, \verb|GL_RGB10_A2|, \verb|GL_RGB565|, \verb|GL_RGB5_A1|, \verb|GL_R3_G3_B2|)
+\begin{itemize}
+\item {\color{green}+} Компактные
+\item {\color{green}+} Достаточно точности
+\item {\color{green}+} Можно использовать обычные форматы изображений
+\item Координаты хранятся в виде, отмасштабированном в диапазон [0, 1], т.е. \verb|0.5 * (x + 1)|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping: формат хранения}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item Если нормаль всегда ориентирована локально `вверх' (как в варианте с TBN), можно не хранить Z-компоненту нормали: её можно восстановить по XY как \begin{math}\sqrt{1-x^2-y^2}\end{math}
+\pause
+\item Для текстуры нормалей обычно имеет смысл включать линейную интерполяцию и мипмапы, но мипмапы могут работать неправильно
+\pause
+\item Нормаль, прочитанную из текстуры, лучше явно нормировать в шейдере (функцией \verb|normalize|), так как она может быть не нормированной из-за неточностей формата хранения и линейной интерполяции, что приведёт к артефактам при расчёте specular освещения
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping: ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/Advanced-Lighting/Normal-Mapping}{\nolinkurl{learnopengl.com/Advanced-Lighting/Normal-Mapping}}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping}{\nolinkurl{opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping}}
+\item \href{https://sudonull.com/post/14500-Learn-OpenGL-Lesson-55-Normal-Mapping}{\nolinkurl{sudonull.com/post/14500-Learn-OpenGL-Lesson-55-Normal-Mapping}}
+\item \href{https://habr.com/ru/post/415579}{\nolinkurl{habr.com/ru/post/415579}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Material mapping}
+\begin{itemize}
+\item В обработке освещения часто встречаются настраиваемые параметры, помимо цвета (альбедо) объекта (например, glossiness и roughness для specular освещения)
+\pause
+\item Можно их тоже варьировать, читая из текстуры!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Material mapping}
+\slideimage{material_map.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Environment mapping}
+\begin{itemize}
+\item Одноцветный фон сцены -- скучно, хочется нарисовать что-нибудь `в далеке'
+\pause
+\item Тратить ресурсы на то, чтобы рисовать что-то очень далёкое, не хочется
+\pause
+\item Решение: статическая (обычно), заранее подготовленная картинка `environment map' (облака, горы, etc.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Environment mapping: как хранить?}
+\begin{itemize}
+\item Environment map задаёт цвет `фона' в каждом возможном направлении
+\pause
+\item Варианты:
+\begin{itemize}
+\item Cubemap-текстура
+\pause
+\item Обычная 2D текстура с равнопромежуточной проекцией (текстуртные координаты соответствуют `долготе' и `широте' направления взгляда)
+\pause
+\item Две 2D текстуры с параболической/fisheye проекцией
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Environment map}
+\slideimage{env-map.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Environment mapping: как рисовать?}
+\begin{itemize}
+\item Первый вариант:
+\pause
+\begin{itemize}
+\item Нарисовать куб вокруг камеры
+\pause
+\item По координате точки и координате камеры получить направление взгляда
+\pause
+\item Использовать направление для обращения к environment map
+\end{itemize}
+\pause
+\item Второй вариант:
+\begin{itemize}
+\item Нарисовать полноэкранный прямоугольник
+\pause
+\item Используя обратную view+projection матрицу получить координаты этого прямоугольника в пространстве
+\pause
+\item По координате точки и координате камеры получить направление взгляда
+\pause
+\item Использовать направление для обращения к environment map
+\end{itemize}
+\pause
+\item Environment map нужно рисовать первым объектом сцены, \textbf{без} теста глубины
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Environment/reflection mapping}
+\begin{itemize}
+\item Рисовать честные отражения в real-time очень сложно
+\pause
+\item Дешёвая аппроксимация: будем учитывать в отражениях только environment map
+\pause
+\item Такая техника известна под названиями reflection mapping или environment mapping
+\pause
+\item {\color{green}+} Просто в реализации
+\item {\color{green}+} Быстро работает
+\item {\color{red}—} Не позволяет учесть динамические объекты
+\pause
+\item Хорошо работает для плохо заметных отражений: дверные ручки, гильзы от пуль, ржавые трубы, etc
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Reflection mapping: реализация}
+\begin{itemize}
+\item Во фрагментном шейдере вычисляем направление луча из камеры в точку
+\pause
+\item Вычисляем направление отражённого луча
+\pause
+\item Используем для чтения из environment map
+\pause
+\item Можно явно использовать mipmap'ы environment map'а чтобы аппроксимировать размытое отражение (roughness)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Reflection mapping}
+\slideimage{reflection.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Environment/reflection mapping: ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Cubemaps}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Cubemaps}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Отражения}
+\begin{itemize}
+\item Расчёт отражений в real-time -- очень сложная задача
+\pause
+\item Для плоских зеркал можно нарисовать сцену целиком, применив отражающее преобразование и нарисовав зеркало предварительно в stencil буфер, чтобы перевёрнутая сцена нарисовалась только там, где находится зеркало
+\pause
+\begin{itemize}
+\item {\color{red}—} Рисовать заново всю сцену -- дорого
+\item {\color{red}—} Не работает для неплоских зеркал
+\end{itemize}
+\pause
+\item Можно нарисовать сцену целиком, вычисляя проекцию объекта на зеркало в вершинном шейдере
+\begin{itemize}
+\item {\color{red}—} Дорого
+\item {\color{red}—} Будут артефакты с растягиванием вершин (зависит от формы зеркала)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Отражения}
+\begin{itemize}
+\item Аппроксимация: использовать ту же идею, что и в reflection mapping'е, но вместо заранее подготовленного environment map нарисуем сцену в текстуру
+\pause
+\begin{itemize}
+\item {\color{red}—} Дорого (рисуем всю сцену ещё раз)
+\item {\color{red}—} Отражения не зависят от точки, в которой происходит отражение
+\item {\color{green}+} Обычно артефакты не очень заметны
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Cubemap отражения}
+\begin{itemize}
+\item Удобнее всего использовать cubemap-текстуру
+\pause
+\item Алгоритм:
+\begin{itemize}
+\item Выбираем точку, из которой будет строиться текстура для отражений (обычно -- позиция камеры или игрока)
+\pause
+\item Рисуем сцену в cubemap-текстуру камерой, находящейся в этой точке (как в shadow mapping от точечного источника света)
+\pause
+\item При рисовании сцены на экран вычисляем отражённый луч из камеры (как в reflection mapping)
+\pause
+\item Читаем значение из cubemap-текстуры по этому направлению -- это отражённый цвет
+\end{itemize}
+\pause
+\item Как в reflection mapping, можно использовать mipmap'ы или размыть cubemap чтобы имитировать нечёткие отражения
+\pause
+\item Можно сэкономить, взяв cubemap низкого качества, и рисуя в него только крупные объекты
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Cubemap отражения (GTA 5)}
+\slideimage{gta_reflections.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Много источников света}
+\slideimage{many-lights.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как обрабатывать много источников света?}
+\begin{itemize}
+\item Простейший способ -- использовать по отдельному набору uniform-переменных для каждого источника света, и обрабатывать их все сразу в шейдере
+\pause
+\item Можно использовать массивы uniform-переменных
+\pause
+\begin{itemize}
+\item Задаются как \verb|uniform vec3 light_position[N]| (\verb|N| -- константа)
+\item Каждый элемент массива -- отдельная uniform-переменная, для неё нужно отдельно вызвать \verb|glGetUniformLocation|
+\item Имя этой переменной -- имя массива + индекс, например \verb|light_position[0]|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как обрабатывать много источников света?}
+\begin{itemize}
+\item Сколько источников света можно так обработать?
+\pause
+\item OpenGL гарантирует, что под uniform-переменные есть как минимум 1024 выделенных компоненты (\verb|vec3| занимает 3 компоненты, и т.п.)
+\pause
+\item В варианте 3 \verb|vec3| на источник (position, color, attenuation) -- около 113 источников света
+\pause
+\item Чем больше источников, тем больше вычислений в шейдере, тем больше нагрузка на GPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как обрабатывать много источников света?}
+\begin{itemize}
+\item Вместо массивов uniform-переменных можно использовать:
+\begin{itemize}
+\item Uniform buffer objects (UBO) -- обычно 16K
+\item Buffer textures -- от 64K
+\item Shader storage buffer objects (SSBO, OpenGL 4.3) -- от 128M
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как обрабатывать много источников света?}
+\begin{itemize}
+\item Другой способ: рисовать сцену по одному разу на каждый источник света с аддитивным blending'ом, `добавляя' вклад каждого источника света
+\pause
+\item Очень дорого:
+\begin{itemize}
+\item Многократно повторяются одни и те же вычисления в вершинных шейдерах
+\item Многократно читаются одни и те же данные атрибутов вершин, текстур, и т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Несколько источников света}
+\begin{itemize}
+\item Оба подхода выполняют много лишних операций:
+\begin{itemize}
+\item Вычисляется полное освещение для объекта, который может быть скрыт другим объектом
+\pause
+\item Вычисляется вклад в освещение для объекта, находящегося слишком далеко от источника света
+\end{itemize}
+\pause
+\item Можно частично решить, вычисляя для каждого объекта список источников, которыми он освещён \begin{math}\Rightarrow\end{math} больше изменений uniform-переменных при рендеринге, меньше возможность для batching'а (объединения объектов в группы или в общие буферы)
+\pause
+\item Более современные решения: deferred shading, tiled/clustered shading
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Deferred shading}
+\begin{itemize}
+\item Идея: вместо рисования сцены на экран, сначала нарисуем её (с точки зрения камеры) в набор буферов, вместе называющийся G-buffer, содержащих
+\begin{itemize}
+\item Цвет пикселей (альбедо)
+\item Нормали пикселей
+\item Материалы пикселей
+\item Позиции пикселей в мировой системе координат
+\item И т.п.
+\end{itemize}
+\pause
+\item После этого вычисляем освещение любым способом: одним большим шейдером на все источники, или аддитивным blending'ом по одному
+\pause
+\item В варианте с blending'ом можно вычислять освещение только для пикселей, расположенных рядом с источником света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Deferred shading: G-buffer}
+\slideimage{g_buffer.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Deferred shading}
+\begin{itemize}
+\item {\color{green}+} Позволяет учесть тысячи источников света
+\item {\color{green}+} После применения освещения остаётся много информации (G-buffer), которую можно использовать для других эффектов (SSAO, screen-space reflections, ...
+\item {\color{green}+} Не вычисляет освещение для объектов, скрытых другими объектами
+\item {\color{green}+} Есть много вариантов оптимизации хранения G-buffer'а (сжимать нормали, восстанавливать позицию по глубине)
+\item {\color{red}—} Не позволяет учесть освещённые полупрозрачные объекты (на каждый слой прозрачных объектов нужен свой G-buffer)
+\item {\color{red}—} Очень много операций записи памяти (в G-buffer) на каждый кадр
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Tiled/clustered shading}
+\begin{itemize}
+\item Идея: разобьём видимую область на кусочки
+\begin{itemize}
+\item Tiled: экран разбивается на маленькие `тайлы', например 8x8 пикселей
+\item Clustered: трёхмерная видимая область (view frustum) разбивается на `кластеры', например 16x8x24 (всего 3072 кластера) по X, Y и Z соответственно
+\end{itemize}
+\pause
+\item Для каждого тайла/кластера вычисляем список источников света, влияющих на объекты в этом тайле/кластере
+\pause
+\item Рисуем сцену как обычно; при расчёте освещения вычисляем, в каком мы находимся тайле/кластере, и читаем оттуда список источников света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Clustered shading}
+\slideimage{clustered.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Tiled/clustered shading}
+\begin{itemize}
+\item Хранить список источников можно в buffer textures или в shader storage buffer objects (OpenGL 4.3)
+\pause
+\item Вычислять список источников для каждого тайла/кластера можно на CPU или на GPU (compute shaders)
+\pause
+\item На GPU быстрее, но сложнее реализация и формат хранения
+\pause
+\item Даже на CPU позволяет обрабатывать тысячи источников света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Clustered shading}
+\slideimage{clustered_mars.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Tiled/clustered shading}
+\begin{itemize}
+\item {\color{green}+} Позволяет учесть тысячи источников света
+\item {\color{green}+} Позволяет рисовать прозрачные освещённые объекты
+\item {\color{red}—} Вычисляет освещение и для объектов, скрытых другими объектами
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени от многих источников света}
+\begin{itemize}
+\item Для каждого источника придётся рисовать shadow map
+\pause
+\item Как хранить много shadow map?
+\pause
+\item Array texture
+\begin{itemize}
+\item {\color{green}+} Удобный доступ (слой = номер источника)
+\item {\color{red}—} Все shadow map будут одинакового размера \begin{math}\Rightarrow\end{math} нельзя сэкономить на тенях далёких источников
+\end{itemize}
+\pause
+\item Shadow atlas: использовать одну большую текстуру, в кусках которой хранятся shadow maps всех источников
+\begin{itemize}
+\item {\color{green}+} Можно варьировать размер shadow map для каждого источника
+\item {\color{red}—} Сложнее доступ к shadow map
+\item {\color{red}—} Нужно аккуратно работать с текстурными координатами, чтобы не залезть в чужой shadow map
+\item {\color{red}—} Нужен алгоритм упаковки многих текстур в одну
+\item Самый распространённый способ
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow atlas}
+\slideimage{shadow_atlas.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Несколько источников света}
+\begin{itemize}
+\item \href{https://learnopengl.com/Lighting/Multiple-lights}{\nolinkurl{learnopengl.com/Lighting/Multiple-lights}}
+\item \href{https://en.wikibooks.org/wiki/GLSL_Programming/GLUT/Multiple_Lights}{\nolinkurl{en.wikibooks.org/wiki/GLSL\_Programming/GLUT/Multiple\_Lights}}
+\item \href{https://learnopengl.com/Advanced-Lighting/Deferred-Shading}{\nolinkurl{learnopengl.com/Advanced-Lighting/Deferred-Shading}}
+\item \href{http://www.aortiz.me/2018/12/21/CG.html}{\nolinkurl{www.aortiz.me/2018/12/21/CG.html}}
+\end{itemize}
+\end{frame}
+
+\end{document}

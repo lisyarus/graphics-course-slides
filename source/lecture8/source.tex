@@ -1,0 +1,686 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 8: Геометрические шейдеры, shadow volumes, shadow mapping и его разновидности}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры}
+\begin{itemize}
+\item Тип шейдера, наравне в вершинным и фрагментным
+\pause
+\item Создаётся как \verb|glCreateShader(GL_GEOMETRY_SHADER)|
+\pause
+\item Встраивается после вершинного шейдера, до perspective divide
+\pause
+\item Оперирует целыми примитивами (точками/линиями/треугольниками), т.е. наборами вершин
+\pause
+\item Может менять тип примитива и количество вершин
+\pause
+\item Может варьировать количество вершин на выходе
+\pause
+\item \begin{math}\Rightarrow\end{math} может работать довольно медленно
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1>[fragile,label=geometry_shader_examples]
+\frametitle{Геометрические шейдеры: примеры использования}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item Расчёт нормалей для flat shading'а
+\pause
+\begin{itemize}
+\item Вход: треугольник (тройка вершин)
+\item Выход: те же вершины с посчитанной нормалью
+\end{itemize}
+\pause
+\item Визуализация нормалей
+\pause
+\begin{itemize}
+\item Вход: вершина с нормалью
+\item Выход: линия из двух вершин -- исходная вершина, исходная вершина + нормаль
+\end{itemize}
+\pause
+\item Shadow volumes -- алгоритм рисования теней
+\pause
+\item Billboards -- плоские фигуры, всегда смотрящие в сторону камеры
+\pause
+\begin{itemize}
+\item Вход: одна вершина (точка)
+\item Выход: набор треугольников
+\pause
+\item Системы частиц
+\pause
+\item Облака
+\pause
+\item Деревья
+\pause
+\item Трава
+\end{itemize}
+\pause
+\item Изолинии
+\pause
+\begin{itemize}
+\item Вход: треугольник
+\item Выход: изолиния, проходящая через этот треугольник (0 или 2 вершины)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Flat shading}
+\slideimage{flat-shading.png}
+\end{frame}
+
+\againframe<2-4>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Визуализация нормалей}
+\slideimage{normals-viz.png}
+\end{frame}
+
+\againframe<5-6>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards}
+\slideimage{billboards.jpg}
+\end{frame}
+
+\againframe<7-8>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: система частиц (дым)}
+\slideimage{smoke.jpg}
+\end{frame}
+
+\againframe<8-9>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: облака}
+\slideimage{clouds.jpg}
+\end{frame}
+
+\againframe<9-10>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: деревья}
+\slideimage{trees.jpg}
+\end{frame}
+
+\againframe<10-11>{geometry_shader_examples}
+
+\begin{frame}[fragile]
+\frametitle{Billboards: трава}
+\slideimage{grass.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры: пример}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+#version 330 core
+uniform mat4 transform;
+// Входные примитивы - точки
+layout (points) in;
+// Выходные примитивы - линии, в сумме не больше 2х вершин
+layout (line_strip, max_vertices = 2) out;
+// Данные из вершинного шейдера
+in vec3 normal[];
+  
+void main() {    
+    gl_Position = transform * gl_in[0].gl_Position;
+    EmitVertex();
+
+    gl_Position = transform * (gl_in[0].gl_Position
+        + vec4(normal[0], 0));
+    EmitVertex();
+
+    EndPrimitive();
+} 
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры: пример}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+#version 330 core
+// Входные примитивы - линии
+layout (lines) in;
+// Выходные примитивы - треугольники, в сумме не больше 4х вершин
+layout (triangle_strip, max_vertices = 4) out;
+// Данные для фрагментного шейдера
+out vec4 color;
+  
+void main() {
+    gl_Position = gl_in[0].gl_Position + vec4(-1.0, -1.0, 0.0, 0.0);
+    color = vec4(1.0, 0.0, 0.0, 1.0);
+    EmitVertex();
+
+    gl_Position = gl_in[0].gl_Position + vec4( 1.0, -1.0, 0.0, 0.0);
+    color = vec4(0.0, 1.0, 0.0, 1.0);
+    EmitVertex();
+
+    gl_Position = gl_in[1].gl_Position + vec4(-1.0,  1.0, 0.0, 0.0);
+    color = vec4(0.0, 0.0, 1.0, 1.0);
+    EmitVertex();
+
+    gl_Position = gl_in[1].gl_Position + vec4( 1.0,  1.0, 0.0, 0.0);
+    color = vec4(1.0, 1.0, 1.0, 1.0);
+    EmitVertex();
+
+    EndPrimitive();
+} 
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Геометрические шейдеры: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Geometry_Shader}{\nolinkurl{khronos.org/opengl/wiki/Geometry\_Shader}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Geometry-Shader}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Geometry-Shader}}
+\item \href{https://open.gl/geometry}{\nolinkurl{open.gl/geometry}}
+\item \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial/geometry-shader}{\nolinkurl{lighthouse3d.com/tutorials/glsl-tutorial/geometry-shader}}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch07.html}{GPU Gems, Chapter 7. Rendering Countless Blades of Waving Grass}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: теория}
+\begin{itemize}
+\item Точка сцены, в которую не попадает (заблокирован чем-то) прямой свет из конкретного источника света
+\item Свойство точки по отношению к конкретному источнику света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени}
+\slideimage{shadows1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: теория}
+\begin{itemize}
+\item Если источник света точечный (или бесконечно удалённый), тень -- бинарное свойство: луч из точки сцены в источник света или пересекает что-то (точка в тени), или нет (точка не в тени) \begin{math}\Rightarrow\end{math} жёсткие тени (hard shadows)
+\pause
+\item Если источник света объёмный, точка сцены может находиться в тени относительно части источника света, и не находиться в тени относительно другой его части \begin{math}\Rightarrow\end{math} мягкие тени (soft shadows)
+\pause
+\begin{itemize}
+\item Точки, полностью находящиеся в тени -- \textit{umbra}
+\item Точки, частично находящиеся в тени -- \textit{penumbra}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: мягкие vs жёсткие}
+\slideimage{shadow-scheme1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Мягкие тени}
+\slideimage{shadows2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Солнечное затмение}
+\slideimage{eclipse.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: теория}
+\begin{itemize}
+\item Реальные источники света -- объёмные
+\pause
+\item Размер и форма penumbra зависит от размеров и формы источника света, а также от расстояния до него (чем дальше, тем меньше penumbra)
+\pause
+\begin{itemize}
+\item В пределе расстояния \begin{math}\rightarrow\infty\end{math} мягкая тень вырождается в жёсткую
+\end{itemize}
+\pause
+\item В real-time графике получить правильные тени (как жёсткие, так и мягкие) довольно сложно
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: raytracing}
+\begin{itemize}
+\item При простом raytracing'е (без решения rendering equation) для получения жёсткой тени можно послать дополнительный луч в направлении света (shadow ray): если он что-то пересёк, точка находится в тени
+\pause
+\item При raytracing'е с монте-карло интегрированием для global illumination тени (как жёсткие, так и мягкие) получаются автоматически
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени: real-time алгоритмы}
+\begin{itemize}
+\item Shadow volumes
+\pause
+\begin{itemize}
+\item {\color{green}+} Идеальные жёсткие тени
+\item {\color{red}---} Алиасинг
+\item {\color{red}---} Нужно на лету генерировать геометрию
+\item {\color{red}---} Сложно сделать мягкие тени
+\item {\color{red}---} Очень большой fill rate (количество обрабатываемых пикселей), плохо предсказумая производительность
+\end{itemize}
+\pause
+\item Shadow mapping
+\pause
+\begin{itemize}
+\item {\color{green}+} Производительность растёт +/- линейно с ростом сложности сцены
+\item {\color{red}---} Крупный алиасинг ("пиксельные" тени)
+\item {\color{green}+} Много вариаций, улучшающих качество и позволяющих делать как жёсткие, так и мягкие тени
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (они же stencil shadows)}
+\begin{itemize}
+\item Тень от конкретного объекта -- некая (полубесконечная) трёхмерная область пространства (shadow volume)
+\end{itemize}
+\slideimage{shadow-volume.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (они же stencil shadows)}
+\begin{itemize}
+\item Тень от конкретного объекта -- некая (полубесконечная) трёхмерная область пространства (shadow volume)
+\pause
+\item Нарисуем её как трёхмерный объект (построим и нарисуем её грани)
+\pause
+\item Если в конкретный пиксель попало одинаковое количество front-facing и back-facing граней, то он не в тени, иначе -- в тени
+\pause
+\item Количество пересечений луча из камеры с гранями shadow volume вычисляем с помощью stencil буфера
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (они же stencil shadows)}
+\slideimage{shadow-volumes-scheme.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: алгоритм}
+\begin{itemize}
+\item Выключаем рисование в цветовой буфер и буфер глубины (\verb|glColorMask|, \verb|glDepthMask|) (но не выключаем тест глубины!)
+\pause
+\item Настраиваем stencil буфер: \verb|+1| для front-facing треугольников, \verb|-1| для back-facing
+\pause
+\item Вычисляем и рисуем shadow volume (для каждого объекта)
+\pause
+\item Обратно включаем рисование цвета и глубины
+\pause
+\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \verb|stencil=0|, и рисуем сцену шейдером, вычисляющим освещение
+\pause
+\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \verb|stencil!=0|, и рисуем сцену шейдером, игнорирующим освещение
+\pause
+\item Процедуру нужно повторить для каждого источника света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volume}
+\slideimage{shadow-volume2.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volume}
+\slideimage{shadow-volume3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (Doom 3)}
+\slideimage{doom3-shadows.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: как вычислять shadow volume?}
+\begin{itemize}
+\item Шаг 1: определить shadow edges -- рёбра модели, у которых один соседний треугольник обращён к источнику света \begin{math}\left(\vec n \cdot \vec r > 0\right)\end{math}, а второй -- против источника света \begin{math}\left(\vec n \cdot \vec r \leq 0\right)\end{math}
+\pause
+\item Щаг 2: для каждого shadow edge построить четырёхугольную грань shadow volume -- к точкам ребра \begin{math}p_1, p_2\end{math} добавлются точки \begin{math}p_1 + D \cdot \frac{p_1 - o}{|p_1 - o|}\end{math} и аналогично для \begin{math}p_2\end{math}
+\begin{itemize}
+\item \begin{math}o\end{math} -- координаты источника света
+\item \begin{math}D\end{math} -- расстояние, до которого отбрасывается тень (в идеале мы хотим \begin{math}D\rightarrow\infty\end{math}, для этого можно воспользоваться однородными координатами)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (Doom 3)}
+\slideimage{shadow-edge.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: как вычислять shadow volume?}
+\begin{itemize}
+\item Два варианта: на CPU или на GPU
+\pause
+\item На CPU: очень дорого (положение модели и источника света могут меняться каждый кадр)
+\pause
+\item На GPU: геометрические шейдеры!
+\begin{itemize}
+\item Нужен входной тип примитива \textit{lines adjacency}, позволяющий передать 4 вершины как один примитив (две вершины ребра + две вершины соседних треугольников)
+\pause
+\item \begin{math}\Rightarrow\end{math} модель должна быть специально адаптирована для генерации shadow volume
+\pause
+\item Шейдер проверяет, является ли ребро shadow edge, и генерирует грань shadow volume
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes}
+\begin{itemize}
+\item {\color{green}+} Pixel-perfect жёсткие тени
+\item {\color{red}---} Алиасинг
+\item {\color{red}---} Сложно получить мягкие тени
+\item {\color{red}---} Нужно на лету генерировать геометрию
+\item {\color{red}---} Требует правильной геометрии (без дырок и дублирования)
+\item {\color{red}---} Не работает, если камера находится внутри тени (исправляется с помощью т.н. Carmack's Reverse)
+\item {\color{red}---} Ресурсозатратен: даже для маленького объекта его shadow volume может занимать значительную часть сцены \begin{math}\Rightarrow\end{math} слишком много растеризации, чтения/записи памяти (stencil buffer)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes с плохой геометрией}
+\slideimage{shadow-volume-bad-mesh.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes}
+\begin{itemize}
+\item Thief 3
+\item Doom 3
+\item Quake 4
+\item Prey
+\item Far Cry
+\item F.E.A.R 1, 2, 3
+\item S.T.A.L.K.E.R.
+\item Timeshift
+\item и др.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes: ссылки}
+\begin{itemize}
+\item \href{https://en.wikipedia.org/wiki/Shadow_volume}{\nolinkurl{en.wikipedia.org/wiki/Shadow\_volume}}
+\item \href{https://ogldev.org/www/tutorial40/tutorial40.html}{\nolinkurl{ogldev.org/www/tutorial40/tutorial40.html}}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch09.html}{GPU Gems, Chapter 9. Efficient Shadow Volume Rendering}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: идея}
+\begin{itemize}
+\item Самое популярное семейство алгоритмов рисования теней
+\pause
+\item Идея: представим, что источник света -- это камера (наблюдатель)
+\item Тень -- это то, что \textbf{не видит} источник света
+\pause
+\item Как понять, что видит источник света? \pause Нарисовать!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: алгоритм}
+\begin{itemize}
+\item Рисуем сцену в текстуру (shadow map, карта теней) с точки зрения источника света (цветовой буфер не нужен, достаточно буфера глубины)
+\pause
+\item Рисуем сцену на экран, фрагментный шейдер читает \textit{буфер глубины} (shadow map), нарисованный с точки зрения источника света -- там содержатся расстояния от источника до ближайшей (к источнику) поверхности
+\item Если расстояние от источника до рисуемого пикселя больше, чем значение из буфера глубины, -- текущий пиксель находится в тени
+\pause
+\item N.B. Линейная фильтрация для буфера глубины не имеет смысла -- будут артефакты на границах объектов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: алгоритм}
+\slideimage{shadow-mapping1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: фрагментный шейдер}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+#version 330 core
+// Матрица с которой рисовался shadow map
+uniform mat4 shadow_projection;
+// Буфер глубины (shadow map)
+uniform sampler2D shadow_depth;
+
+in vec3 position;
+
+void main(){
+  vec4 shadow_coord = shadow_projection * vec4(position, 1.0);
+  shadow_coord /= shadow_coord.w; // perspective divide
+  if (abs(shadow_coord.x) < 1.0 && abs(shadow_coord.y) < 1.0){
+    shadow_coord = shadow_coord * 0.5 + vec2(0.5);
+
+    bool in_shadow = texture(shadow_depth,
+      shadow_coord.xy).r < shadow_coord.z;
+
+    ...
+  }
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: буфер глубины}
+\slideimage{shadow-mapping-depth.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: результат}
+\slideimage{shadow-mapping2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: проекция}
+\begin{itemize}
+\item Как выбрать проекцию камеры (\verb|shadow_transform|) для shadow map?
+\pause
+\item Удалённый источник освещает всю сцену с одного направления \begin{math}\Rightarrow\end{math} удобно использовать ортографическую проекцию
+\pause
+\item Проекцию надо подобрать так, чтобы в видимую область попала вся сцена
+\pause
+\item Можно спроецировать все объекты на плоскость, перпендикулярную направлению на свет (которое можно считать Z-осью этой камеры), взять любые два ортогональных вектора X и Y в этой плоскости, и найти bounding box сцены в координатах XYZ -- это даст размеры и ориентацию области shadow map
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: проекция}
+\begin{itemize}
+\item Точечный источник светит во все стороны \begin{math}\Rightarrow\end{math} удобно использовать перспективную проекцию и cubemap-текстуру
+\pause
+\item 6 shadow map (по одной на каждую грань) с соответствующей перспективной проекцией
+\pause
+\item Положение камеры совпадает с положением источника света, виртуальный `экран' совпадает с отрисовываемой гранью shadow map
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow acne}
+\slideimage{shadow-acne.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow acne}
+\slideimage{shadow-acne-scheme.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow acne}
+\begin{itemize}
+\item Артефакт, возникающий из-за дискретности shadow map: если луч света не перпендикулярен плоскости объекта, рядом с центром пикселя shadow map будут точки с меньшей или большей глубиной
+\pause
+\item Первый способ исправить: добавить к значению, прочитанному из из shadow map, некую константу (shadow bias)
+\begin{itemize}
+\item Часто эту константу умножают на тангенс угла падения света
+\end{itemize}
+\pause
+\item Второй способ исправить: рисовать только back-facing грани (т.е. обращённые против света) в shadow map
+\begin{itemize}
+\item Теперь shadow acne возникнет на back-facing гранях, но мы и без shadow map знаем, что они в тени!
+\item Работает только с правильной геометрией (двусторонней, без дырок, и т.п.)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Back-facing shadows}
+\slideimage{shadow-mapping-backface.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Peter panning}
+\slideimage{peter-panning.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Peter panning}
+\begin{itemize}
+\item Объекты кажутся приподнятыми над поверхностью из-за того, что их тень начинается не сразу под объектом
+\pause
+\item Усиливается при использовании shadow bias
+\pause
+\item Лучший способ исправить -- не использовать слишком тонкую геометрию
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping}
+\slideimage{shadow-mapping3.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Разрешение shadow map}
+\slideimage{shadow-map-resolution.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item При низком разрешении shadow map хорошо видны `пиксели' теней
+\pause
+\item Чем выше разрешение, тем лучше жёсткая тень
+\pause
+\begin{itemize}
+\item Алгоритм silhouette mapping позволяет получить жёсткую тень без слишком большого разрешения
+\end{itemize}
+\pause
+\item Можно слегка размыть тень, избавившись от `пикселей' и получив аппроксимацию мягких теней
+\pause
+\begin{itemize}
+\item Размывать нужно результат сравнения глубины со значением в shadow map, а \textbf{не} саму shadow map!
+\pause
+\item Percentage-closer filtering (PCF)
+\pause
+\item В OpenGL есть встроенная реализация: shadow samplers
+\end{itemize}
+\pause
+\item Более современные вариации shadow maps пишут в текстуру не глубину, а какие-нибудь значения, которые имеет смысл складывать и усреднять
+\pause
+\begin{itemize}
+\item Позволяет использовать фильтрацию текстур, mipmaps, размытие shadow map
+\pause
+\item Exponential shadow maps, variance shadow maps (следующая лекция)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow sampler}
+\fontsize{10pt}{10pt}
+\begin{itemize}
+\item В OpenGL есть ограниченная поддержка PCF в виде shadow sampler'ов
+\pause
+\item Для текстуры нужно настроить параметры:
+\begin{itemize}
+\item \verb|GL_TEXTURE_COMPARE_MODE| в значение \verb|GL_COMPARE_REF_TO_TEXTURE| (по умолчанию -- \verb|GL_NONE|)
+\item \verb|GL_TEXTURE_COMPARE_FUNC| в значение \verb|GL_LEQUAL| (теоретически могут быть \verb|GL_ALWAYS| и т.п.)
+\end{itemize}
+\pause
+\item Текстуру с \verb|GL_COMPARE_REF_TO_TEXTURE| \textbf{нельзя} использовать как \verb|sampler2D|, для неё есть отдельный тип sampler'а: \verb|sampler2DShadow|
+\pause
+\item Функция \verb|texture(shadow_map, texcoord)| принимает трёхмерный вектор текстурных координат:
+\begin{itemize}
+\item Первые две -- обычные X,Y текстурные координаты
+\item Третья -- используется для сравнения со значением в shadow map
+\end{itemize}
+\pause
+\item Если сравнение успешно, возвращается 1, иначе 0 (функция сравнения настраивается \verb|GL_TEXTURE_COMPARE_FUNC|)
+\pause
+\item Для такой текстуры можно включить линейную фильтрацию -- интерполироваться будут не значения глубины, а \textit{результаты сравнения}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow sampler с линейной фильтрацией}
+\slideimage{pcf.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow sampler с линейной фильтрацией и 7x7 размытием по Гауссу}
+\slideimage{pcf_gauss.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping: ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}{\nolinkurl{learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping}{\nolinkurl{opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping}}
+\item \href{https://ogldev.org/www/tutorial23/tutorial23.html}{\nolinkurl{ogldev.org/www/tutorial23/tutorial23.html}}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-17-efficient-soft-edged-shadows-using}{GPU Gems 2, Chapter 17. Efficient Soft-Edged Shadows Using Pixel Shader Branching}
+\end{itemize}
+\end{frame}
+
+\end{document}

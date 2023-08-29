@@ -1,0 +1,1000 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 6: Ошибки OpenGL, расширения OpenGL, blending, stencil buffer, framebuffer, renderbuffer, пост-обработка}
+\date{2022}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item Часто драйвер может понять, что в определённом OpenGL-вызове содержится ошибка
+\pause
+\begin{itemize}
+\item \verb|glTexImage2D| с параметром \verb|target|, не являющимся одним из типов текстур
+\pause
+\item \verb|glTexParameteri| устанавливающая mag filter в что-то отличное от \verb|GL_LINEAR| или \verb|GL_NEAREST|
+\pause
+\item \verb|glBindBuffer| с ID буффера, который не был получен через \verb|glGenBuffers|
+\pause
+\item etc.
+\end{itemize}
+\pause
+\item В таких случаях генерируется ошибка как особое значение типа \verb|GLenum|
+\pause
+\item Как правило, вызвавшая ошибку операция не выполняется
+\pause
+\item \verb|glGetError()| -- получить значение ошибки, если она была
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+Возможные значения ошибок:
+\begin{itemize}
+\item \verb|GL_NO_ERROR| -- ошибки нет
+\pause
+\item \verb|GL_INVALID_ENUM| -- недопустимое значения перечисления (например, \verb|GL_TEXTURE_2D| как первый параметр \verb|glBindBuffer|)
+\pause
+\item \verb|GL_INVALID_VALUE| -- недопустимое значение числового аргумента (например, отрицательная ширина текстуры в \verb|glTexImage2D|)
+\pause
+\item \verb|GL_INVALID_OPERATION| -- недопустимая операция (например, \verb|glUniform1i| при отсутствии текущей шейдерной программы)
+\pause
+\item \verb|GL_INVALID_FRAMEBUFFER_OPERATION| -- операция рисования/чтения пикселей с невалидным framebuffer'ом (о них чуть позже)
+\pause
+\item \verb|GL_OUT_OF_MEMORY| -- закончилась память на GPU (может быть вызвана любой OpenGL-командой, обычно не обрабатывается)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item Документация к каждой функции описывает все возможные ошибки, которые эта функция может вызвать, и в каких случаях
+\pause
+\begin{itemize}
+\item N.B. \verb|GL_OUT_OF_MEMORY| нигде не указан, потому что может появиться где угодно
+\end{itemize}
+\pause
+\item Не все ошибки покрываются этим механизмом (например: \verb|glDrawArrays| с правильно настроенным VAO но с пустым VBO с вершинами)
+\pause
+\item Нет информации о том, какая именно функция вызвала ошибку (любая из тех, что были вызваны до \verb|glGetError|)
+\pause
+\begin{itemize}
+\item \begin{math}\Rightarrow\end{math} Придётся расставлять проверку после каждого OpenGL-вызова
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item Драйвер может хранить один флаг ошибки, и пропускать все последующие ошибки до вызова \verb|glGetError|
+\pause
+\item Драйвер может хранить несколько флагов, и \verb|glGetError| возвращает и очищает любой из них
+\pause
+\item \begin{math}\Rightarrow\end{math} Чтобы очистить ошибки, нужно вызывать \verb|glGetError| в цикле:
+\end{itemize}
+\begin{verbatim}
+while (glGetError() != GL_NO_ERROR);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ошибки OpenGL}
+\begin{itemize}
+\item OpenGL 4.3+ (или расширение \verb|GL_ARB_debug_output|): более удобный механизм, \verb|glDebugMessageCallback|
+\pause
+\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Error}{\nolinkurl{khronos.org/opengl/wiki/OpenGL\_Error}}
+\item \href{https://docs.gl/gl3/glGetError}{\nolinkurl{docs.gl/gl3/glGetError}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Предоставляют дополнительную функциональность за рамками возможностей конкретной версии OpenGL\only<2->{, например}
+\pause
+\begin{itemize}
+\item Конкретный производитель выпустил новую функциональность
+\pause
+\item Фунцкиональность доступна на большинстве реализаций OpenGL, но ещё не успела войти в новую версию OpenGL
+\pause
+\item Функциональность доступна в новой версии OpenGL, но крайне распространена и хочется ей пользоваться из старой версии
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Имя расширения имеет особый префикс:
+\begin{itemize}
+\item ARB (\textit{Architectural Review Board}) -- функциональность, которая (скорее всего) войдёт в следующий стандарт
+\item EXT -- широко распространённая функциональность
+\item NV -- расширение от Nvidia (возможно, доступно и на других видеокартах)
+\item AMD -- расширение от AMD (возможно, доступно и на других видеокартах)
+\item APPLE -- расширение от APPLE (возможно, доступно и на других видеокартах)
+\item И т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Расширение -- набор констант и функций (как и конкретная версия OpenGL)
+\pause
+\item Функции нужно загружать, так же, как и функции самого OpenGL
+\pause
+\item Константы и перечисления заканчиваются на суффикс в зависимости от типа расширения:
+\begin{itemize}
+\item \verb|ARB_debug_output|: \verb|glDebugMessageCallbackARB|, \verb|GL_DEBUG_SEVERITY_HIGH_ARB|
+\item \verb|EXT_texture_filter_anisotropic|: \verb|GL_TEXTURE_MAX_ANISOTROPY_EXT|
+\item \verb|NV_texture_barrier|: \verb|glTextureBarrierNV|
+\end{itemize}
+\pause
+\item Исключение: core extensions -- предоставляют функциональность новых версий OpenGL в старых версиях OpenGL
+\begin{itemize}
+\item Имеют тип \verb|ARB|
+\item Не имеют суффиксов в названиях функций и констант
+\end{itemize}  
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item Получить список поддерживаемых расширений:
+\end{itemize}
+\begin{verbatim}
+GLint numExtensions;
+glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+for (GLint i = 0; i < numExtensions; ++i) {
+    std::cout << glGetStringi(GL_EXTENSIONS, i) << "\n";
+}
+\end{verbatim}
+\pause
+\begin{itemize}
+\item GLEW загружает их автоматически:
+\end{itemize}
+\begin{verbatim}
+if (GLEW_EXT_texture_filter_anisotropic) {
+    std::cout << "Anisotropic filtering is supported\n";
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Расширения OpenGL}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Extension}{\nolinkurl{khronos.org/opengl/wiki/OpenGL\_Extension}}
+\item \href{https://www.khronos.org/registry/OpenGL/index_gl.php}{\nolinkurl{khronos.org/registry/OpenGL/index\_gl.php}} -- список всех зарегистрированных расширений
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1-3>[fragile,label=blending]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Результат фрагментного шейдера (\verb|layout (location = 0) vec4 out_color;|) записывается в пиксель экрана, стирая то, что было в нём до этого
+\pause
+\item Иногда мы хотим `смешать' результат и пиксель экрана, и записать результат смешивания
+\pause
+\begin{itemize}
+\item Полупрозрачные объекты
+\pause
+\item Растительность
+\pause
+\item Алгоритмы освещения и теней
+\pause
+\item Heatmaps
+\pause
+\item Ручное сглаживание
+\pause
+\item И т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Полупрозрачность}
+\begin{figure}
+\slideimage{window.png}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Полупрозрачность}
+\begin{figure}
+\slideimage{macos-ui.png}
+\end{figure}
+\end{frame}
+
+\againframe<3-4>{blending}
+
+\begin{frame}
+\frametitle{Деревья}
+\begin{figure}
+\slideimage{birch.png}
+\end{figure}
+\end{frame}
+
+\againframe<4-6>{blending}
+
+\begin{frame}
+\frametitle{Heatmap}
+\begin{figure}
+\slideimage{heatmap.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<6-7>{blending}
+
+\begin{frame}
+\frametitle{Yandex maps}
+\begin{figure}
+\slideimage{yandex-maps.jpg}
+\end{figure}
+\end{frame}
+
+\againframe<7->{blending}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Включается/выключается: \verb|glEnable(GL_BLEND)|
+\pause
+\item Уравнение blending'а:
+\begin{center}
+\begin{math}
+dst \leftarrow f(C_{src} \cdot src, C_{dst} \cdot dst)
+\end{math}
+\end{center}
+\pause
+\item \begin{math}src\end{math} -- результат фрагментного шейдера
+\item \begin{math}dst\end{math} -- пиксель на экране
+\item \begin{math}f\end{math} -- настраиваемая функция
+\item \begin{math}C_{src}\end{math} и \begin{math}C_{dst}\end{math} -- настраиваемые веса
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Настройка функции \begin{math}f\end{math}: \verb|glBlendEquation(GLenum equation)|:
+\pause
+\begin{itemize}
+\item \verb|GL_FUNC_ADD|: \begin{math}f(src, dst) = src + dst\end{math}
+\item \verb|GL_FUNC_SUBTRACT|: \begin{math}f(src, dst) = src - dst\end{math}
+\item \verb|GL_FUNC_REVERSE_SUBTRACT|: \begin{math}f(src, dst) = dst - src\end{math}
+\item \verb|GL_MIN|: \begin{math}f(src, dst) = \min(src, dst)\end{math}
+\item \verb|GL_MAX|: \begin{math}f(src, dst) = \max(src, dst)\end{math}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Настройка весов \begin{math}C_{src}\end{math} и \begin{math}C_{dst}\end{math}: \verb|glBlendFunc(GLenum src, GLenum dst)|:
+\pause
+\begin{itemize}
+\item \verb|GL_ZERO|: \begin{math}C = 0\end{math}
+\item \verb|GL_ONE|: \begin{math}C = 1\end{math}
+\item \verb|GL_SRC_COLOR|: \begin{math}C = src\end{math}
+\item \verb|GL_ONE_MINUS_SRC_COLOR|: \begin{math}C = 1 - src\end{math}
+\item \verb|GL_SRC_ALPHA|: \begin{math}C = src_A\end{math}
+\item \verb|GL_ONE_MINUS_SRC_ALPHA|: \begin{math}C = 1 - src_A\end{math}
+\item И т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Обычно \begin{math}src=(R,G,B,A)\end{math} означает, что цвет имеет полупрозрачность \begin{math}A\end{math}
+\begin{itemize}
+\item \begin{math}A=0\end{math} -- полностью прозрачный цвет
+\item \begin{math}A=1\end{math} -- полностью непрозрачный цвет
+\end{itemize}
+\pause
+\item Для этого нужна такая формула смешивания:
+\begin{center}
+\begin{math}
+dst \leftarrow src_A \cdot src + (1 - src_A) \cdot dst
+\end{math}
+\end{center}
+\pause
+\item Этому соответстует настройка
+\begin{verbatim}
+glBlendEquation(GL_FUNC_ADD);
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+\end{verbatim}
+\pause
+\item Это самый типичный способ использовать blending
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Такое смешивание некоммутативно, т.е. результат зависит от порядка рисования
+\item Бывают конкретные ситуации, когда коммутативность не нарушается (наложение двух объектов с \verb|A = 0.5| или наложение нескольких объектов одинакового цвета)
+\end{itemize}
+\slideimage{two-squares.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Смешивание некорректно работает с тестом глубины
+\end{itemize}
+\slideimage{blending_incorrect_order.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item В общем случае нужно сортировать полупрозрачные объекты и рисовать в порядке уменьшения расстояния до камеры
+\begin{itemize}
+\item Что именно считать расстоянием до камеры (расстояние от центра объекта / от ближайшей вершины / от самой далёкой вершины / среднее между минимальным и максимальным расстоянием) -- большой вопрос
+\item Для любого варианта можно найти примеры, ломающие его (цикл между объектами, накрывающими друг друга)
+\end{itemize}
+\item Order-independent transparency (OIT) -- активная тема исследований
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\slideimage{blending_sorted.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\slideimage{painters.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Аддитивное смешивание}
+\begin{itemize}
+\item Один часто используемый вариант смешивания -- аддитивное смешивание
+\item \begin{math}dst \leftarrow src + dst\end{math} или \begin{math}dst \leftarrow src_A \cdot src + dst\end{math}
+\pause
+\item \verb|glBlendEquation(GL_FUNC_ADD)|
+\item \verb|glBlendFunc(GL_ONE, GL_ONE)| или \verb|glBlendFunc(GL_SRC_ALPHA, GL_ONE)|
+\pause
+\item Такое смешивание коммутативно!
+\pause
+\item Heatmaps, облака точек
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Аддитивное смешивание}
+\begin{figure}
+\slideimage{heatmap.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+\frametitle{Аддитивное смешивание}
+\begin{figure}
+\slideimage{galaxy.jpg}
+\end{figure}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Blending}{\nolinkurl{khronos.org/opengl/wiki/Blending}}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency/}{\nolinkurl{opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Blending}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Blending}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil buffer (буфер трафарета)}
+\begin{itemize}
+\item Особый буфер, хранящий произвольные данные (почти всегда unsigned 8-bit на каждый пиксель), с особыми побитовыми операциями над ними
+\pause
+\item Чем-то аналогичен буферу глубины: тоже хранит какие-то данные, такого же размера (как и цветовой буфер), тоже позволяет рисовать или не рисовать пиксель по какому-то условию (stencil test -- происходит перед depth test'ом)
+\pause
+\item У дефолтного фреймбуфера часто есть свой stencil буфер (зависит от настроек контекста OpenGL)
+\pause
+\item Можно (и нужно, если вы его используете) очищать как \verb|glClear(GL_STENCIL_BUFFER_BIT|)
+\pause
+\item Настроить значение, которым очищается буфер: \verb|glClearStencil|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\begin{itemize}
+\item Включить/выключить stencil тест: \verb|glEnable/glDisable(GL_STENCIL_TEST)|
+\pause
+\item Настроить stencil тест: \verb|glStencilFunc(func, ref, mask)|
+\begin{itemize}
+\item \verb|func| -- одна из констант \verb|GL_ALWAYS|, \verb|GL_LESS|, \verb|GL_GREATER|, \verb|GL_EQUAL|, ...
+\item \verb|ref| -- референсное значение для теста
+\item \verb|mask| -- побитовая маска для теста
+\end{itemize}
+\item Stencil тест: \verb|func(ref & mask, stencil & mask)|
+\pause
+\item Так же, как с depth тестом: если stencil тест не прошёл, пиксель не будет нарисован
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\begin{itemize}
+\item Как записать значение в stencil буфер? \pause \verb|glStencilOp(sfail, dpfail, dppass)|
+\begin{itemize}
+\item \verb|sfail| -- что делать, если пиксель не прошёл stencil тест
+\item \verb|dpfail| -- что делать, если пиксель прошёл stencil тест, но не прошёл depth тест
+\item \verb|dppass| -- что делать, если пиксель прошёл оба теста
+\end{itemize}
+\pause
+\item Возможные значение \verb|sfail|, \verb|dpfail| и \verb|dppass|:
+\begin{itemize}
+\item \verb|GL_KEEP| -- не менять записанное значение
+\item \verb|GL_ZERO| -- записать 0
+\item \verb|GL_INVERT| -- побитово обратить
+\item \verb|GL_REPLACE| -- записать \verb|ref| из функции \verb|glStencilFunc|
+\item \verb|GL_INCR| -- увеличить на 1, если значение меньше максимального
+\item \verb|GL_DECR| -- уменьшить на 1, если значение больше минимального (0)
+\item \verb|GL_INCR_WRAP| -- увеличить на 1 с целочисленным переполнением
+\item \verb|GL_DECR_WRAP| -- уменьшить на 1 с целочисленным переполнением
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\begin{itemize}
+\item Дополнительно можно включать/выключать запись отдельных битов stencil буфера: \verb|glStencilMask|
+\pause
+\item Все параметры stencil теста можно настраивать отдельно для front и back граней функциями \verb|glStencilFuncSeparate|, \verb|glStencilOpSeparate|, \verb|glStencilMaskSeparate|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\slideimage{stencil-example-1.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\slideimage{stencil-example-2.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\slideimage{stencil-example-3.png}
+\end{frame}
+
+\begin{frame}<1>[fragile,label=stencil_examples]
+\frametitle{Stencil буфер: применение}
+\begin{itemize}
+\item Некоторые алгоритмы рисования теней (shadow volumes)
+\pause
+\item Любая ситуация, в которой нужно ограничить рисование определённых пикселей:
+\pause
+\begin{itemize}
+\item Симулятор самолёта: сначала рисуется внутренность самолёта, затем -- окружающий мир, только там, где не был нарисован самолёт \begin{math}\Rightarrow\end{math} можно избежать проблем с точностью буфера глубины
+\pause
+\item UI, который нужно нарисовать в какой-то ограниченной области экрана (например, scroll)
+\pause
+\item Рисование невыпуклых полигонов (odd-even rule)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow volumes (stencil shadows)}
+\slideimage{shadow-volumes.jpeg}
+\end{frame}
+
+\againframe<2-3>{stencil_examples}
+
+\begin{frame}[fragile]
+\frametitle{Microsoft flight simulator}
+\slideimage{flight-simulator.jpg}
+\end{frame}
+
+\againframe<4>{stencil_examples}
+
+\begin{frame}[fragile]
+\frametitle{Unity Scroll View}
+\slideimage{scroll-view.png}
+\end{frame}
+
+\againframe<5>{stencil_examples}
+
+\begin{frame}[fragile]
+\frametitle{Невыпуклый полигон}
+\slideimage{non-convex-polygon.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil буфер: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Stencil_Test}{\nolinkurl{khronos.org/opengl/wiki/Stencil\_Test}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Stencil-testing}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Stencil-testing}}
+\item \href{https://open.gl/depthstencils}{\nolinkurl{open.gl/depthstencils}}
+\item \href{https://en.wikibooks.org/wiki/OpenGL_Programming/Stencil_buffer}{\nolinkurl{en.wikibooks.org/wiki/OpenGL\_Programming/Stencil\_buffer}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer (FBO, кадровый буфер)}
+\begin{itemize}
+\item OpenGL-объект, хранящий настройки того, куда осуществляется рисование
+\pause
+\item Не владеет памятью, только ссылается на неё
+\pause
+\item Может иметь depth buffer, stencil buffer, и несколько color buffer'ов
+\pause
+\item Общепринятая аббревиатура: FBO
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer}
+\begin{itemize}
+\item Создание/удаление: \verb|glGenFramebuffers|/\verb|glDeleteFramebuffers|
+\pause
+\item Сделать текущим: \verb|glBindFramebuffer|
+\pause
+\item Два значения target:
+\begin{itemize}
+\item \verb|GL_DRAW_FRAMEBUFFER| -- в этот фреймбуфер рисуют все операции рисования (\verb|glDrawArrays|, etc), этот фреймбуфер очищает \verb|glClear|
+\pause
+\item \verb|GL_READ_FRAMEBUFFER| -- из этого фреймбуфера читают операции чтения
+\end{itemize}  
+\pause
+\item Можно вызвать \verb|glBindFramebuffer(GL_FRAMEBUFFER, fbo)| -- это эквивалентно
+\begin{verbatim}
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+\end{verbatim}
+\item Советую не использовать \verb|GL_FRAMEBUFFER|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Default framebuffer}
+\begin{itemize}
+\item Особый объект, имеет ID = 0
+\pause
+\item Создаётся при создании OpenGL-контекста
+\pause
+\item Настроен, чтобы рисовать на экран, к которому привязан контекст
+\pause
+\item Для него форматы цвета, буфера глубины и stencil буфера настраиваются при создании контекста
+\pause
+\item Нельзя настроить по-другому или удалить
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Запись во фреймбуфер}
+\begin{itemize}
+\item Напрямую писать во фреймбуфер нельзя!
+\pause
+\item Можно \textit{рисовать} с его помощью в текстуру
+\item Все операции рисования (\verb|glDraw*|) рисуют в текущий \verb|GL_DRAW_FRAMEBUFFER|
+\item \textit{Render to texture}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Чтение из фреймбуфера}
+\begin{itemize}
+\item \verb|glReadPixels| -- копирует на CPU пиксели из определённого участка текущего \verb|GL_READ_FRAMEBUFFER| (можно прочитать цвет, глубину или stencil)
+\pause
+\item \verb|glBlitFramebuffer| -- копирует пиксели из определённого участка текущего \verb|GL_READ_FRAMEBUFFER| в определённый участок текущего \verb|GL_DRAW_FRAMEBUFFER| (можно скопировать цвет, глубину или stencil)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer attachments}
+\begin{itemize}
+\item Текстура, на которую ссылается фреймбуфер, называется attachment
+\pause
+\item У каждого фреймбуфера есть набор attachment points
+\pause
+\item \verb|GL_COLOR_ATTACHMENT0|, ... \verb|GL_COLOR_ATTACHMENT7| -- цветовые буферы
+\pause
+\begin{itemize}
+\item Максимальное количество: \verb|glGet(GL_MAX_COLOR_ATTACHMENTS)|
+\end{itemize}
+\pause
+\item \verb|GL_DEPTH_ATTACHMENT| -- буфер глубины
+\item \verb|GL_STENCIL_ATTACHMENT| -- stencil буфер
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer attachments}
+\begin{itemize}
+\item Связать текстуру с фреймбуфером: \verb|glFramebufferTexture(target, attachment, texture, level)|
+\pause
+\begin{itemize}
+\item \verb|target| -- текстура будет привязана к текущему фреймбуферу с таким таргетом (\verb|GL_READ_FRAMEBUFFER| или \verb|GL_DRAW_FRAMEBUFFER|)
+\pause
+\item \verb|attachment| -- \verb|GL_COLOR_ATTACHMENT0|, ...
+\pause
+\item \verb|texture| -- ID текстуры (делать саму текстуру текущей не нужно!)
+\pause
+\item \verb|level| -- mipmap-уровень текстуры, в который будет осуществляться рисование (обычно 0)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer attachments}
+\begin{itemize}
+\item Можно привязать несколько текстур к одному фреймбуферу (в т.ч. иметь несколько цветовых буферов -- соответственно, несколько \verb|out|-переменных во фрагментном шейдере)
+\pause
+\item Можно привязать одну текстуру к нескольким фреймбуферам
+\pause
+\item Можно привязать несколько разных mipmap-уровней одной текстуры к одному или нескольким фреймбуферам
+\pause
+\item Можно привязать одномерные и двумерные текстуры, грани cubemap-текстуры (\verb|glFramebufferTexture2D|), слои трёхмерных или 2D-array текстур (\verb|glFramebufferTexture3D| или \verb|glFramebufferTextureLayer|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer completeness}
+\begin{itemize}
+\item У фреймбуферов есть особое свойство -- completeness: правильно ли настроен фреймбуфер
+\pause
+\item Фреймбуфер считается complete, если
+\begin{itemize}
+\item Размеры всех его attachment'ов совпадают
+\pause
+\item Все attachment'ы имеют правильный формат
+\end{itemize}
+\pause
+\item Проверить completeness -- \verb|glCheckFramebufferStatus|: вернёт \verb|GL_FRAMEBUFFER_COMPLETE| или некий код ошибки
+\pause
+\item Рисовать в incomplete фреймбуфер нельзя!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Renderable formats}
+\begin{itemize}
+\item Что такое \textit{правильный формат}?
+\pause
+\item Для цветового буфера -- \textit{color-renderable} формат, т.е. любой цветовой формат: \verb|GL_RED|, \verb|GL_RGB8|, \verb|GL_RGBA8|, \verb|GL_RG32F|, ...
+\pause
+\item Для буфера глубины -- \textit{depth-renderable} формат: \verb|GL_DEPTH_COMPONENT16|, \verb|GL_DEPTH_COMPONENT24|, \verb|GL_DEPTH_COMPONENT32F|, \verb|GL_DEPTH24_STENCIL8|, \verb|GL_DEPTH32F_STENCIL8|
+\pause
+\item Для stencil буфера -- \textit{stencil-renderable} формат: \verb|GL_DEPTH24_STENCIL8|, \verb|GL_DEPTH32F_STENCIL8|
+\pause
+\item Некоторые форматы могут не поддерживаться конкретными драйверами/GPU
+\pause
+\item Есть небольшой список гарантированно поддерживаемых форматов (см. документацию)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рисование во фреймбуфер}
+\begin{itemize}
+\item Все операции рисования (\verb|glDraw*|) рисуют в текущий \verb|GL_DRAW_FRAMEBUFFER|
+\pause
+\item Как связать attachments фреймбуфера с out-переменными фрагментного шейдера?
+\pause
+\item \verb|glDrawBuffers(n, buffers)|
+\begin{itemize}
+\item \verb|buffers| -- массив констант \verb|GL_COLOR_ATTACHMENTi| или специальных значений для default фреймбуфера
+\item \verb|layout (location = k) out ...| будет писать в attachment, указанный в \verb|buffers[k]|
+\end{itemize}
+\pause
+\item N.B.: для рисования в default framebuffer обычно нужен \verb|buffers[] = {GL_FRONT_LEFT}|
+\pause
+\item Есть устаревшая функция \verb|glDrawBuffer| -- ей лучше не пользоваться
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Viewport}
+\begin{itemize}
+\item \verb|glViewport| настраивает преобразование из координат \begin{math}[-1, 1]^2\end{math} в пиксельные координаты
+\pause
+\item Никак не связан с фреймбуфером
+\pause
+\item Но обычно мы хотим, чтобы viewport совпадал с размером текущего фреймбуфера
+\pause
+\item \begin{math}\Rightarrow\end{math} Перед рисованием с помощью фреймбуфера надо подумать о viewport'е
+\pause
+\item N.B. \verb|glClear| игнорирует viewport
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рисование в текстуру: инициализация}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+GLuint fbo;
+glGenFramebuffers(1, &fbo);
+
+// создаём текстуру
+...
+
+// привязываем текстуру
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+    fbo_color_texture, 0);
+
+// проверяем completeness
+if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    throw std::runtime_error("Framebuffer incomplete");
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Рисование в текстуру: рисование}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+// Рисование в FBO
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
+glDrawBuffers(1, draw_buffers);
+glClear(GL_COLOR_BUFFER_BIT);
+glViewport(0, 0, fbo_width, fbo_height);
+drawSomething();
+
+...
+
+// Рисование в дефолтный фреймбуфер
+// здесь можно использовать текстуру fbo_color_texture
+glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+GLenum draw_buffers[] = {GL_FRONT_LEFT};
+glDrawBuffers(1, draw_buffers);
+glClear(GL_COLOR_BUFFER_BIT);
+glViewport(0, 0, screen_width, screen_height);
+drawSomethingElse();
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Renderbuffers}
+\begin{itemize}
+\item Объекты OpenGL, хранящие пиксели
+\pause
+\item Нельзя загрузить данные, нет режимов фильтрации, нет mipmaps \begin{math}\Rightarrow\end{math} могут быть быстрее текстур, и работать с ними проще
+\pause
+\item Могут быть attachment'ами для фреймбуфера, вместо текстур
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Renderbuffers}
+\begin{itemize}
+\item Создать/удалить: \verb|glGenRenderbuffers/glDeleteRenderbuffers|
+\pause
+\item Сделать текущим: \verb|glBindRenderbuffer|, target = \verb|GL_RENDERBUFFER|
+\pause
+\item Выделить память: \verb|glRenderbufferStorage|
+\pause
+\item Привязать renderbuffer к фреймбуферу: \verb|glFramebufferRenderbuffer|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffers \& renderbuffers: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Framebuffer_Object}{\nolinkurl{www.khronos.org/opengl/wiki/Framebuffer\_Object}}
+\item \href{https://www.khronos.org/opengl/wiki/Renderbuffer_Object}{\nolinkurl{www.khronos.org/opengl/wiki/Renderbuffer\_Object}}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture}{\nolinkurl{opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Framebuffers}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Framebuffers}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1-3>[fragile,label=fb_examples]
+\frametitle{Примеры использования render to texture}
+\begin{itemize}
+\item Пост-обработка кадра -- реализуется рисованием кадра в текстуру, и затем рисованием полноэкранного прямоугольника на экран с нужным шейдером, читающим эту текстуру
+\pause
+\begin{itemize}
+\item Размытие
+\pause
+\item Свечение (bloom)
+\pause
+\item Toon shading (edge detection, color grading)
+\pause
+\item HDR, гамма-коррекция
+\pause
+\item Сглаживание (FXAA)
+\pause
+\item И т.д.
+\end{itemize}
+\pause
+\item Тени (shadow maps)
+\pause
+\item Отражения
+\pause
+\item Deferred shading
+\pause
+\item И много другого
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Размытие}
+\slideimage{blur.png}
+\end{frame}
+
+\againframe<4>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Свечение}
+\slideimage{bloom.png}
+\end{frame}
+
+\againframe<5>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Toon shading}
+\slideimage{toon-shading.jpg}
+\end{frame}
+
+\againframe<6-7>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{FXAA}
+\slideimage{fxaa.jpg}
+\end{frame}
+
+\againframe<8-9>{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Shadow mapping}
+\slideimage{shadow-maps.png}
+\end{frame}
+
+\againframe<10->{fb_examples}
+
+\begin{frame}[fragile]
+\frametitle{Размытие}
+\begin{itemize}
+\item Усреднение значений соседних пикселей
+\pause
+\item Box blur: все веса одинаковые, получается слегка угловатым
+\pause
+\item Gaussian blur: веса пропорциональны гауссиане \begin{math}\exp\left(-\frac{x^2+y^2}{r^2}\right)\end{math}, получается равномерное сглаживание
+\pause
+\item Несколько итераций box blur похожи на один gaussian blur
+\pause
+\item Обычно gaussian blur делают в два прохода: один размывает по горизонтали, второй -- по вертикали
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Box blur}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform sampler2D source;
+
+in vec2 texcoord;
+
+out vec4 out_color;
+
+void main()
+{
+    vec4 sum = vec4(0.0);
+    const int N = 5;
+
+    for (int x = -N; x <= N; ++x) {
+        for (int y = -N; y <= N; ++y) {
+            sum += texture(source, texcoord +
+                vec2(x,y) / vec2(textureSize(source, 0)));
+        }
+    }
+
+    out_color = sum / float((2*N+1)*(2*N+1));
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Gaussian blur}
+\fontsize{10pt}{10pt}
+\begin{verbatim}
+uniform sampler2D source;
+
+in vec2 texcoord;
+
+out vec4 out_color;
+
+void main()
+{
+    vec4 sum = vec4(0.0);
+    float sum_w = 0.0;
+    const int N = 5;
+    float radius = 3.0;
+
+    for (int x = -N; x <= N; ++x) {
+        for (int y = -N; y <= N; ++y) {
+            float c = exp(-float(x*x + y*y) / (radius*radius));
+            sum += c * texture(source, texcoord +
+                vec2(x,y) / vec2(textureSize(source, 0)));
+            sum_w += c;
+        }
+    }
+
+    out_color = sum / sum_w;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Bloom}
+\slideimage{bloom-diagram.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Toon shading (cel shading)}
+\begin{itemize}
+\item Edge detection + color grading
+\pause
+\item Edge detection: шейдер находит и выделяет резкие перепады цвета или глубины (используя, например, Sobel filter)
+\pause
+\item Color grading: палитра цветов искусственно уменьшается (например, сжимается до 2-3 бит на канал)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+\begin{itemize}
+\item \href{https://learnopengl.com/Advanced-Lighting/Bloom}{\nolinkurl{learnopengl.com/Advanced-Lighting/Bloom}}
+\item \href{https://www.youtube.com/watch?v=uZlwbWqQKpc}{Gaussian blur (youtube video tutorial)}
+\end{itemize}
+\end{frame}
+
+\end{document}

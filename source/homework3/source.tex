@@ -1,0 +1,173 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{tikz}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Домашнее задание 3: Снежный шар}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание}
+\begin{itemize}
+\item Нарисовать `снежный шар', отражающий environment map по Френелю
+\item Внутри шара -- какие-нибудь модели (часть из них должна быть анимированной) и падающие частицы (снежинки)
+\item Движущийся направленный источник света и тени от него
+\item Туман, влияющий на всё внутри шара, с объёмными тенями
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание}
+\slideimage{example.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Environment map}
+\begin{itemize}
+\item Можно взять из 10ой практики или найти самим, их легко найти (\verb|environment map download|)
+\item Нужно, чтобы была возможность одновременно настраивать (динамически менять) яркость ambient освещения и environment map (можно значение environment map просто домножить на ambient освещение)
+\begin{itemize}
+\item Это нужно, чтобы лучше были видны объёмные тени
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Шар}
+\begin{itemize}
+\item Должен отражать environment map с полупрозрачностью
+\item Коэффициент полупрозрачности нужно вычислять с помощью \href{https://en.wikipedia.org/wiki/Schlick%27s_approximation}{аппроксимации Шлика} для \href{https://en.wikipedia.org/wiki/Fresnel_equations}{уравнений Френеля}:
+\begin{equation}
+R = R_0 + (1 - R_0) \cdot (1 - \cos \theta)^5
+\end{equation}
+\begin{equation}
+R_0 = \left(\frac{1-n}{1+n}\right)^2
+\end{equation}
+\item \begin{math}\theta\end{math} -- угол между нормалью и направлением взгляда
+\item \begin{math}n\end{math} -- коэффициент преломления стекла (возьмите 1.5 .. 4)
+\item \begin{math}R\end{math} -- результирующее значение opacity (альфа-канала)
+\item Код генерации сферы можно взять из 10ой практики
+\item Имеет смысл рисовать шар последним
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Модели}
+\begin{itemize}
+\item Нужна большая модель в центре, чтобы хорошо было видно объёмные тени -- попробуйте найти сами (\verb|free 3d models download|)
+\item Нужна анимированная модель, можно взять волка из 13ой практики (или, опять же, найти самим)
+\item Нужен `пол' для шарика, можно взять код генерации сферы и сделать, чтобы он генерировал половинку сферы
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тени}
+\begin{itemize}
+\item Подойдёт любой вариант shadow mapping
+\item Сцена маленькая, артефактов не должно быть (не забудьте про shadow bias)
+\item Пол можно не рисовать в shadow map (но \textit{на} пол тень должна падать!)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Туман}
+\begin{itemize}
+\item На любой объект внутри шара (можно кроме снежинок) должен влиять объёмный туман, находящийся только внутри шара
+\item Придётся найти пересечение луча из камеры с границей шара (немного геометрии, сводится к квадратному уравнению; центр и радиус шара можно захардкодить в шейдерах)
+\item В варианте без объёмных теней можно просто взять белый цвет и альфа-канал, учитывающий optical depth
+\item В варианте с объёмными тенями нужен цикл интегрирования вдоль луча, аналогичный практике 12
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Туман}
+\begin{itemize}
+\item Можно вычислять вклад тумана во фрагментном шейдере каждого объекта
+\item Альтернативно можно вычислить туман шейдером пост-обработки (когда сцена нарисована в текстуру, позицию пикселя в пространстве можно вычислить через буфер глубины)
+\item В `пустом' пространстве (где есть шарик, но нет никаких объектов внутри) тоже должен быть туман \begin{math}\Rightarrow\end{math} можно нарисовать тот же шарик с front face culling'ом, чтобы нарисовалась задняя стенка шара, и для неё написать отдельный шейдер, вычисляющий туман (этот объект будет полупрозрачным -- сквозь шарик должна быть видна environment map)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Объёмные тени}
+\begin{itemize}
+\item Внутренний цикл (в направлении света) не нужен, только внешний (вдоль луча из камеры)
+\item Нужно брать значение из shadow map в текущей точке луча и интерпретировать как \verb|emission|, или как количество света для рассеяния
+\item Поиграйте с коэффициентами, чтобы получилось красиво
+\item Число шагов цикла можно сделать побольше (64, 128), иначе будут banding-артефакты
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Снежинки}
+\begin{itemize}
+\item Аналогично 11ой практике
+\item Пересоздаются где-нибудь внутри шара, когда достигают пола
+\item Вместо текстуры можно захардкодить гауссиану (или что-нибудь поинтереснее) во фрагментном шейдере
+\item На них влияют тени
+\item Можно анимировать прозрачность, чтобы они плавно появлялись и исчезали
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Баллы}
+\begin{itemize}
+\item 1 балл: рисуются какие-нибудь модели
+\item 1 балл: движущийся источник света, диффузное освещение
+\item 1 балл: двигается камера
+\item 1 балл: на фоне есть environment map
+\item 1 балл: можно настраивать яркость ambient + environment map
+\item 2 балла: шар с отражением по Френелю
+\item 2 балл: тени от моделей
+\item 1 балл: туман
+\item 2 балла: объёмные тени в тумане
+\item 2 балла: анимированная модель
+\item 1 балл: снежинки
+\end{itemize}
+Всего: 15 баллов
+
+Защита заданий на практике 12 сентября
+\end{frame}
+
+\end{document}

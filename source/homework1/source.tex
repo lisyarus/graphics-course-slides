@@ -1,0 +1,190 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{tikz}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{red}{rgb}{1,0,0}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Домашнее задание 1: график функции на плоскости}
+\date{2021}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Задание}
+\begin{itemize}
+\item Функция на плоскости, зависящая от времени \begin{math}f(x, y, t)\end{math}
+\pause
+\item Фиксированный прямоугольник \begin{math}[x_0, x_1] \times [y_0, y_1]\end{math}, разбитый на сетку из \begin{math}W\times H\end{math} прямоугольных ячеек
+\pause
+\item Нужно нарисовать:
+\begin{itemize}
+\item `График' функции цветом, используя вершины сетки как основу
+\pause
+\item Изолинии -- линии \begin{math}f(x,y,t) = const\end{math} поверх графика
+\end{itemize}
+\pause
+\item График и изолинии вычисляются заново на каждый кадр
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Пример}
+\slideimage{matlab-plot.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Функция}
+Любая интересная меняющаяся во времени функция на плоскости
+\begin{itemize}
+\item Metaballs: \begin{math}f(x,y,t) = \sum c_i\exp\left(-\frac{(x-x_i)^2+(y-y_i)^2}{r_i^2}\right)\end{math}, где \begin{math}(x_i, y_i)\end{math} -- координаты движущейся по какому-то закону точки
+\pause
+\item Шум Перлина: строится на основе сетки двумерных единичных векторов, которые можно крутить в зависимости от времени (эта сетка никак не связана с сеткой использующейся для рендеринга)
+\pause
+\item Комбинация синусов/косинусов с разными амплитудами и фазами
+\pause
+\item etc.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{График}
+\begin{itemize}
+\item Вершина сетки -- \begin{math}(x_i, y_j)\end{math} + цвет
+\item Раскрасить в зависимости от значения функции
+\pause
+\item Прямоугольники сетки придётся разбить на пары треугольников
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Изолинии}
+\begin{itemize}
+\item Линии \begin{math}z = f(x,y,t) = C_i\end{math} для некоторых \begin{math}C_i\end{math}, разного цвета
+\item Набор значений \begin{math}C_1, C_2, C_3, \dots, C_k\end{math} выбрать на основе вашей функции
+\pause
+\item Строить алгоритмом marching squares с линейной интерполяцией (или аналогичным алгоритмом на треугольниках) на основе той же сетки, что и график
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Marching squares}
+\begin{center}
+\begin{tikzpicture}
+\draw[black,thick,dashed] (0.0, 0.0) rectangle (4.0, 4.0);
+\draw[black,thick,dashed] (6.0, 0.0) rectangle (10.0, 4.0);
+
+\draw[black,thick] (0.0, 2.0) -- (2.0, 0.0);
+\draw[black,thick] (6.0, 3.5) -- (7.0, 0.0);
+
+\node at (0.0, 0.0) {\color{blue}\textbullet};
+\node at (4.0, 0.0) {\color{red}\textbullet};
+\node at (0.0, 4.0) {\color{red}\textbullet};
+\node at (4.0, 4.0) {\color{red}\textbullet};
+
+\node at (6.0, 0.0) {\color{blue}\textbullet};
+\node at (10.0, 0.0) {\color{red}\textbullet};
+\node at (6.0, 4.0) {\color{red}\textbullet};
+\node at (10.0, 4.0) {\color{red}\textbullet};
+
+\node at (0.0, -0.5) {\color{blue}\begin{math}f<C\end{math}};
+\node at (4.0, -0.5) {\color{red}\begin{math}f>C\end{math}};
+\node at (0.0, 4.5) {\color{red}\begin{math}f>C\end{math}};
+\node at (4.0, 4.5) {\color{red}\begin{math}f>C\end{math}};
+
+\node at (6.0, -0.5) {\color{blue}\begin{math}f<C\end{math}};
+\node at (10.0, -0.5) {\color{red}\begin{math}f>C\end{math}};
+\node at (6.0, 4.5) {\color{red}\begin{math}f>C\end{math}};
+\node at (10.0, 4.5) {\color{red}\begin{math}f>C\end{math}};
+
+\node at (0.0, 2.0) {\color{black}\textbullet};
+\node at (2.0, 0.0) {\color{black}\textbullet};
+
+\node at (6.0, 3.5) {\color{black}\textbullet};
+\node at (7.0, 0.0) {\color{black}\textbullet};
+\end{tikzpicture}
+\end{center}
+\begin{itemize}
+\item Есть вариант алгоритма, соединящий центры рёбер
+\item Есть вариант алгоритма, линейно интерполирующий значение функции вдоль ребра чтобы найти точку \begin{math}f = C\end{math} -- {\color{red}нужно использовать его}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Marching triangles}
+\begin{itemize}
+\item Есть вариант алгоритма (иногда называется marching triangles), использующий треугольники и избавляющийся от неоднозначностей алгоритма на квадратах, -- можно использовать его
+\pause
+\item Ещё marching triangles называют трёхмерный алгоритм построения модели по облаку точек -- это \textbf{не оно}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Немного деталей}
+\begin{itemize}
+\item Часть данных вершин будут обновляться каждый кадр -- цвета точек графика, координаты изолиний
+\item Часть данных постоянна -- XY-координаты вершин сетки -- их имеет смысл хранить в отдельном VBO
+\item Как для графика, так и для изолиний имеет смысл использовать индексированный рендеринг
+\item Можно использовать простые \verb|GL_LINES| и \verb|GL_TRIANGLES|, а можно \verb|GL_LINE_STRIP/GL_LINE_LOOP| и \verb|GL_TRIANGLE_STRIP| вместе с \verb|primitive restart|
+\item Чтобы избавиться от дублирования вершин в изолиниях, придётся для каждого ребра исходной сетки запомнить индекс вершины изолинии, лежащей на этом ребре: можно использовать, например, \verb|std::unordered_map| или просто \verb|std::vector|, придумав какую-то нумерацию для рёбер
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Баллы}
+\begin{itemize}
+\item 3 балла: рисуется динамический график функции (т.е. цвета меняются во времени)
+\item 3 балла: рисуются динамические изолинии
+\item 2 балла: все данные в VBO обновляются только при их изменении, статические данные хранятся в отдельных VBO
+\item 2 балла: используется индексированный рендеринг для графика и его вершины не дублируются
+\item 2 балла: используется индексированный рендеринг для изолиний и их вершины не дублируются
+\item 1 балл:  можно динамически менять количество изолиний
+\item 1 балл:  можно динамически менять детализацию сетки
+\item 1 балл:  корректно обрабатывается aspect ratio (т.е. соотношение ширины к высоте видимого графика не меняется при изменении размеров экрана)
+\end{itemize}
+Всего: 15 баллов
+
+Защита заданий на практике 3 октября (через 2 недели).
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ссылки}
+\fontsize{8pt}{8pt}\selectfont
+\begin{itemize}
+\item \href{http://jamie-wong.com/2014/08/19/metaballs-and-marching-squares}{\nolinkurl{jamie-wong.com/2014/08/19/metaballs-and-marching-squares}}\item \href{http://jacobzelko.com/marching-squares/}{\nolinkurl{jacobzelko.com/marching-squares}}
+\item \href{https://ckcollab.com/2020/11/08/Marching-Squares-Algorithm.html}{\nolinkurl{ckcollab.com/2020/11/08/Marching-Squares-Algorithm.html}}
+\end{itemize}
+\end{frame}
+
+\end{document}

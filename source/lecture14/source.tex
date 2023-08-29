@@ -1,0 +1,1004 @@
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+
+\documentclass{beamer}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+
+\usepackage{adjustbox}
+
+\usepackage{color}
+\usepackage{soul}
+
+\usepackage{hyperref}
+
+\usepackage{amsmath}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations}
+\usetikzlibrary{decorations.pathreplacing}
+\usepackage{xifthen}
+
+\definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+}
+
+\makeatletter
+\newcommand{\slideimage}[1]{
+  \begin{figure}
+    \begin{adjustbox}{width=\textwidth, totalheight=\textheight-2\baselineskip-2\baselineskip,keepaspectratio}
+      \includegraphics{#1}
+    \end{adjustbox}
+  \end{figure}
+}
+\makeatother
+
+\title{Компьютерная графика}
+\subtitle{Лекция 14: оптимизация рендеринга, timer queries, batching, instancing, uniform buffers, frustum culling, occlusion culling}
+\date{2022}
+
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация -- это сложно}
+На производительность CPU влияют:
+\pause
+\begin{itemize}
+\item Общая загруженность системы
+\pause
+\item Количество и паттерн доступов к памяти (cache-friendliness)
+\pause
+\item Как функции программы лежат в памяти (опять кэш)
+\pause
+\item Branch prediction
+\pause
+\item Оптимизации компилятора
+\pause
+\item Throttling
+\pause
+\item Многое другое
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация на GPU -- это очень сложно}
+На производительность GPU влияют:
+\pause
+\begin{itemize}
+\item Асинхронность: операции выполняются отложенно
+\pause
+\item Параллельность: много операций выполняется одновременно
+\pause
+\item Много встроенных операций (fixed-function pipeline)
+\pause
+\item Сложные операции с памятью (доступ к текстуре: mipmaps + фильтрация, и т.п.)
+\pause
+\item Оптимизации компилятора шейдеров (зависят от драйвера)
+\pause
+\item Многое другое
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Два основных принципа оптимизации}
+\begin{itemize}
+\item Замеряйте то, что оптимизируете
+\pause
+\begin{itemize}
+\item N.B Измерение `на глаз' -- тоже измерение
+\end{itemize}
+\pause
+\item Выполняйте меньше операций (любых!)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы -- неправильный способ}
+\begin{verbatim}
+while (true) {
+  auto frame_start = clock::now();
+
+  // нарисовали сцену
+  ...
+
+  auto frame_end = clock::now();
+
+  SwapBuffers();
+}
+\end{verbatim}
+\pause
+\begin{itemize}
+\item \verb|(frame_end - frame_start)| -- сколько времени ушло на то, чтобы \textbf{вызвать OpenGL-команды}
+\pause
+\item В реальности драйвер поставил их в очередь, и, возможно, GPU ещё даже не начала их выполнять
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы -- простой способ}
+\begin{verbatim}
+disableVsync();
+auto last_frame_start = clock::now();
+while (true) {
+  auto frame_start = clock::now();
+  auto frame_time = frame_start - last_frame_start;
+  last_frame_start = frame_start;
+
+  // нарисовали сцену
+  ...
+
+  SwapBuffers();
+}
+\end{verbatim}
+\pause
+\begin{itemize}
+\item Из-за выключенного vsync видеокарта будет работать \begin{math}\pm\end{math} постоянно
+\pause
+\item В итоге мы получим примерное время, тратящееся на рисование одного кадра
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы: glFlush и glFinish}
+\begin{itemize}
+\item Многие (старые) туториалы по измерению времени кадра советуют вызывать \verb|glFlush| или \verb|glFinish| в конце кадра
+\pause
+\item \verb|glFlush| сбрасывает буфер команд (хранящийся внутри драйвера) с CPU на GPU
+\pause
+\item \verb|glFinish| ждёт, пока GPU не завершит обрабатывать все посланные команды
+\pause
+\item \verb|SwapBuffers| сама вызывает \verb|glFlush|
+\pause
+\item \verb|glFinish| ухудшает производительность: половину времени вы отправляете команды на GPU, а GPU (скорее всего) ничего не делает; половину времени вы ждёте, пока GPU закончит выполнять команды
+\pause
+\item \begin{math}\Rightarrow\end{math} Лучше не пользоваться этими функциями :)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы: FPS vs frame duration}
+\begin{itemize}
+\item FPS (frames per second, количество кадров в секунду) -- очень неудобная метрика
+\pause
+\begin{itemize}
+\item Нелинейна: если кадр рисовался 10 мс, и мы добавили что-то рисующееся 1 мс, и ещё что-то рисующееся 1 мс, то FPS изменялся от 100 до 90.9 до 83.3
+\end{itemize}
+\pause
+\item Обычно при измерениях используют \textit{время} (а не 1/время), тратящееся на рисование кадра или конкретного объекта/эффекта (миллисекунды/микросекунды)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы -- правильный способ: timer queries}
+\begin{itemize}
+\item Query objects -- объекты OpenGL, позволяющие узнать некоторую статистику с GPU:
+\pause
+\begin{itemize}
+\item Сколько было нарисовано пикселей
+\pause
+\item Сколько сгенерировано примитивов (напр. геометрическим шейдером)
+\pause
+\item Сколько прошло времени
+\end{itemize}
+\pause
+\item \verb|glGenQueries/glDeleteQueries|
+\pause
+\item \textbf{Нет} \verb|glBindQuery|!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы -- правильный способ: timer queries}
+\begin{itemize}
+\item \verb|glBeginQuery/glEndQuery| -- статистика будет собрана для команд между этими вызовами
+\pause
+\item Query одного типа \textbf{не могут} быть вложенными
+\end{itemize}
+\pause
+\begin{verbatim}
+GLuint query_id;
+glGenQueries(1, &query_id);
+
+...
+
+glBeginQuery(GL_TIME_ELAPSED, query_id);
+
+// что-нибудь рисуем
+
+glEndQuery(GL_TIME_ELAPSED);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы -- правильный способ: timer queries}
+\begin{itemize}
+\item GPU работает асинхронно \begin{math}\Rightarrow\end{math} результат query будет готов не сразу
+\pause
+\item Узнать, готов ли результат:
+\begin{verbatim}
+glGetQueryObjectiv(query_id,
+  GL_QUERY_RESULT_AVAILABLE, &result);
+\end{verbatim}
+\pause
+\item Получить результат (блокирует поток, если результат ещё не готов; неявно вызывает \verb|glFlush|)
+\begin{verbatim}
+glGetQueryObjectiv(query_id,
+  GL_QUERY_RESULT, &result);
+\end{verbatim}
+\pause
+\item Время возвращается в \textbf{наносекундах}, т.е. знаковый 32-битный тип может представить 2 секунды
+\pause
+\item Если 64-битные и беззнаковые версии этих функций
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Измерение времени работы -- правильный способ: пул timer queries}
+\begin{itemize}
+\item Хотим мерять время рисования каждого кадра, но результат для предыдущего кадра может быть не готов к началу следующего кадра
+\pause
+\item \begin{math}\Rightarrow\end{math} Заводим пул (pool) query-объектов:
+\pause
+\begin{itemize}
+\item Храним расширяемый массив (\verb|std::vector|) query-объектов: ID + пометка, свободен или нет
+\pause
+\item Когда нам нужен новый query, ищем в массиве свободный объект, если такого нет -- добавляем новый
+\pause
+\item В конце рисования кадра проходим по всем несвободным объектам и проверяем: если результат уже готов, обрабатываем его и помечаем объект свободным
+\end{itemize}
+\pause
+\item Средний размер пула -- на сколько кадров отстаёт GPU от CPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Timer queries: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Query_Object}{\nolinkurl{khronos.org/opengl/wiki/Query\_Object}}
+\item \href{https://www.lighthouse3d.com/tutorials/opengl-timer-query}{Туториал по использованию timer queries}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Поиск bottleneck'а}
+\begin{itemize}
+\item Мы померяли и узнали, что тормозит
+\pause
+\item OpenGL pipeline включает много компонентов, какой именно тормозит?
+\pause
+\item Обычно компоненты конвейера влияют на следующие за ними компоненты
+\pause
+\begin{itemize}
+\item Больше вершин \begin{math}\Rightarrow\end{math} больше вызовов вершинного шейдера
+\item Больше примитивов \begin{math}\Rightarrow\end{math} больше пикселей
+\item Больше пикселей \begin{math}\Rightarrow\end{math} больше вызовов фрагментного шейдера
+\item Больше пикселей \begin{math}\Rightarrow\end{math} больше операций записи в память
+\end{itemize}
+\pause
+\item \begin{math}\Rightarrow\end{math} Удобно искать bottleneck начиная \textit{с конца} конвейера
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Поиск bottleneck'а}
+\begin{itemize}
+\item Упростим до предела фрагментный шейдер (напр. выведем фиксированный цвет)
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком тяжёлый фрагментный шейдер
+\end{itemize}
+\pause
+\item Уменьшим размер окна до чего-нибудь в духе 50x50 пикселей
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком много растеризации и операций записи в память
+\end{itemize}
+\pause
+\item Упростим до предела вершинный шейдер (напр. вернём фиксированные координаты)
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком тяжёлый вершинный шейдер
+\end{itemize}
+\pause
+\item Уменьшим число вершин (параметр \verb|count| в \verb|glDraw*|)
+\pause
+\begin{itemize}
+\item Стало лучше? \begin{math}\Rightarrow\end{math} Слишком много вершин
+\end{itemize}
+\pause
+\item Ничего не помогло \begin{math}\Rightarrow\end{math} CPU-bound
+\pause
+\begin{itemize}
+\item Слишком много OpenGL-вызовов
+\pause
+\item Слишком много других операций на CPU
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Оптимизация шейдеров}
+\begin{itemize}
+\item Выполняем меньше операций
+\pause
+\item Избегаем (по возможности) вызова сложных функций (\verb|sin|, \verb|exp|, \verb|pow|)
+\pause
+\item Реорганизуем вычисления (напр. \verb|exp(a+b+c+d)| вместо \verb|exp(a)*exp(b)*exp(c)*exp(d)|)
+\pause
+\item Предпосчитываем что-нибудь (в константный массив в шейдере или в текстуру)
+\pause
+\item Меньше читаем из текстур
+\pause
+\item Читаем из текстур меньшего размера (лучше утилизируется текстурный кэш)
+\pause
+\item Используем mipmap'ы (лучше утилизируется текстурный кэш)
+\pause
+\item Делаем так, чтобы близкие пиксели читали близкие части текстуры (cache coherency; лучше утилизируется текстурный кэш)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация вершин}
+\begin{itemize}
+\item Используем индексированный рендеринг (меньше данных нужно прочитать из памяти; лучше используется вершинный кэш)
+\pause
+\item Используем примитивы, группирующие вершины -- line strip, triangle strip, triangle fan, etc (те же причины)
+\pause
+\item Используем меньше атрибутов, не храним ненужные атрибуты, сжимаем атрибуты (напр. \verb|GL_BYTE| для нормалей, \verb|GL_UNSIGNED_BYTE| для текстурных координат)
+\pause
+\item Используем LOD (Level Of Detail) -- упрощённые версии 3D моделей
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация количества OpenGL-вызовов}
+\begin{itemize}
+\item Batching: группируем объекты по используемому шейдеру, текстуре, другим настройкам (меньше переключения состояния OpenGL \begin{math}\Rightarrow\end{math} меньше OpenGL-вызовов)
+\pause
+\item Instancing: рисуем много объектов одним OpenGL-вызовом
+\pause
+\item Uniform buffers: передаём uniform-переменные не по одной, а записываем их в буффер (вместо большого количества вызовов \verb|glUniform*| один вызов \verb|glBufferData|)
+\pause
+\item Indirect rendering: переносим вычисления того, что нужно нарисовать, на GPU (OpenGL 4.0 + compute shaders)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация чего угодно}
+\begin{itemize}
+\item Рисуем поменьше
+\begin{itemize}
+\item Frustum culling: не рисуем то, что не попадёт в камеру
+\pause
+\item Occlusion culling: не рисуем то, что закрыто другими объектами
+\end{itemize}
+\pause
+\item Рисуем с уменьшенным разрешением
+\begin{itemize}
+\item Обычно используется для эффектов (blur, SSAO и т.п.)
+\end{itemize}
+\pause
+\item Переводим рисование в отдельный поток
+\begin{itemize}
+\item Освобождает основной (UI) поток
+\pause
+\item Позволяет делать полезную работу, пока render-поток ждёт VSync
+\pause
+\item Сильно усложняет код
+\pause
+\item Все OpenGL-вызовы нужно делать из render-потока
+\pause
+\item Применяется только в крайних случаях
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Оптимизация: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Performance}{\nolinkurl{khronos.org/opengl/wiki/Performance}}
+\item \href{https://www.opengl.org/pipeline/article/vol003_8}{\nolinkurl{opengl.org/pipeline/article/vol003\_8}}
+\item \href{https://www.nvidia.com/docs/IO/8230/GDC2003_OGL_Performance.pdf}{Доклад с GDC 2003, всё ещё актуальный}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{LOD (level of detail)}
+\begin{itemize}
+\item Когда модель далеко от камеры, рисуем упрощённую модель объекта вместо детализированной
+\pause
+\item Таких уровней детализации может быть несколько, вплоть до почти непрерывного изменения детализации (Unreal 5 Nanite)
+\pause
+\item Упрощённая модель может иметь отдельные VAO/VBO/EBO, а может лежать вместе с основной моделью (рисование конкретного LOD'а сводится к передаче правильных \verb|first| и \verb|count| в \verb|glDrawArrays| и т.п.)
+\pause
+\item Автоматическая генерация упрощённой модели -- предмет активных исследований
+\begin{itemize}
+\item Большинство современных подходов используют edge collapse: пара вершин, соединённых ребром, схлопывается в одну вершину
+\end{itemize}
+\pause
+\item Конкретный уровень детализации выбирается на основе желаемого видимого размера треугольников
+\pause
+\item Выбор уровня детализации можно перенести на GPU (indirect rendering)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{LOD (level of detail)}
+\slideimage{lod.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{LOD (level of detail)}
+\begin{itemize}
+\item Концепция LOD не ограничивается 3D-моделями
+\pause
+\item Например, хотим нарисовать огромный лес
+\pause
+\begin{itemize}
+\item Близкие деревья используют детализированную модель
+\pause
+\item Деревья подальше используют упрощённую модель
+\pause
+\item Далёкие деревья рисуются как billboard'ы с картой нормалей
+\pause
+\item Очень далёкий лес рисуется сплошной поверхностью кроны деревьев с правильно подобранной BRDF
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Batching}
+\begin{itemize}
+\item Группируем вместе объекты, использующие один шейдер, текстуру, настройки, и т.п., чтобы уменьшить количество OpenGL-вызовов для настроек рисования
+\pause
+\item Может быть неявным: объекты, использующие один шейдер/материал/etc сами по себе лежат в одном месте
+\pause
+\item Может быть явным: движок рендеринга получает список объектов и сам их сортирует
+\pause
+\item Конкретная реализация сильно зависит от ситуации:
+\pause
+\begin{itemize}
+\item Карты, ландшафт: один batch -- один \textit{тайл} (квадратный кусочек) карты
+\pause
+\item Шутер: по batch'у на каждую небольшую группу зданий + на каждого персонажа + один batch на все пули
+\pause
+\item Визуализация графика функции: один batch на всё
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Instanced rendering (instancing)}
+\begin{itemize}
+\item Позволяет рисовать несколько копий (instances) объекта одним OpenGL-вызовом
+\pause
+\item Обычно атрибуты вершин берутся в соответствии с индексом вершины: \verb|offset + stride * vertexID|
+\pause
+\item При использовании instancing конкретный атрибут вычисляется из номера instance: \verb|offset + stride * (instanceID / divisor)| (целочисленное деление)
+\pause
+\item Включить instancing для конкретного атрибута: \verb|glVertexAttribDivisor(index, divisor)|:
+\begin{itemize}
+\item \verb|divisor = 0|: атрибут не использует instancing и использует номер вершины
+\item \verb|divisor != 0|: атрибут использует instancing и использует номер instance (по формуле выше)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Instanced rendering (instancing)}
+\begin{itemize}
+\item Вызвать instanced rendering: \verb|glDrawArraysInstanced|
+\begin{itemize}
+\item Параметры -- те же, что у \verb|glDrawArrays|, плюс последний параметр -- количество instance'ов (значения \verb|instanceID| будут в диапазоне \verb|0 .. instance_count-1|)
+\end{itemize}
+\pause
+\item Аналогично есть \verb|glDrawElementsInstanced|
+\pause
+\item Типичный пример использования:
+\begin{itemize}
+\item 3D модель хранится в одном VBO/EBO, для её атрибутов \verb|divisor = 0|
+\item Атрибуты для каждого instance (напр. положение и поворот) хранятся в другом VBO, для них \verb|divisor = 1|
+\end{itemize}
+\pause
+\item В вершинном шейдере никаких изменений, все атрибуты равноправны
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Instanced rendering (instancing): пример шейдера}
+\fontsize{8pt}{8pt}
+\begin{verbatim}
+uniform mat4 camera_transform;
+
+// divisor = 0
+layout (location = 0) in vec3 in_position;
+layout (location = 1) in vec3 in_normal;
+
+// divisor = 1
+layout (location = 2) in mat4 in_instance_transform;
+
+out vec3 normal;
+
+void main()
+{
+    gl_Position = camera_transform * in_instance_transform * in_position;
+
+    normal = vec3(in_instance_transform) * in_normal;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Instancing: производительность}
+\begin{itemize}
+\item Instancing сам по себе не бесплатный, и имеет некоторый overhead
+\pause
+\item Обычно instancing становится быстрее чем цикл вызовов обычного рисования (по одному на каждый instance), когда число instance'ов достигает сотен или тысяч
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Instancing: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Vertex_Rendering#Instancing}{\nolinkurl{khronos.org/opengl/wiki/Vertex\_Rendering\#Instancing}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Instancing}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Instancing}}
+\item \href{https://ogldev.org/www/tutorial33/tutorial33.html}{\nolinkurl{ogldev.org/www/tutorial33/tutorial33.html}}
+\item \href{https://habr.com/ru/post/352962}{\nolinkurl{habr.com/ru/post/352962}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Uniform buffers}
+\begin{itemize}
+\item Позволяет использовать в качестве uniform-переменных данные из буфера
+\pause
+\item Специальный тип (target) для буферов: \verb|GL_UNIFORM_BUFFER| (создание и загрузка данных -- так же, как для других буферов)
+\pause
+\item В шейдере -- т.н. \textit{buffer-backed interface block}
+\pause
+\item Нужно быть внимательным с memory layout данных в буфере (конкретные правила описаны в спецификации)
+\pause
+\item Каждый interface block нужно привязать к \textit{binding index}: \verb|glGetUniformBlockIndex + glUniformBlockBinding| (в OpenGL 4.2 можно задать прямо в шейдере)
+\item Uniform buffer нужно привизать к тому же \textit{binding index}: \verb|glBindBufferBase| или \verb|glBindBufferRange|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Uniform buffers: пример шейдера}
+\begin{verbatim}
+#define MAX_BONES 256
+
+layout (std140) uniform Bones
+{
+  mat4x3 bones[MAX_BONES];
+};
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Uniform buffers}
+\begin{itemize}
+\item OpenGL гарантирует поддержку как минимум 1024 компонент uniform-переменных (напр. \verb|vec4| это 4 компоненты)
+\pause
+\item Для uniform buffers гарантируется максимальный размер как минимум в 16Kb \begin{math}\Rightarrow\end{math} позволяют передать больше данных в шейдер
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Uniform buffers: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Uniform_Buffer_Object}{\nolinkurl{khronos.org/opengl/wiki/Uniform\_Buffer\_Object}}
+\item \href{https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Buffer_backed}{\nolinkurl{khronos.org/opengl/wiki/Interface\_Block\_(GLSL)\#Buffer\_backed}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Advanced-GLSL}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1-2>[fragile,label=frustum_culling]
+\fontsize{10pt}{10pt}
+\selectfont
+\frametitle{Frustum culling}
+\begin{itemize}
+\item Давайте не рисовать то, что заведомо не попадёт в камеру
+\pause
+\item Видимая область камеры -- параллелепипед (ортографическая проекция) или усечённая пирамида (перспективная проекция)
+\pause
+\item Для каждого объекта нужно посчитать какую-нибудь оболочку (bounding volume) и пересечь её с видимой областью
+\pause
+\item Оболочка должна:
+\begin{itemize}
+\fontsize{10pt}{10pt}
+\selectfont
+\item Как можно плотнее прилегать к объекту
+\pause
+\item Быть дешёвой для вычисления
+\pause
+\item Иметь поменьше вершин (упрощает поиск пересечений)
+\pause
+\item Быть выпуклой (упрощает поиск пересечений)
+\end{itemize}
+\pause
+\item Варианты оболочки:
+\begin{itemize}
+\fontsize{10pt}{10pt}
+\selectfont
+\item Выпуклая оболочка -- плотно прилегает, но дорого вычислять и много вершин
+\pause
+\item Ограничивающая сфера/эллипсоид -- может неплотно прилегать, легко вычислять, средний алгоритм пересечения (сложнее для эллипсоидов)
+\pause
+\item AABB (axis-aligned bounding box) -- легко вычислять (но нужно пересчитывать каждый кадр), не всегда плотно прилегает, легко искать пересечения
+\pause
+\item OBB (oriented bounding box) -- легко вычислять (предподсчитали для модели, поворачиваем вместе с моделью), плотно прилегает, легко искать пересечения
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Усечённая пирамида (frustum)}
+\slideimage{frustum.png}
+\end{frame}
+
+\againframe<3->{frustum_culling}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\begin{itemize}
+\item Для детектирования пересечения выпуклых многогранников (frustum, AABB, OBB, etc.) обычно используется алгоритм, основанный на SAT -- Separating Axis Theorem (в математике известна как HST -- Hyperplane Separation Theorem)
+\pause
+\item Пусть A и B -- два непересекающихся замкнутых выпуклых подмножества Евклидова пространства (есть версия для Банаховых пространств). Тогда:
+\pause
+\begin{itemize}
+\item HST: существует гиперплоскость (separating hyperplane), проходящая между этими подмножествами
+\pause
+\item SAT: существует прямая (separating axis), такая, что проекции A и B на эту прямую не пересекаются
+\pause
+\item HST \begin{math}\Leftrightarrow\end{math} SAT: гиперплоскость \begin{math}\Leftrightarrow\end{math} перпендикулярная ей прямая
+\end{itemize}
+\pause
+\item N.B.: на этой же теореме основывается метод SVM -- Support Vector Machine
+\item N.B.: тот же алгоритм используется для детектирования столкновений в физических движках
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\slideimage{sat.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: вычисление проекции на прямую}
+\begin{itemize}
+\item Проекция выпуклого замкнутого ограниченного множества на прямую -- отрезок
+\pause
+\item Нужно выбрать некоторую точку \begin{math}o\end{math} на прямой, тогда проекция точки \begin{math}p\end{math} на прямую вычисляется как \begin{math}(p - o) \cdot n\end{math} (где \begin{math}n\end{math} -- вектор направления прямой)
+\pause
+\item Выбор другой точки \begin{math}o\end{math} или замена вектора \begin{math}n\end{math} на коллинеарный приведёт к сдвигу и масштабированию проекций \begin{math}\Rightarrow\end{math} непересекающиеся проекции останутся непересекающимися
+\pause
+\item \begin{math}\Rightarrow\end{math} нам не важна начальная точка, можно вычислять \begin{math}p \cdot n\end{math} (интерпретируя точку \begin{math}p\end{math} как радиус-вектор из начала координат)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Frustum culling: вычисление проекции на прямую}
+Псевдокод вычисления проекции выпуклого множества на прямую:
+\begin{verbatim}
+float vmin = inf, vmax = -inf;
+for (p : vertices) {
+  float v = dot(p, n);
+  vmin = min(vmin, v);
+  vmax = max(vmax, v);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Frustum culling: вычисление пересечения проекций}
+\begin{itemize}
+\item Число принадлежит отрезку \verb|[vmin, vmax]|, если \begin{math}v_{min} \leq v \leq v_{max}\end{math}
+\pause
+\item Число принадлежит пересечению двух отрезков, если выполняются два уравнения
+\begin{equation}
+\begin{cases}
+v^1_{min} \leq v \leq v^1_{max} \\
+v^2_{min} \leq v \leq v^2_{max}
+\end{cases}
+\end{equation}
+\pause
+\item Чтобы эта система имела решения (т.е. отрезки пересекались), нужно
+\begin{equation}
+\begin{cases}
+v^1_{min} \leq v^2_{max} \\
+v^2_{min} \leq v^1_{max}
+\end{cases}
+\end{equation}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Frustum culling: вычисление пересечения проекций}
+Псевдокод детектирования пересечения двух отрезков:
+\begin{verbatim}
+return v1min <= v2max && v2min <= v1max;
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\begin{itemize}
+\item Если проекции объектов на любые прямые пересекаются, то объекты пересекаются
+\pause
+\item Если проекции объектов хотя бы на одну прямую не пересекаются, то объекты не пересекаются
+\pause
+\item Возможных прямых бесконечно много \begin{math}\Rightarrow\end{math} нужно выбрать конечное число прямых
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT, 2D}
+\begin{itemize}
+\item Будем мысленно сдвигать объекты вдоль separating axis друг к другу до первого пересечения
+\pause
+\item Три варианта пересечения:
+\begin{itemize}
+\item Ребро-ребро
+\item Ребро-вершина
+\item Вершина-вершина
+\end{itemize}
+\pause
+\item Во всех трёх случаях в качестве направления separating axis можно взять нормаль к какому-нибудь ребру
+\pause
+\item \begin{math}\Rightarrow\end{math} SAT для выпуклых многоугольников: в качестве множества направлений для separating axis берём множество нормалей к рёбрам обоих объектов
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{8pt}{8pt}
+\frametitle{SAT, 2D}
+\begin{verbatim}
+bool intersect_along(Body b1, Body b2, vec3 n) {
+  auto p1 = project(b1.vertices, n);
+  auto p2 = project(b2.vertices, n);
+  return intersect(p1, p2);
+}
+
+bool intersect(Body b1, Body b2) {
+  for (n : b1.edge_normals) {
+    if (!intersect_along(b1, b2, n))
+      return false;
+  }
+
+  for (n : b2.edge_normals) {
+    if (!intersect_along(b1, b2, n))
+      return false;
+  }
+
+  return true;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: SAT, 3D}
+\begin{itemize}
+\item Для 3D можно рассмотреть ту же идею, получится больше случаев
+\pause
+\item SAT для выпуклых многогранников: в качестве множества направлений для separating axis берём
+\begin{itemize}
+\item Множество нормалей к граням обоих объектов
+\item + множество попарных векторных произведений \begin{math}e_1 \times e_2\end{math}, где \begin{math}e_1\end{math} и \begin{math}e_2\end{math} -- рёбра первого и второго многогранников, соответственно (для всех пар рёбер)
+\end{itemize}
+\pause
+\item N.B.: нас интересуют только направления с точностью до умножения на константу, так что во многих случаях необязательно рассматривать все грани и рёбра
+\pause
+\begin{itemize}
+\item Например, у куба/параллелепипеда только три неколлинеарных нормали и три неколлинеарных ребра
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{8pt}{8pt}
+\frametitle{Frustum culling: SAT, 3D}
+\begin{verbatim}
+bool intersect_along(Body b1, Body b2, vec3 n) {
+  auto p1 = project(b1.vertices, n);
+  auto p2 = project(b2.vertices, n);
+  return intersect(p1, p2);
+}
+
+bool intersect(Body b1, Body b2) {
+  for (n : b1.face_normals) {
+    if (!intersect_along(b1, b2, n))
+      return false;
+  }
+
+  for (n : b2.face_normals) {
+    if (!intersect_along(b1, b2, n))
+      return false;
+  }
+
+  for (e1 : b1.edges) {
+    for (e2 : b2.edges) {
+      vec3 n = cross(e1, e2);
+      if (!intersect_along(b1, b2, n))
+        return false;
+    }
+  }
+
+  return true;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: вычисление camera frustum}
+\begin{itemize}
+\item В независимости от проекции, комбинаторно видимая область -- куб, т.е. имеет 8 вершин, 12 рёбер, и 6 граней, соединённых как в кубе
+\pause
+\item Достаточно вычислить координаты 8-ми вершин
+\pause
+\item Можно вычислить напрямую из параметров и свойств камеры (напр. используя углы и тригонометрию) \begin{math}\Rightarrow\end{math} сложный ad-hoc алгоритм
+\pause
+\item Можно вычислить из матрицы \begin{math}T\end{math} (view + projection):
+\pause
+\begin{itemize}
+\item Координаты вершин видимой области в NDC (normalized device coordinates): \begin{math}(\pm 1, \pm 1, \pm 1)\end{math}
+\pause
+\item Координаты вершин видимой области в сцене: \begin{math}\operatorname{Proj}\left(T^{-1} \cdot (\pm 1, \pm 1, \pm 1, 1)\right)\end{math}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling}
+\begin{itemize}
+\item В идеале, хочется отсечь как можно больше
+\pause
+\item Отсекать на уровне треугольников неэффективно: GPU нарисует треугольник быстрее, чем мы проверим, что его не нужно рисовать
+\pause
+\item Отсекать только на уровне огромных групп объектов неэффективно: будем рисовать все объекты, попавшие в группу, если хотя бы один объект виден
+\pause
+\item Нужен какой-то баланс между стоимостью самого frustum culling'а и эффективностью отсечения
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling}
+\begin{itemize}
+\item Объекты можно как-то групировать, чтобы отсекать сразу большие группы объектов, не попадающие в камеру:
+\pause
+\begin{itemize}
+\item Деревья (BVH -- bounding volume hierarchy, octree, R-tree, ...)
+\pause
+\item Сетки/bins: группируем объекты в ячейки квадратной/кубической сетки, отсекаем сразу целые ячейки
+\end{itemize}
+\pause
+\item Можно перевести отсечение на GPU (indirect rendering)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling + batching}
+\begin{itemize}
+\item Для уменьшения числа OpenGL-вызовов хочется хранить вместе (один VAO/VBO/EBO) как можно больше объектов
+\pause
+\item Для поддержки динамических сцен хочется хранить разные объекты по отдельности (проще добавлять/удалять объекты, обновлять буферы)
+\pause
+\item Для frustum culling хочется хранить объекты по отдельности (чтобы по отдельности их отсекать и рисовать / не рисовать)
+\pause
+\item Противоречащие друг другу требования
+\pause
+\item Как найти баланс между ними -- зависит от ситуации 
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: ссылки}
+\begin{itemize}
+\item Есть много способов написать этот алгоритм; есть вариации, соптимизированные для параллелограммов/кубов
+\item Часто в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false positive пересечения -- не страшно для frustum culling, но неэффективно
+\item \href{https://en.wikipedia.org/wiki/Hyperplane_separation_theorem}{\nolinkurl{en.wikipedia.org/wiki/Hyperplane\_separation\_theorem}}
+\item \href{https://www.geometrictools.com/Documentation/MethodOfSeparatingAxes.pdf}{Статья с разбором SAT и выводом алгоритмов для 2D и 3D}
+\item \href{https://learnopengl.com/Guest-Articles/2021/Scene/Frustum-Culling}{Большая статья с разбором разных вариантов bounding volume}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\fontsize{10pt}{10pt}
+\frametitle{Occlusion culling}
+\begin{itemize}
+\item Не будем рисовать объекты (ocludees), закрытые другими объектами (occluders)
+\pause
+\item \textbf{Очень} много вариаций
+\pause
+\item Если есть заранее известные occluders (здания, ландшафт)
+\pause
+\begin{itemize}
+\item Можно растеризовать их на CPU в буфер глубины низкого разрешения, и использовать его для проверки видимости
+\pause
+\item Можно нарисовать их обычным способом, и затем полагаться на early depth test (z pre-pass)
+\end{itemize}
+\pause
+\item Можно использовать буфер глубины с предыдущего кадра
+\pause
+\begin{itemize}
+\item Нужно запомнить матрицу проекции предыдущего кадра
+\pause
+\item Может давать неточный результат
+\end{itemize}
+\pause
+\item Лучше построить max-mipmaps по буферу глубины (HiZ -- hierarchical Z): специальным шейдером строить mipmaps, вычисляя максимум среди группы 2x2 пикселей
+\pause
+\begin{itemize}
+\item По размеру объекта (ocludee) вычисляем mipmap-уровень: если в Z-буфере значение меньше, чем минимальная глубина нашего объекта, то объект не будет видно
+\end{itemize}
+\pause
+\item Можно сгенерировать HiZ по списку известных occluders
+\pause
+\item Можно запомнить список видимых объектов с прошлого кадра и использовать их как occluders
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Occlusion culling}
+\begin{itemize}
+\item Главное -- избежать \textit{pipeline stall}, т.е. блокирующего ожидания окончания работы GPU на CPU
+\pause
+\item Если Z-буфер для occlusion culling (возможно, в виде HiZ) построен на CPU, проверку тоже можно осуществлять на CPU
+\pause
+\item Если Z-буфер построен на GPU (взят с прошлого кадра, или построен по известным occluders), проверку хочется делать на GPU
+\pause
+\begin{itemize}
+\item Можно использовать compute shaders + indirect rendering (OpenGL 4.0)
+\pause
+\item Можно использовать occlusion queries + conditional rendering
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Occlusion culling: conditional rendering}
+\begin{itemize}
+\item Выключаем рисование в z-буфер и в цветовой буфер (нас интересует только то, \textbf{будет ли нарисован} объект)
+\pause
+\item Внутри \verb|glBeginQuery(GL_ANY_SAMPLES_PASSED, query_id)| рисуем дешёвую аппроксимацию объекта (напр. bounding box)
+\pause
+\item Обратно включаем рисование в z-буфер и в цветовой буфер
+\pause
+\item Внутри пары \verb|glBeginConditionalRender(query_id, GL_QUERY_NO_WAIT)| и \verb|glEndConditionalRender| рисуем сам объект
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Occlusion culling: ссылки}
+\begin{itemize}
+\item \href{https://www.khronos.org/opengl/wiki/Vertex_Rendering#Conditional_rendering}{Статья про conditional rendering на OpenGL wiki}
+\item \href{https://arm-software.github.io/opengl-es-sdk-for-android/occlusion_culling.html}{Статья про много вариантов реализации occlusion culling}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-i-geometric-complexity/chapter-6-hardware-occlusion-queries-made-useful}{Ещё одна статья}
+\item \href{https://interplayoflight.wordpress.com/2017/11/15/experiments-in-gpu-based-occlusion-culling}{И ещё одна статья}
+\item \href{http://www.diva-portal.org/smash/get/diva2:934562/FULLTEXT02.pdf}{И ещё одна, очень большая, статья}
+\end{itemize}
+\end{frame}
+
+\end{document}
