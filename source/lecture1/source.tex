@@ -1,9 +1,10 @@
 % (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass[11pt]{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -17,8 +18,9 @@
 
 \usetheme{metropolis}
 
-\definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
+\setminted{fontsize=\footnotesize}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -42,13 +44,13 @@
 
 \begin{frame}
 \frametitle{}
-Лекции:
+\textbf{Лекции}
 \begin{itemize}
 \item Лисица Никита Игоревич (Яндекс)
 \item \nolinkurl{lisyarus@gmail.com}
 \item \nolinkurl{+7(952)276-70-50}
 \end{itemize}
-Практики:
+\textbf{Практики}
 \begin{itemize}
 \item Садовский Владимир Сергеевич (NauEngine)
 \item \nolinkurl{vovacolt@yandex.ru}
@@ -63,9 +65,9 @@
 \href{https://github.com/lisyarus/graphics-course-practice/tree/master/pdf}{\nolinkurl{github.com/lisyarus/graphics-course-practice}}
 \pause
 \begin{itemize}
-\item Лекции (слайды в \href{https://github.com/lisyarus/graphics-course-slides/tree/master/2022/pdf}{github-репозитории})
+\item \textbf{Лекции} (слайды в \href{https://github.com/lisyarus/graphics-course-slides/tree/master/2022/pdf}{github-репозитории})
 \pause
-\item Практики:
+\item \textbf{Практики}
 \pause
 \begin{itemize}
 \item Код-заготовка на C++ (в \href{https://github.com/lisyarus/graphics-course-practice/tree/master/2022}{github-репозитории})
@@ -75,7 +77,7 @@
 \item Сдача на занятии или отправкой кода
 \end{itemize}
 \pause
-\item Домашние задания:
+\item \textbf{Домашние задания}
 \pause
 \begin{itemize}
 \item Слайды с заданием (в \href{https://github.com/lisyarus/graphics-course-slides/tree/master/2022/pdf}{github-репозитории})
@@ -83,7 +85,7 @@
 \item Сдача на практическом занятии 
 \end{itemize}
 \pause
-\item Финальный проект
+\item \textbf{Финальный проект}
 \begin{itemize}
 \item Большое, сложное, интересное задание по выбору
 \pause
@@ -124,15 +126,15 @@
 \frametitle{Оценка за курс}
 \pause
 \begin{itemize}
-\item \alert{\textbf{Зачет}}: \textbf{50 и более} баллов
+\item Зачет: \textbf{50 и более} баллов
 \pause
-\item \alert{\textbf{Экзамен}}:
+\item Экзамен:
 \begin{itemize}
-\item \textbf{50-59 баллов}: \alert{\textbf{E}}
-\item \textbf{60-69 баллов}: \alert{\textbf{D}}
-\item \textbf{70-79 баллов}: \alert{\textbf{C}}
-\item \textbf{80-89 баллов}: \alert{\textbf{B}}
-\item \textbf{90-100 баллов}: \alert{\textbf{A}}
+\item \textbf{50-59} баллов: \textbf{E}
+\item \textbf{60-69} баллов: \textbf{D}
+\item \textbf{70-79} баллов: \textbf{C}
+\item \textbf{80-89} баллов: \textbf{B}
+\item \textbf{90-100} баллов: \textbf{A}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -141,7 +143,7 @@
 \frametitle{Пререквезиты}
 \pause
 \begin{itemize}
-\item Программирование
+\item \textbf{Программирование}
 \pause
 \begin{itemize}
 \item Основы C++
@@ -149,7 +151,7 @@
 \item Компилировать и запускать программы в удобной вам среде
 \end{itemize}
 \pause
-\item Математика
+\item \textbf{Математика}
 \pause
 \begin{itemize}
 \item Линейная алгебра (векторы, матрицы, умножение матриц, линейные системы, ортогональность)
@@ -434,11 +436,11 @@
 \begin{frame}
 \frametitle{Чем мы будем заниматься?}
 \begin{itemize}
-\item \only<-1>{2D / 2.5D / 3D}\only<2->{{\alert{\underline{2D / 2.5D / 3D}}}}
-\item \only<-2>{Векторная / растровая}\only<3->{{\alert{\underline{Векторная / растровая}}}}
-\item \only<-3>{Realtime}\only<4->{{\alert{\underline{Realtime}}}} / near real-time / offline
-\item \only<-4>{Фотореалистичная / стилизованная}\only<5->{{\alert{\underline{Фотореалистичная / стилизованная}}}}
-\item CPU / \only<-5>{GPU}\only<6->{{\alert{\underline{GPU}}}}
+\item \only<-1>{2D / 2.5D / 3D}\only<2->{{\alert{\textbf{\underline{2D / 2.5D / 3D}}}}}
+\item \only<-2>{Векторная / растровая}\only<3->{{\alert{\textbf{\underline{Векторная / растровая}}}}}
+\item \only<-3>{Realtime}\only<4->{{\alert{\textbf{\underline{Realtime}}}}} / near real-time / offline
+\item \only<-4>{Фотореалистичная / стилизованная}\only<5->{{\alert{\textbf{\underline{Фотореалистичная / стилизованная}}}}}
+\item CPU / \only<-5>{GPU}\only<6->{{\alert{\textbf{\underline{GPU}}}}}
 \end{itemize}
 \end{frame}
 
@@ -446,15 +448,15 @@
 \frametitle{Чем мы будем заниматься?}
 \begin{itemize}
 \pause
-\item Как пользоваться графическими API
+\item Как пользоваться \textit{графическими API}
 \pause
-\item Как реализовывать графические движки
+\item Как реализовывать \textit{графические движки}
 \pause
-\item Как реализовывать графические эффекты
+\item Как реализовывать \textit{графические эффекты}
 \pause
-\item Как их оптимизировать
+\item Как их \textit{оптимизировать}
 \pause
-\item Профессия \alert{\textit{graphics engineer}}
+\item Профессия \alert{\textbf{\textit{\underline{graphics engineer}}}}
 \end{itemize}
 \end{frame}
 
@@ -462,35 +464,35 @@
 \frametitle{Где это пригодится?}
 \begin{itemize}
 \pause
-\item Разработка игр и движков
+\item Разработка \textit{игр и игровых движков}
 \pause
-\item Разработка инструментов для художников/дизайнеров/архитекторов/etc
+\item Разработка \textit{инструментов для художников/дизайнеров/архитекторов}
 \pause
-\item Разработка инструментов для научной визуализации/визуализации данных/etc
+\item Разработка \textit{инструментов для научной визуализации/визуализации данных}
 \pause
-\item Разработка картографических приложений
+\item Разработка \textit{картографических приложений}
 \pause
-\item Разработка движков графического интерфейса
+\item Разработка \textit{движков графического интерфейса}
 \pause
 \item И т.д.
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Чем мы \textbf{не} будем заниматься?}
+\frametitle{Чем мы \underline{не} будем заниматься?}
 \begin{itemize}
 \pause
-\item Учиться рисовать / моделировать и анимировать объекты / etc.
+\item \textbf{Учиться рисовать / моделировать и анимировать объекты / etc.}
 \pause
 \begin{itemize}
 \item Красивая картинка -- движок + данные (текстуры, модели, частицы, etc, -- \textit{assets})
-\item Курс про \alert{\textit{движок}}
+\item Курс про \alert{\textbf{\underline{\textit{движок}}}}
 \end{itemize}
 \pause
-\item Делать игры
+\item \textbf{Делать игры}
 \begin{itemize}
 \item Игра -- гейм-дизайн + контент + графика + физика + механики + UI + аудио + сетевые компоненты + ...
-\item Курс про \alert{\textit{графику}}
+\item Курс про \alert{\textbf{\underline{\textit{графику}}}}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -499,7 +501,7 @@
 \frametitle{Примерный план курса}
 \pause
 \begin{itemize}
-\item Основы OpenGL
+\item \textbf{Основы OpenGL}
 \begin{itemize}
 \item Как хранить данные на GPU
 \item Как рисовать эти данные
@@ -507,7 +509,7 @@
 \item Работа с камерой, перспективная проекция
 \end{itemize}
 \pause
-\item Освещение
+\item \textbf{Освещение}
 \begin{itemize}
 \item Теория
 \item Модели освещения и материалов
@@ -515,7 +517,7 @@
 \item Обработка большого количества источников света
 \end{itemize}
 \pause
-\item Эффекты и оптимизации
+\item \textbf{Эффекты и оптимизации}
 \begin{itemize}
 \item Системы частиц (e.g. дым)
 \item Скелетная анимация
@@ -528,7 +530,7 @@
 
 \begin{frame}<1>[label=history-1]
 \frametitle{Краткая история real-time компьютерной графики}
-1960-е: Осциллографы
+\textbf{1960-е: Осциллографы}
 \pause
 \begin{itemize}
 \item Tennis For Two (1958)
@@ -588,7 +590,7 @@
 
 \begin{frame}<1-2>[label=history-2]
 \frametitle{Краткая история real-time компьютерной графики}
-1970-е: Аркадные игры
+\textbf{1970-е: Аркадные игры}
 \pause
 \begin{itemize}
 \item Magnavox Odyssey (Magnavox, 1972) -- первая игровая консоль, подключалась к телевизору (CRT)
@@ -656,6 +658,7 @@
 
 \begin{frame}
 \frametitle{Space Invaders}
+\textbf{Технические характеристики:}
 \pause
 \begin{itemize}
 \item Intel 8080, 8-bit, 2Mhz
@@ -672,7 +675,7 @@
 
 \begin{frame}<1-2>[label=history-3]
 \frametitle{Краткая история real-time компьютерной графики}
-1980-е: Векторные аркады
+\textbf{1980-е: Векторные аркады}
 \pause
 \begin{itemize}
 \item Asteroids (Atari, 1979)
@@ -711,7 +714,7 @@
 
 \begin{frame}<1-2>[label=history-4]
 \frametitle{Краткая история real-time компьютерной графики}
-1980-е: 8-битные спрайтовые консоли
+\textbf{1980-е: 8-битные спрайтовые консоли}
 \pause
 \begin{itemize}
 \item Atari 2600 (Atari, 1977)
@@ -755,7 +758,7 @@
 
 \begin{frame}<1-2>[label=history-5]
 \frametitle{Краткая история real-time компьютерной графики}
-Конец 1980-х: 16-битные консоли и персональные компьютеры
+\textbf{Конец 1980-х: 16-битные консоли и персональные компьютеры}
 \pause
 \begin{itemize}
 \item Sega Mega Drive (Sega, 1988)
@@ -784,7 +787,7 @@
 
 \begin{frame}<1-3>[label=history-6]
 \frametitle{Краткая история real-time компьютерной графики}
-1990-е: Raycasting
+\textbf{1990-е: Raycasting}
 \pause
 \begin{itemize}
 \item Алгоритм рисования двумерных уровней в 3D
@@ -818,7 +821,7 @@
 
 \begin{frame}<1-5>[label=history-7]
 \frametitle{Краткая история real-time компьютерной графики}
-1990-е: 32-битные консоли и компьютеры
+\textbf{1990-е: 32-битные консоли и компьютеры}
 \pause
 \begin{itemize}
 \item Графические процессоры с 3D графикой (Sony Playstation, Sega Saturn, Nintendo 64)
@@ -858,7 +861,7 @@
 
 \begin{frame}
 \frametitle{Краткая история real-time компьютерной графики}
-\centerline{2000-е и 2010-е}
+\textbf{2000-е и дальше}
 \pause
 \begin{itemize}
 \item Растут мощности как CPU, так и GPU
@@ -911,29 +914,29 @@
 
 \begin{frame}
 \frametitle{Как использовать GPU? \only<2->{Графические API}}
-GPU -- Graphics Processing Unit
+\textbf{GPU -- Graphics Processing Unit}
 \pause
 \pause
 \begin{itemize}
-\item Вендор-специфичные API (1980е -- 1990е)
+\item \textit{Вендор-специфичные} API (1980е -- 1990е)
 \pause
-\item OpenGL (Silicon Graphics, 1992)
+\item \textbf{OpenGL} (Silicon Graphics, 1992)
 \pause
 \begin{itemize}
-\item \only<-11>{OpenGL 3.3 (Khronos Group, 2010)}\only<12->{\alert{\underline{OpenGL 3.3 (Khronos Group, 2010)}}}
+\item \only<-11>{\textbf{OpenGL 3.3} (Khronos Group, 2010)}\only<12->{\alert{\textbf{\underline{OpenGL 3.3}}} (Khronos Group, 2010)}
 \end{itemize}
 \pause
-\item DirectX (Microsoft, 1995)
+\item \textbf{DirectX} (Microsoft, 1995)
 \pause
 \begin{itemize}
-\item {\only<11->{\color{mLightGreen}\textbf}{DirectX 12 (Microsoft, 2015)}}
+\item {\only<11->{\color{mLightGreen}}\textbf{DirectX 12}} (Microsoft, 2015)
 \end{itemize}
 \pause
-\item {\only<11->{\color{mLightGreen}\textbf}{Metal (Apple, 2014)}}
+\item {\only<11->{\color{mLightGreen}}\textbf{Metal}} (Apple, 2014)
 \pause
-\item {\only<11->{\color{mLightGreen}\textbf}{Vulkan (Khronos Group, 2018)}}
+\item {\only<11->{\color{mLightGreen}}\textbf{Vulkan}} (Khronos Group, 2018)
 \pause
-\item {\only<11->{\color{mLightGreen}\textbf}{WebGPU (W3C, working draft)}}
+\item {\only<11->{\color{mLightGreen}}\textbf{WebGPU}} (W3C, working draft)
 \end{itemize}
 \pause
 \bigskip
@@ -942,22 +945,22 @@ GPU -- Graphics Processing Unit
 
 \begin{frame}
 \frametitle{Как использовать GPU? API общего назначения (GPGPU):}
-GPGPU -- General-Purpose Graphics Processing Unit
+\textbf{GPGPU -- General-Purpose Graphics Processing Unit}
 \pause
 \begin{itemize}
-\item CUDA (Nvidia, 2007)
+\item \textbf{CUDA} (Nvidia, 2007)
 \pause
-\item DirectX 11 DirectCompute (Microsoft, 2008)
+\item \textbf{DirectX 11 DirectCompute} (Microsoft, 2008)
 \pause
-\item OpenCL (Khronos Group, 2009)
+\item \textbf{OpenCL} (Khronos Group, 2009)
 \pause
-\item OpenGL 4.3 Compute Shaders (Khronos Group, 2012)
+\item \textbf{OpenGL 4.3 Compute Shaders} (Khronos Group, 2012)
 \pause
-\item Metal Compute Shaders (Apple, 2014)
+\item \textbf{Metal Compute Shaders} (Apple, 2014)
 \pause
-\item Vulkan Compute Shaders (Khronos Group, 2018)
+\item \textbf{Vulkan Compute Shaders} (Khronos Group, 2018)
 \pause
-\item WebGPU Compute Shaders (W3C, 2021)
+\item \textbf{WebGPU Compute Shaders} (W3C, 2021)
 \end{itemize}
 \end{frame}
 
@@ -965,19 +968,19 @@ GPGPU -- General-Purpose Graphics Processing Unit
 \frametitle{Почему OpenGL 3.3?}
 \pause
 \begin{itemize}
-\item Широкая поддержка: интегрированные GPU, встраиваемые устройства, телефоны, web, некоторые игровые приставки
+\item \textit{Широкая поддержка}: интегрированные GPU, встраиваемые устройства, телефоны, web, некоторые игровые приставки
 \pause
-\item Поддерживает всё, что нам нужно
+\item Поддерживает \textit{все нужные нам возможности GPU}
 \pause
-\item +/- Кроссплатформенность \pause (спасибо, Apple)
+\item +/- \textit{Кроссплатформенность} \pause (спасибо, Apple)
 \pause
-\item Низкий порог вхождения (в сравнении с более современными API)
+\item \textit{Низкий} порог вхождения (в сравнении с более современными API)
 \pause
-\item Достаточно старый
+\item Достаточно \textit{старый}
 \begin{itemize}
-\item Много вспомогательных библиотек
-\item Известны best practices
-\item Известны все грабли \pause (их много)
+\item \textit{Много} вспомогательных библиотек
+\item Известны \textit{best practices}
+\item Известны все \textit{грабли} \pause (их много)
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -986,22 +989,23 @@ GPGPU -- General-Purpose Graphics Processing Unit
 \frametitle{Почему OpenGL 3.3?}
 \pause
 \begin{itemize}
-\item Крупные движки переписывают на Vulkan / DirectX 12
+\item Крупные движки переписывают на \textbf{Vulkan / DirectX 12}
 \pause
 \item Не у всех есть на это ресурсы
 \pause
 \item Не всем нужна самая крутая графика и производительность (работает в 60 fps -- и ладно)
 \pause
-\item OpenGL всё ещё широко используется
+\item \textbf{OpenGL} всё ещё широко используется
 \pause
-\item Все основные концепции OpenGL (шейдеры, атрибуты вершин, буферы с данными, текстуры, ...) есть в любом графическом API $\Rightarrow$ изучение OpenGL поможет в изучении более современных API
+\item Все основные концепции \textbf{OpenGL} \textit{(шейдеры, атрибуты вершин, буферы с данными, текстуры, ...)} есть в любом графическом API $\Rightarrow$ изучение OpenGL \textit{поможет в изучении} более современных API
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 1.0 (1992)}
 \slideimage{opengl.png}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
 for object in scene.objects:
     glBegin(GL_TRIANGLES)
     for triangle in object.triangles:
@@ -1010,124 +1014,129 @@ for object in scene.objects:
             glNormal3f(vertex.normal)
             glVertex3f(vertex.position)
     glEnd(GL_TRIANGLES)
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 1.0 (1992)}
 \begin{itemize}
-\item Данные хранятся в памяти CPU
+\item Данные хранятся \textit{в памяти CPU}
 \pause
-\item Несколько OpenGL-вызовов на каждую вершину
+\item Несколько OpenGL-вызовов \textit{на каждую вершину}
 \pause
 \begin{itemize}
-\item GPU становятся быстрее $\Longrightarrow$ основное время тратится не на рисование, а на накладные расходы самих OpenGL-вызовов
+\item GPU становятся быстрее $\Longrightarrow$ основное время тратится не на рисование, а на \textit{накладные расходы} самих OpenGL-вызовов
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 1.0 (1992)}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Как менять положение объектов и камеры?
 \pause
-\item $\Longrightarrow$ Матрицы преобразований (\verb|glMatrixMode(), glLoadMatrix()|)
+\item $\Longrightarrow$ \textbf{Матрицы преобразований} (\mintinline{cpp}|glMatrixMode, glLoadMatrix|)
 \pause
-\item Fixed-function pipeline: настраиваемая, но не расширяемая последовательность операций (применить матрицы к входным данным, нарисовать треугольник на экране, выполнить тест глубины, ...)
+\item \textbf{Fixed-function pipeline}: настраиваемая, но \textit{не расширяемая} последовательность операций (применить матрицы к входным данным, нарисовать треугольник на экране, выполнить тест глубины, ...)
 \pause
-\item Асинхронный API: команды выполнятся на GPU когда-нибудь
+\item \textbf{Асинхронный API}: команды выполнятся на GPU \textit{когда-нибудь}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 1.1 (1997)}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Vertex array -- спецификация формата и расположения вершин
+\item \textbf{Vertex array} -- спецификация формата и расположения вершин
 \begin{itemize}
-\item Сказать, где находятся вершины одной командой \verb|glVertexPointer|
-\item Нарисовать все вершины одной командой \verb|glDrawArrays|
+\item Сказать, где находятся вершины одной командой \mintinline{cpp}|glVertexPointer|
+\item Нарисовать все вершины одной командой \mintinline{cpp}|glDrawArrays|
 \item Вершины всё ещё хранятся на CPU
 \end{itemize}
 \pause
-\item Текстуры -- изображения в памяти GPU, натягиваемые на полигоны
+\item \textbf{Текстуры} -- изображения в памяти GPU, натягиваемые на полигоны
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 1.1 (1997)}
-\begin{verbatim}
-// на старте
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
+# на старте
 for object in scene.objects:
     object.createVertexArray(object.vertices)
     object.createTexture()
 
-// при рендеринге
+# при рендеринге
 for object in scene.objects:
     glBindTexture(GL_TEXTURE_2D, object.texture)
     glBindVertexArray(object.vertexArray)
     glDrawArrays(object.vertexCount)
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}
 \frametitle{История графических API: OpenGL 1.2 - 1.4 (1998 - 2002)}
 \begin{itemize}
-\item В текстурах можно записать очень много интересного, помимо цвета: normal map, material map, bump map
-\item Хочется выполнять сложные вычисления на каждый пиксель
+\item В текстурах можно записать \textit{очень много интересного}, помимо цвета: normal map, material map, bump map
+\item Хочется выполнять \textit{сложные вычисления} на каждый пиксель
 \pause
-\item $\Longrightarrow$ Texture environments -- зачатки программируемости GPU (шейдеров)
+\item $\Longrightarrow$ \textbf{Texture environments} -- зачатки программируемости GPU (шейдеров)
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 1.5 (2003)}
 \begin{itemize}
-\item Vertex buffer -- возможность хранить вершины в памяти GPU
+\item \textbf{Vertex buffer} -- возможность хранить вершины \textit{в памяти GPU}
 \end{itemize}
 \pause
-\begin{verbatim}
-// на старте
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
+# на старте
 for object in scene.objects:
     object.createVertexBuffer(object.vertices)
     object.createVertexArray(object.vertexBuffer)
     object.createTexture()
 
-// при рендеринге
+# при рендеринге
 for object in scene.objects:
     glBindTexture(GL_TEXTURE_2D, object.texture)
     glBindVertexArray(object.vertexArray)
     glDrawArrays(object.vertexCount)
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}
 \frametitle{История графических API: OpenGL 2.0 (2004)}
 \begin{itemize}
-\item Шейдеры -- программы на C-подобном языке GLSL, компилируемые под конкретную GPU
-\item Заменяют fixed-function pipeline
+\item \textbf{Шейдеры} -- программы на C-подобном языке GLSL, компилируемые под конкретную GPU
 \begin{itemize}
-\item Необходимые части fixed-function pipeline остаются (растеризация, тест глубины, etc)
+\item \textit{Заменяют} fixed-function pipeline
+\item Необходимые части fixed-function pipeline \textit{остаются} (растеризация, тест глубины, etc)
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 2.0 (2004)}
-\begin{verbatim}
-// на старте
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
+# на старте
 for object in scene.objects:
     object.createVertexBuffer(object.vertices)
     object.createVertexArray(object.vertexBuffer)
     object.createTexture()
     object.createShaderProgram()
 
-// при рендеринге
+# при рендеринге
 for object in scene.objects:
     glBindTexture(GL_TEXTURE_2D, object.texture)
     glBindVertexArray(object.vertexArray)
     glUseProgram(object.shaderProgram)
     glDrawArrays(object.vertexCount)
-\end{verbatim}
+\end{minted}
 \pause
 \begin{itemize}
 \item \underline{Примерно так будет выглядеть наш код}
@@ -1136,18 +1145,19 @@ for object in scene.objects:
 
 \begin{frame}[fragile]
 \frametitle{История графических API: OpenGL 3.0 (2008)}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Огромная часть API объявлена deprecated
+\item Огромная часть API объявлена \textit{deprecated}
 \pause
 \begin{itemize}
-\item Immediate-mode рисование -- \verb|glBegin/glEnd|
-\item Хранение данных на CPU -- \verb|glVertexPointer, ...|
-\item Матрицы преобразований -- \verb|glLoadMatrix, ...|
+\item Immediate-mode рисование -- \mintinline{cpp}|glBegin/glEnd|
+\item Хранение данных на CPU -- \mintinline{cpp}|glVertexPointer, ...|
+\item Матрицы преобразований -- \mintinline{cpp}|glLoadMatrix, ...|
 \end{itemize}
 \pause
-\item Transform feedback -- возможность записать результат работы шейдеров обратно в вершинный буфер
+\item \textbf{Transform feedback} -- возможность записать результат работы шейдеров обратно в вершинный буфер
 \begin{itemize}
-\item Зачатки GPGPU
+\item Зачатки \textit{GPGPU}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -1155,53 +1165,53 @@ for object in scene.objects:
 \begin{frame}
 \frametitle{История графических API: OpenGL 3.1 (2009)}
 \begin{itemize}
-\item Объявленные deprecated возможности удалены
+\item Объявленные deprecated возможности \textit{удалены}
 \pause
-\item Instanced rendering -- нарисовать много копий одного объекта в разных местах одной командой
+\item \textbf{Instanced rendering} -- нарисовать \textit{много копий} одного объекта в разных местах \textit{одной командой}
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{История графических API: OpenGL 3.2 (2009)}
 \begin{itemize}
-\item Механизм профилей
+\item \textbf{Механизм профилей}
 \begin{itemize}
-\item Core profile
+\item \textbf{Core profile}
 \begin{itemize}
 \item Обязан поддерживаться
 \item Только функционал конкретной версии OpenGL
 \end{itemize}
-\item Compatibility profile
+\item \textbf{Compatibility profile}
 \begin{itemize}
 \item Не обязан поддерживаться
 \item Функционал этой и всех предыдущих версий OpenGL
 \end{itemize}
 \pause
-\item Мы будем использовать core profile
+\item Мы будем использовать \alert{\textbf{\textit{\underline{core profile}}}}
 \end{itemize}
 \pause
-\item Геометрические шейдеры -- возможность менять тип геометрии и количество вершин на лету (используются для систем частиц, травы, etc)
+\item \textbf{Геометрические шейдеры} -- возможность менять тип геометрии и количество вершин \textit{на лету} (используются для систем частиц, травы, etc)
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{История графических API: OpenGL 4.0 (2010)}
 \begin{itemize}
-\item Шейдеры тесселяции -- увеличивают детализацию геометрии на лету
+\item \textbf{Шейдеры тесселяции} -- увеличивают детализацию геометрии на лету
 \begin{itemize}
-\item Гораздо меньше возможностей, чем у геометрических шейдеров, зато быстрее
+\item Гораздо меньше возможностей, чем у геометрических шейдеров, \textit{зато быстрее}
 \end{itemize}
 \pause
-\item Indirect drawing -- можно вычислять количество вершин и их расположение в памяти на лету на GPU, и использовать вычисленные значения для команд рисования
+\item \textbf{Indirect drawing} -- можно вычислять количество вершин и их расположение в памяти на лету \textit{на GPU}, и использовать вычисленные значения для команд рисования
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{История графических API: OpenGL 4.1 - 4.7 (2010 - 2017)}
 \begin{itemize}
-\item Compute shaders -- настоящее GPGPU внутри OpenGL
+\item \textbf{Compute шейдеры} -- \textit{настоящее GPGPU} внутри OpenGL
 \item Проработка и детализация API
-\item Атомарные операции в шейдерах
+\item \textbf{Атомарные операции} в шейдерах
 \item Вливание расширений в стандарт OpenGL
 \item \href{https://khronos.org/opengl/wiki/History_of_OpenGL}{\nolinkurl{khronos.org/opengl/wiki/History\_of\_OpenGL}}
 \end{itemize}
@@ -1211,9 +1221,9 @@ for object in scene.objects:
 \frametitle{История графических API: Vulkan 1.1 (2018)}
 \slideimage{vulkan.png}
 \begin{itemize}
-\item 700 строк кода, чтобы нарисовать один треугольник
+\item \textit{700 строк кода}, чтобы нарисовать один треугольник
 \pause
-\item Крайне низкоуровневый API
+\item \textit{Крайне низкоуровневый} API
 \item Последовательности команд для выполнения на GPU (command queues) в явном виде
 \begin{itemize}
 \item Можно распараллелить генерацию command queues на несколько CPU
@@ -1228,12 +1238,12 @@ for object in scene.objects:
 \frametitle{История графических API: WebGPU (2021 - ...)}
 \slideimage{webgpu.png}
 \begin{itemize}
-\item 200 строк кода, чтобы нарисовать один треугольник
+\item \textit{200 строк кода}, чтобы нарисовать один треугольник
 \pause
-\item Ориентирован на web, но есть реализации под десктоп (\href{https://github.com/gfx-rs/wgpu-native}{\nolinkurl{wgpu-native}})
+\item Ориентирован на web, но есть реализации \textit{под десктоп} (\href{https://github.com/gfx-rs/wgpu-native}{\nolinkurl{wgpu-native}})
 \pause
-\item Средне низкоуровневый API: сложнее (но приятнее), чем OpenGL, и легче, чем Vulkan
-\item Хороший выбор для изучения после OpenGL
+\item \textit{Средне низкоуровневый} API: сложнее (но приятнее), чем OpenGL, и легче, чем Vulkan
+\item \textit{Хороший выбор} для изучения после OpenGL
 \item \href{https://sotrh.github.io/learn-wgpu/}{\nolinkurl{sotrh.github.io/learn-wgpu}}
 \end{itemize}
 \end{frame}
@@ -1241,24 +1251,24 @@ for object in scene.objects:
 \begin{frame}
 \frametitle{Разновидности OpenGL}
 \begin{itemize}
-\item OpenGL
+\item \textbf{OpenGL}
 \pause
-\item OpenGL ES (Embedded Systems)
+\item \textbf{OpenGL ES} (Embedded Systems)
 \begin{itemize}
-\item OpenGL ES 1.0 $\approx$ OpenGL 1.3
-\item OpenGL ES 2.0 $\approx$ OpenGL 2.0
-\item OpenGL ES 3.0 $\approx$ OpenGL 3.0
+\item \textbf{OpenGL ES 1.0} $\approx$ \textbf{OpenGL 1.3}
+\item \textbf{OpenGL ES 2.0} $\approx$ \textbf{OpenGL 2.0}
+\item \textbf{OpenGL ES 3.0} $\approx$ \textbf{OpenGL 3.0}
 \end{itemize}
 \pause
-\item WebGL
+\item \textbf{WebGL}
 \begin{itemize}
-\item WebGL 1.0 $\approx$ OpenGL ES 2.0
-\item WebGL 2.0 $\approx$ OpenGL ES 3.0
+\item \textbf{WebGL 1.0} $\approx$ \textbf{OpenGL ES 2.0}
+\item \textbf{WebGL 2.0} $\approx$ \textbf{OpenGL ES 3.0}
 \end{itemize}
 \pause
-\item OpenGL SC (Safety Critical)
+\item \textbf{OpenGL SC} (Safety Critical)
 \begin{itemize}
-\item Убраны любые способы отстрелить себе ногу, в ущерб производительности
+\item Убраны любые способы отстрелить себе ногу, \textit{в ущерб производительности}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -1266,8 +1276,8 @@ for object in scene.objects:
 \begin{frame}
 \frametitle{Что такое OpenGL?}
 \begin{itemize}
-\item {\color{red}Не} библиотека
-\item Спецификация API (документ) на языке C
+\item \textbf{{\color{red}Не} библиотека!}
+\item \textbf{Спецификация API (документ) на языке C}
 \begin{itemize}
 \item Описание констант-перечислений (тэгов)
 \item Описание сигнатур функций и их семантики
@@ -1280,58 +1290,61 @@ for object in scene.objects:
 \begin{frame}[fragile]
 \frametitle{Что такое реализация OpenGL?}
 \pause
-Заголовочный файл, поставляемый системой или драйвером
+\textbf{Заголовочный файл}, поставляемый системой или драйвером
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Определение типов, e.g. \verb|typedef unsigned int GLenum;|
-\item Определение констант, e.g. \verb|#define GL_TEXTURE_2D 0x0DE1|
-\item Объявление функций, e.g. \verb|void glBindTexture(GLenum target,GLuint texture)|
+\item Определение типов, e.g. \mintinline{cpp}|typedef unsigned int GLenum;|
+\item Определение констант, e.g. \mintinline{cpp}|#define GL_TEXTURE_2D 0x0DE1|
+\item Объявление функций, e.g. \mintinline{cpp}|void glBindTexture(GLenum target,GLuint texture);|
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Что такое реализация OpenGL?}
 \pause
-Бинарная реализация объявленных функций (обычно -- динамическая библиотека), поставляемая системой и/или драйвером
+\textbf{Бинарная реализация} объявленных функций (обычно -- динамическая библиотека), поставляемая системой и/или драйвером
 \begin{itemize}
-\item Может содержать непосредственную реализацию OpenGL как часть драйвера и общаться с GPU
-\item Может быть промежуточным звеном, маршрутизирующим вызов до драйвера
-\item Может быть заглушкой
+\item Может содержать \textit{непосредственную реализацию OpenGL} как часть драйвера и общаться с GPU
+\item Может быть \textit{промежуточным звеном}, маршрутизирующим вызов до драйвера
+\item Может быть \textit{заглушкой}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Что такое реализация OpenGL?}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Заголовочный файл
+\item \textbf{Заголовочный файл}
 \begin{itemize}
-\item Linux: \verb|GL/gl.h| -- до OpenGL 1.3
+\item Linux: \mintinline{cpp}|GL/gl.h| -- до OpenGL 1.3
 \pause
-\item Windows: \verb|GL/gl.h| -- до OpenGL 1.1
+\item Windows: \mintinline{cpp}|GL/gl.h| -- до OpenGL 1.1
 \pause
-\item MacOS: \verb|OpenGL/gl.h| -- до OpenGL 2.1
+\item MacOS: \mintinline{cpp}|OpenGL/gl.h| -- до OpenGL 2.1
 \begin{itemize}
-\item {\color{red}Не} \verb|OpenGL/OpenGL.h|
+\item {\color{red}Не} \mintinline{cpp}|OpenGL/OpenGL.h|
 \end{itemize}
-\item Все платформы: \verb|GL/glext.h| вместе с \verb|#define GL_GLEXT_PROTOTYPES| -- до OpenGL 4.6
+\item Все платформы: \mintinline{cpp}|GL/glext.h| вместе с \mintinline{cpp}|#define GL_GLEXT_PROTOTYPES| -- до OpenGL 4.6
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Что такое реализация OpenGL?}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Динамическая библиотека
+\item \textbf{Динамическая библиотека}
 \begin{itemize}
-\item Linux: \verb|libGL.so|
-\item Windows: \verb|opengl32.dll|
-\item MacOS: \verb|OpenGL framework|
+\item Linux: \mintinline{cpp}|libGL.so|
+\item Windows: \mintinline{cpp}|opengl32.dll|
+\item MacOS: \mintinline{cpp}|OpenGL framework|
 \end{itemize}
 \pause
-\item Может не содержать функции всех версий OpenGL
+\item Может содержать функции \textit{не всех версий} OpenGL
 \begin{itemize}
 \item Под Linux обычно содержит
 \end{itemize}
-\item Остальные функции OpenGL нужно динамически загружать специфичными для платформы средствами
+\item Остальные функции OpenGL нужно динамически загружать \textit{специфичными для платформы средствами}
 \item $\Longrightarrow$ Библиотеки-загрузчики OpenGL
 \end{itemize}
 \end{frame}
@@ -1351,12 +1364,12 @@ for object in scene.objects:
 \frametitle{Контекст OpenGL}
 \begin{itemize}
 \item Необходим для вызова любой функции OpenGL
-\item Привязан к конкретной реализации OpenGL
-\item Привязан к конкретным версии и профилю OpenGL
-\item Привязан к экрану / окну оконной системы / изображению в памяти
-\item Хранит текущее глобальное состояние OpenGL
+\item Привязан к \textit{конкретной реализации} OpenGL
+\item Привязан к \textit{конкретным версии и профилю} OpenGL
+\item Привязан к \textit{экрану / окну оконной системы / изображению в памяти}
+\item Хранит текущее \textit{глобальное состояние} OpenGL
 \item \href{https://khronos.org/opengl/wiki/OpenGL_Context}{\nolinkurl{khronos.org/opengl/wiki/OpenGL\_Context}}
-\item Создаётся специфичными для платформы средствами
+\item Создаётся \textit{специфичными для платформы} средствами
 \item $\Longrightarrow$ Библиотеки, создающие контекст OpenGL
 \end{itemize}
 \end{frame}
@@ -1366,7 +1379,7 @@ for object in scene.objects:
 \begin{itemize}
 \item Обычно привязывают контекст к окну и умеют обрабатывать события оконной системы
 \item GLUT -- устаревшая, плохой интерфейс
-\item GLFW
+\item GLFW -- простая, широко распространённая
 \item \href{https://www.libsdl.org/}{\alert{\textbf{\underline{SDL2}}}} -- умеет загружать изображения, выводить звук, и другое
 \item \href{https://open.gl/context}{\nolinkurl{open.gl/context}}
 \end{itemize}
@@ -1374,25 +1387,26 @@ for object in scene.objects:
 
 \begin{frame}[fragile]
 \frametitle{Как начать работать с OpenGL?}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
 window = createWindow(title)
 context = createGLContext(window, version, profile)
 context.makeCurrent()
 loadGLFunctions()
-// тут можно работать с OpenGL!
-\end{verbatim}
+# тут можно работать с OpenGL!
+\end{minted}
 \end{frame}
 
 \begin{frame}
 \frametitle{Литература, ссылки}
 \begin{itemize}
-\item Realtime графика
+\item \textbf{Realtime графика}
 \begin{itemize}
 \item Computer Graphics: Principles and Practice -- книжка начального уровня
 \item Real-Time Rendering (4th edition) -- обзор передовых алгоритмов индустрии
 \item \href{https://developer.nvidia.com/gpugems}{\texttt{GPU Gems 1, 2, 3}} -- журнал про техники и алгоритмы
 \end{itemize}
-\item OpenGL
+\item \textbf{OpenGL}
 \begin{itemize}
 \item \href{https://khronos.org/opengl/wiki}{\nolinkurl{khronos.org/opengl/wiki}} -- подробное изложение всех аспектов OpenGL
 \item \href{http://docs.gl}{\nolinkurl{docs.gl}} -- удобная документация по отдельным функциям
