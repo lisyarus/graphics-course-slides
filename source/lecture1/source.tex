@@ -1234,10 +1234,12 @@ for object in scene.objects:
 \begin{itemize}
 \item \textit{700 строк кода}, чтобы нарисовать один треугольник
 \pause
-\item \textit{Крайне низкоуровневый} API
-\item Последовательности команд для выполнения на GPU (command queues) в явном виде
+\item Не поддерживается на macOS и iOS, но есть прослойка MoltenVK, реализующая Vulkan поверх Metal API
+\pause
+\item \textit{Крайне низкоуровневый} и гибкий API
 \begin{itemize}
-\item Можно распараллелить генерацию command queues на несколько CPU
+\item Последовательности команд для выполнения на GPU (command queues) в явном виде
+\item Явное управление памятью и синхронизацией
 \end{itemize}
 \pause
 \item Похож на DirectX 12, Metal
@@ -1251,9 +1253,11 @@ for object in scene.objects:
 \begin{itemize}
 \item \textit{200 строк кода}, чтобы нарисовать один треугольник
 \pause
-\item Ориентирован на web, но есть реализации \textit{под десктоп} (\href{https://github.com/gfx-rs/wgpu-native}{\nolinkurl{wgpu-native}})
+\item Всё ещё в состоянии \textit{working draft}, но некоторые браузеры (Chrome с апреля 2023) уже его поддерживают
 \pause
-\item \textit{Средне низкоуровневый} API: сложнее (но приятнее), чем OpenGL, и легче, чем Vulkan
+\item Ориентирован на web, но есть реализации \textit{под десктоп} (\href{https://dawn.googlesource.com/dawn/+/refs/heads/chromium-gpu-experimental/README.md}{\texttt{Google Dawn}}, \href{https://github.com/gfx-rs/wgpu-native}{\nolinkurl{wgpu-native}}) поверх платформенных API (DirectX 12/Vulkan/Metal)
+\pause
+\item \textit{Разумно низкоуровневый} API: сложнее (но приятнее), чем OpenGL, и легче, чем Vulkan
 \item \textit{Хороший выбор} для изучения после OpenGL
 \item \href{https://sotrh.github.io/learn-wgpu/}{\nolinkurl{sotrh.github.io/learn-wgpu}}
 \end{itemize}
@@ -1413,8 +1417,8 @@ loadGLFunctions()
 \begin{itemize}
 \item \textbf{Realtime графика}
 \begin{itemize}
-\item Computer Graphics: Principles and Practice -- книжка начального уровня
-\item Real-Time Rendering (4th edition) -- обзор передовых алгоритмов индустрии
+\item \href{https://cgpp.net/about.xml}{\texttt{Computer Graphics: Principles and Practice}} -- книжка начального уровня
+\item \href{https://www.amazon.com/Real-Time-Rendering-Fourth-Tomas-Akenine-M\%C3\%B6ller/dp/1138627003}{\texttt{Real-Time Rendering (4th edition)}} -- обзор передовых алгоритмов индустрии
 \item \href{https://developer.nvidia.com/gpugems}{\texttt{GPU Gems 1, 2, 3}} -- журнал про техники и алгоритмы
 \end{itemize}
 \item \textbf{OpenGL}
