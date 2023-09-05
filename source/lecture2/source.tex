@@ -36,7 +36,7 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Лекция 2: Растеризация, графический конвейер, шейдеры, аффинные преобразования}
+\subtitle{Лекция 2: Растеризация, графический конвейер, шейдеры, интерполяция, аффинные преобразования}
 \date{2023}
 
 \setbeamertemplate{footline}[frame number]
@@ -45,23 +45,23 @@
 
 \frame{\titlepage}
 
-\begin{frame}
-\frametitle{Два слова о GPU}
-\pause
-\begin{itemize}
-\item SIMD -- Single Instruction, Multiple Data
-\pause
-\item Как SIMD-расширения процессоров (SSE, AVX), но на более крупном масштабе -- сотни/тысячи одновременных вычислений
-\pause
-\item Для производительности вычислительные ядра организованы в группы (wavefronts) по 32/64 элемента
-\pause
-\item Все ядра одного wavefront'а выполняют одну и ту же операцию (но над разными данными)
-\pause
-\item Если мы рисуем только один треугольник, под него всё равно выделяется целый wavefront и большинство его ядер делают бесполезную работу
-\pause
-\item Максимизация загрузки wavefront'ов -- важная часть низкоуровневой оптимизации GPU
-\end{itemize}
-\end{frame}
+% \begin{frame}
+% \frametitle{Два слова о GPU}
+% \pause
+% \begin{itemize}
+% \item SIMD -- Single Instruction, Multiple Data
+% \pause
+% \item Как SIMD-расширения процессоров (SSE, AVX), но на более крупном масштабе -- сотни/тысячи одновременных вычислений
+% \pause
+% \item Для производительности вычислительные ядра организованы в группы (wavefronts) по 32/64 элемента
+% \pause
+% \item Все ядра одного wavefront'а выполняют одну и ту же операцию (но над разными данными)
+% \pause
+% \item Если мы рисуем только один треугольник, под него всё равно выделяется целый wavefront и большинство его ядер делают бесполезную работу
+% \pause
+% \item Максимизация загрузки wavefront'ов -- важная часть низкоуровневой оптимизации GPU
+% \end{itemize}
+% \end{frame}
 
 \begin{frame}
 \frametitle{Растеризация}
@@ -204,7 +204,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{frame}
 
 \begin{frame}<1>[fragile,label=rasterization]
-\frametitle{Растеризация: OpenGL}
+\frametitle{Растеризация в OpenGL}
 \begin{itemize}
 \item Пиксель растеризуется, если \textit{центр пикселя} содержится в треугольнике
 \pause
@@ -219,44 +219,44 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{frame}
 
 \begin{frame}
-\frametitle{Растеризация: OpenGL}
+\frametitle{Растеризация в OpenGL}
 \slideimage{pixel-covered.png}
 \end{frame}
 
-\againframe<2>{rasterization}
+\againframe<1-2>{rasterization}
 
 \begin{frame}
-\frametitle{Растеризация: OpenGL}
+\frametitle{Растеризация в OpenGL}
 \:
 \slideimage{triangle-rasterization.png}
 \end{frame}
 
 \begin{frame}
-\frametitle{Растеризация: OpenGL}
+\frametitle{Растеризация в OpenGL}
 Не будет ``дырок'':
 \slideimage{triangle-rasterization-hole.png}
 \end{frame}
 
 \begin{frame}
-\frametitle{Растеризация: OpenGL}
+\frametitle{Растеризация в OpenGL}
 Не будет наложения пикселей:
 \slideimage{triangle-rasterization-overlap.png}
 \end{frame}
 
-\againframe<3>{rasterization}
+\againframe<2-3>{rasterization}
 
 \begin{frame}[fragile]
-\frametitle{Растеризация: OpenGL}
+\frametitle{Растеризация в OpenGL}
 \begin{itemize}
 \usemintedstyle{solarized-light}
 \item В современном OpenGL есть только три основных примитива для растеризации:
 \pause
 \begin{itemize}
-\item Точки: \mintinline{cpp}|GL_POINTS|
+\item \textbf{Точки}: \mintinline{cpp}|GL_POINTS|
 \pause
-\item Линии: \mintinline{cpp}|GL_LINE_STRIP|, \mintinline{cpp}|GL_LINE_LOOP|, \mintinline{cpp}|GL_LINES|
+\item \textbf{Линии}: \mintinline{cpp}|GL_LINES|, \mintinline{cpp}|GL_LINE_STRIP|, \mintinline{cpp}|GL_LINE_LOOP|
 \pause
-\item Треугольники: \mintinline{cpp}|GL_TRIANGLE_STRIP|, \mintinline{cpp}|GL_TRIANGLE_FAN|, \mintinline{cpp}|GL_TRIANGLES|
+\item \textbf{Треугольники}: \mintinline{cpp}|GL_TRIANGLES|, \mintinline{cpp}|GL_TRIANGLE_STRIP|, \mintinline{cpp}|GL_TRIANGLE_FAN|
 \end{itemize}
 \pause
 \item Есть особые примитивы для геометрических шейдеров: \mintinline{cpp}|GL_LINE_STRIP_ADJACENCY|, \mintinline{cpp}|GL_LINES_ADJACENCY|, \mintinline{cpp}|GL_TRIANGLE_STRIP_ADJACENCY|, \mintinline{cpp}|GL_TRIANGLES_ADJACENCY|
@@ -268,7 +268,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \begin{frame}
 \frametitle{О треугольниках}
 \begin{itemize}
-\item Почему основным примитивом рисования стал треугольник?
+\item Почему основным примитивом рисования стал \textit{треугольник}?
 \pause
 \item Для более сложных геометрических фигур (круг, многоугольник, и т.д.):
 \pause
@@ -311,9 +311,10 @@ for (int x = xmin; x <= xmax; ++x) {
 \begin{frame}[fragile]
 \frametitle{Графический конвейер (graphics pipeline)}
 \usemintedstyle{solarized-light}
+Основные части конвейера:
 \begin{itemize}
-\pause
 \item Входной поток вершин (vertex stream)
+\pause
 \begin{itemize}
 \item Позже мы узнаем, как его задавать
 \end{itemize}
@@ -324,12 +325,9 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Преобразование в оконную систему координат (viewport transform)
 \pause
-\item Back-face culling
+\item Отсечение невидимых граней (back-face culling)
 \pause
-\item Растеризация примитивов: примитив превращается в набор пикселей
-\begin{itemize}
-\item Линейная интерполяция значений, переданных из вершинного шейдера во фрагментный
-\end{itemize}
+\item Растеризация примитивов
 \pause
 \item Пиксельный (фрагментный) шейдер: обрабатывает пиксели по одному
 \end{itemize}
@@ -341,48 +339,6 @@ for (int x = xmin; x <= xmax; ++x) {
 \item Мы пропустили много важных частей конвейера
 \item Будем их по чуть-чуть добавлять в течение курса
 \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Viewport transform}
-\usemintedstyle{solarized-light}
-\begin{itemize}
-\item Преобразование в оконную систему координат
-\item \begin{math}X: [-1, 1] \rightarrow [0, width]\end{math}
-\item \begin{math}Y: [-1, 1] \rightarrow [height, 0]\end{math} (-1 внизу, 1 вверху)
-\pause
-\item Настроить: \mintinline{cpp}|glViewport(0, 0, width, height)|
-\end{itemize}
-\end{frame}
-
-\begin{frame}<1>[fragile,label=back_face_culling]
-\frametitle{Back-face culling}
-\begin{itemize}
-\usemintedstyle{solarized-light}
-\item Обычно в OpenGL треугольники, вершины которых оказываются на экране в порядке обхода \textit{по часовой стрелке}, \alert{\textbf{не рисуются}}
-\pause
-\begin{itemize}
-\item Чтобы не рисовать треугольники, которые всё равно будут скрыты другими треугольниками спереди
-\end{itemize}
-\pause
-\item Включить/выключить это поведение: \mintinline{cpp}|glEnable(GL_CULL_FACE)| или \mintinline{cpp}|glDisable(GL_CULL_FACE)| (по умолчанию \textit{выключено})
-\pause
-\item Настроить, какие треугольники будут скрываться: \mintinline{cpp}|glCullFace(GL_BACK)|, \mintinline{cpp}|glCullFace(GL_FRONT)|, \mintinline{cpp}|glCullFace(GL_FRONT_AND_BACK)|
-\pause
-\item Настроить, какие треугольники считаются \mintinline{cpp}|FRONT|, а какие -- \mintinline{cpp}|BACK|: \mintinline{cpp}|glFrontFace(GL_CCW)|, \mintinline{cpp}|glFrontFace(GL_CW)|
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Back-face culling}
-\slideimage{back-face-culling.png}
-\end{frame}
-
-\againframe<2->{back_face_culling}
-
-\begin{frame}
-\frametitle{Группировка вершин по примитивам (primitive assembly)}
-\slideimage{primitives.png}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -405,6 +361,75 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Переменные, интерполированное значение которых попадёт во фрагментный (пиксельный) шейдер: \mintinline{glsl}|out vec3 color;|
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1>[label=primitive_assembly]
+\frametitle{Сборка примитивов (primitive assembly)}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Превращает набор независимых вершин в \textit{притимивы} растеризации: точки/линии/треугольники
+\item Правила сборки зависят от выбранного режима: \mintinline{cpp}|GL_POINTS|, \mintinline{cpp}|GL_LINES|, \mintinline{cpp}|GL_LINE_STRIP|, \mintinline{cpp}|GL_LINE_LOOP|, \mintinline{cpp}|GL_TRIANGLES|, \mintinline{cpp}|GL_TRIANGLE_STRIP|, \mintinline{cpp}|GL_TRIANGLE_FAN|
+\pause
+\item Порядок вершин в \mintinline{cpp}|GL_TRIANGLE_STRIP| и \mintinline{cpp}|GL_TRIANGLE_FAN| важен для \textit{back-face culling}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Сборка примитивов (primitive assembly)}
+\slideimage{primitives.png}
+\end{frame}
+
+\againframe<1->{primitive_assembly}
+
+\begin{frame}[fragile]
+\frametitle{Viewport transform}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Преобразование в оконную систему координат
+\item \begin{math}X: [-1, 1] \rightarrow [0, width]\end{math}
+\item \begin{math}Y: [-1, 1] \rightarrow [height, 0]\end{math} (-1 внизу, 1 вверху)
+\pause
+\item Настроить: \mintinline{cpp}|glViewport(0, 0, width, height)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}<1-2>[fragile,label=back_face_culling]
+\frametitle{Back-face culling}
+\begin{itemize}
+\usemintedstyle{solarized-light}
+\item \textit{Обычно} в OpenGL треугольники, вершины которых оказываются на экране в порядке обхода \textit{по часовой стрелке}, \alert{\textbf{не рисуются}}, чтобы не рисовать треугольники, которые будут скрыты другими треугольниками ближе к камере
+\pause
+\begin{itemize}
+\item Из-за этого в некоторых играх вы видите всю карту, когда проваливаетесь в текстуры
+\end{itemize}
+\pause
+\item Работает только для сплошных 3D моделей без ``дырок'', имеющих внутренность (напр. \textit{manifold mesh})
+\pause
+\item Работает только при договорённости, что все грани описаны \textit{против часовой стрелки}, если смотреть на модель \textit{снаружи}
+\pause
+\item Порядок вершин в \mintinline{cpp}|GL_TRIANGLE_STRIP| и \mintinline{cpp}|GL_TRIANGLE_FAN| чётко определён, чтобы не сломать back-face culling
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Back-face culling}
+\slideimage{back-face-culling.png}
+\end{frame}
+
+\againframe<2->{back_face_culling}
+
+\begin{frame}[fragile]
+\frametitle{Back-face culling}
+\begin{itemize}
+\usemintedstyle{solarized-light}
+\item Выключен по умолчанию
+\pause
+\item Включить/выключить это поведение: \mintinline{cpp}|glEnable(GL_CULL_FACE)| или \mintinline{cpp}|glDisable(GL_CULL_FACE)|
+\pause
+\item Настроить, какие треугольники будут скрываться: \mintinline{cpp}|glCullFace(GL_BACK)|, \mintinline{cpp}|glCullFace(GL_FRONT)|, \mintinline{cpp}|glCullFace(GL_FRONT_AND_BACK)|
+\pause
+\item Настроить, какие треугольники считаются \mintinline{cpp}|FRONT|, а какие -- \mintinline{cpp}|BACK|: \mintinline{cpp}|glFrontFace(GL_CCW)|, \mintinline{cpp}|glFrontFace(GL_CW)|
 \end{itemize}
 \end{frame}
 
@@ -437,15 +462,15 @@ for (int x = xmin; x <= xmax; ++x) {
 \begin{frame}[fragile]
 \frametitle{Языки описания шейдеров}
 \begin{itemize}
-\item OpenGL, Vulkan: GLSL (GL Shading Language)
+\item \textbf{OpenGL, Vulkan}: \textbf{\alert{\underline{GLSL}}} (GL Shading Language)
 \pause
-\item DirectX: HLSL (High-Level Shading Language)
+\item \textbf{DirectX}: \textbf{HLSL} (High-Level Shading Language)
 \pause
-\item DirectX (до 2012): Cg (C for Graphics), deprecated
+\item \textbf{DirectX} (до 2012): \textbf{Cg} (C for Graphics), deprecated
 \pause
-\item WebGPU: WGSL
+\item \textbf{WebGPU}: \textbf{WGSL} (WebGpu Shading Language)
 \pause
-\item \href{https://en.wikipedia.org/wiki/Shading_language}{\nolinkurl{en.wikipedia.org/wiki/Shading\_language}}
+\item И другие: \href{https://en.wikipedia.org/wiki/Shading_language}{\nolinkurl{en.wikipedia.org/wiki/Shading\_language}}
 \end{itemize}
 \end{frame}
 
@@ -657,9 +682,9 @@ vec3 reflect(vec3 v, vec3 n) {
 \pause
 \item Выберем начало координат \begin{math}p_0\end{math} и определим
 
-\begin{math}\sum \lambda_i p_i = p_0 + \sum \lambda_i (p_i - p_0) \end{math}
+\begin{math}\sum \lambda_i p_i = p_0 + \sum \lambda_i (p_i - p_0) \in \mathbb A\end{math}
 \pause
-\item Теорема: если \begin{math}\sum \lambda_i = 1\end{math}, то результат не зависит от выбора \begin{math}p_0\end{math}
+\item Теорема: если \begin{math}\sum \lambda_i = 1\end{math}, то результат (точка) не зависит от выбора \begin{math}p_0\end{math}
 \pause
 \item В этом случае \begin{math}q = \sum \lambda_i p_i\end{math} называется аффинной комбинацией точек \begin{math}p_i\end{math} с коэффициентами \begin{math}\lambda_i\end{math}
 \pause
@@ -697,11 +722,24 @@ vec3 reflect(vec3 v, vec3 n) {
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Векторнозначные комбинации}
+\begin{itemize}
+\item Пусть есть набор точек \begin{math}p_1, \dots, p_N\end{math} и набор коэффициентов \begin{math}\lambda_1, \dots, \lambda_N\end{math}
+\pause
+\item Выберем начало координат \begin{math}p_0\end{math} и определим
+
+\begin{math}\sum \lambda_i p_i = \sum \lambda_i (p_i - p_0) \in \mathbb V\end{math}
+\pause
+\item Теорема: если \begin{math}\sum \lambda_i = 0\end{math}, то результат (вектор) не зависит от выбора \begin{math}p_0\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Аффинная оболочка}
 \begin{itemize}
 \item Пусть есть набор точек \begin{math}p_1, \dots, p_N\end{math}
 \pause
-\item Их аффинная оболочка -- множество всех возможных аффинных комбинаций, т.е. множество \begin{math}\sum \lambda_i p_i\end{math} для всех возможных \begin{math}\lambda_i\end{math} таких, что \begin{math}\sum \lambda_i = 1\end{math}
+\item Их \textit{аффинная оболочка} -- множество всех возможных аффинных комбинаций, т.е. множество \begin{math}\sum \lambda_i p_i\end{math} для всех возможных \begin{math}\lambda_i\end{math} таких, что \begin{math}\sum \lambda_i = 1\end{math}
 \pause
 \item Аффинная оболочка точки -- сама \textit{точка}
 \pause
@@ -724,7 +762,9 @@ vec3 reflect(vec3 v, vec3 n) {
 \pause
 \item Линейная интерполяция величины \begin{math}f\end{math} в точке \begin{math}q\end{math} -- значение \begin{math}\sum \lambda_i f_i\end{math}
 \pause
-\item \textbf{Ровно это} происходит при интерполяции значений, переданных из вершинного шейдера во фрагментный
+\item Для этого нужно вычисляить \begin{math}\lambda_i\end{math} по известным \begin{math}p_i\end{math} и \begin{math}q\end{math}, что сводится к системе линейных уравнений
+\pause
+\item \textbf{Ровно это} происходит при интерполяции значений, переданных из вершинного шейдера во фрагментный \pause (с точностью до перспективной проекции, о чём мы поговорим позже)
 \end{itemize}
 \end{frame}
 
@@ -738,7 +778,11 @@ vec3 reflect(vec3 v, vec3 n) {
 \begin{itemize}
 \item Выпуклая комбинация: аффинная комбинация, в которой все коэффициенты неотрицательны \begin{math}\lambda_i \geq 0\end{math}
 \pause
-\item Множество всех выпуклых комбинаций набора точек = выпуклая оболочка
+\begin{itemize}
+\item Вместе с \begin{math}\sum\lambda_i = 1\end{math} это означает, что \begin{math}\lambda_i \in [0, 1]\end{math}
+\end{itemize}
+\pause
+\item Множество всех выпуклых комбинаций набора точек = \textit{выпуклая оболочка}
 \pause
 \item Выпуклая оболочка точки -- сама \textit{точка}
 \pause
@@ -747,6 +791,27 @@ vec3 reflect(vec3 v, vec3 n) {
 \item Выпуклая оболочка трёх точек -- \textit{треугольник} с этими точками в качестве вершин
 \pause
 \item Выпуклая оболочка четырёх точек -- \textit{тетраэдр} с этими точками в качестве вершин
+\pause
+\item И т.д.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Выпуклые оболочки}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item При растеризации центры пикселей попадают внутрь треугольника
+\pause
+\item \begin{math}\Rightarrow\end{math} Пиксели лежат в \textit{выпуклой оболочке} исходных вершин
+\pause
+\item \begin{math}\Rightarrow\end{math} Коэффициенты интерполяции всегда в диапазоне \begin{math}\lambda_i \in [0, 1]\end{math}
+\pause
+\item \begin{math}\Rightarrow\end{math} Проинтерполированные значения лежат в выпуклой оболочке значений в вершинах
+\begin{itemize}
+\item Если \mintinline{cpp}|out|-значения величины в вершинах были \begin{math}1.5\end{math}, \begin{math}0.3\end{math} и \begin{math}5.7\end{math}, то \mintinline{cpp}|in|-значения в пикселях будут в диапазоне \begin{math}[0.3, 5.7]\end{math} \textit{(с точностью до floating-point ошибок)}
+\end{itemize}
+\pause
+\item N.B. Это может нарушаться при \textit{мультисэмплинге}, о котором мы поговорим позднее
 \end{itemize}
 \end{frame}
 
@@ -757,7 +822,7 @@ vec3 reflect(vec3 v, vec3 n) {
 \pause
 \item Аффинные преобразования -- сохраняют \textit{аффинные комбинации} точек: \begin{math}S \left(\sum \lambda_i p_i\right) = \sum \lambda_i S p_i\end{math}
 \pause
-\item При выборе начала координат \begin{math}p_0\end{math} преобразование \begin{math}S: \mathbb A \rightarrow \mathbb A\end{math} можно понимать как преобразование соответствующего векторного пространства
+\item Если выбрано начало координат \begin{math}p_0\end{math}, преобразование \begin{math}S: \mathbb A \rightarrow \mathbb A\end{math} можно понимать как преобразование соответствующего векторного пространства
 \begin{math}S: \mathbb V \rightarrow \mathbb V\end{math} по формуле \begin{math}S(v) = S(p_0 + v) - p_0\end{math}
 \pause
 \item Можно показать, что в таком виде любое аффинное преобразование это линейное преобразование + сдвиг на фиксированный вектор:
