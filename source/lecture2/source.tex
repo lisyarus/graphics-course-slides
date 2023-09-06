@@ -67,6 +67,7 @@
 \frametitle{Растеризация}
 \begin{itemize}
 \item Растеризация -- превращение геометрического примитива (точки, линии, треугольника, прямоугольника, круга, и т.д.) в набор соответствующих ему пикселей на экране/изображении
+\pause
 \item Превращение векторных данных в растровые
 \pause
 \item За нас её делает OpenGL!
@@ -261,7 +262,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Есть особые примитивы для геометрических шейдеров: \mintinline{cpp}|GL_LINE_STRIP_ADJACENCY|, \mintinline{cpp}|GL_LINES_ADJACENCY|, \mintinline{cpp}|GL_TRIANGLE_STRIP_ADJACENCY|, \mintinline{cpp}|GL_TRIANGLES_ADJACENCY|
 \pause
-\item Точки и линии обычно используются для дебажного рендеринга, \textit{главный примитив -- \underline{треугольник}}
+\item Точки и линии обычно используются для дебажного рендеринга или вместе с геометрическими шейдерами, \textit{главный примитив -- \underline{треугольник}}
 \end{itemize}
 \end{frame}
 
@@ -386,11 +387,13 @@ for (int x = xmin; x <= xmax; ++x) {
 \frametitle{Viewport transform}
 \usemintedstyle{solarized-light}
 \begin{itemize}
-\item Преобразование в оконную систему координат
-\item \begin{math}X: [-1, 1] \rightarrow [0, width]\end{math}
-\item \begin{math}Y: [-1, 1] \rightarrow [height, 0]\end{math} (-1 внизу, 1 вверху)
+\item Преобразование в оконную (пиксельную) систему координат
+\item \begin{math}X: [-1, 1] \rightarrow [X_{min}, X_{max}]\end{math}
+\item \begin{math}Y: [-1, 1] \rightarrow [Y_{max}, Y_{min}]\end{math} (-1 внизу, 1 вверху)
 \pause
-\item Настроить: \mintinline{cpp}|glViewport(0, 0, width, height)|
+\item Настроить: \mintinline{cpp}|glViewport(xmin, ymin, width, height)| (в пикселях)
+\pause
+\item Вне прямоугольника \begin{math}[X_{min}, X_{max}]\times[Y_{min}, Y_{max}]\end{math} \textit{ничего не нарисуется}: GPU обрежет все примитивы по этим границам
 \end{itemize}
 \end{frame}
 
@@ -401,7 +404,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \item \textit{Обычно} в OpenGL треугольники, вершины которых оказываются на экране в порядке обхода \textit{по часовой стрелке}, \alert{\textbf{не рисуются}}, чтобы не рисовать треугольники, которые будут скрыты другими треугольниками ближе к камере
 \pause
 \begin{itemize}
-\item Из-за этого в некоторых играх вы видите всю карту, когда проваливаетесь в текстуры
+\item Из-за этого в некоторых играх вы видите объекты насквозь, когда проваливаетесь в них
 \end{itemize}
 \pause
 \item Работает только для сплошных 3D моделей без ``дырок'', имеющих внутренность (напр. \textit{manifold mesh})
@@ -430,6 +433,8 @@ for (int x = xmin; x <= xmax; ++x) {
 \item Настроить, какие треугольники будут скрываться: \mintinline{cpp}|glCullFace(GL_BACK)|, \mintinline{cpp}|glCullFace(GL_FRONT)|, \mintinline{cpp}|glCullFace(GL_FRONT_AND_BACK)|
 \pause
 \item Настроить, какие треугольники считаются \mintinline{cpp}|FRONT|, а какие -- \mintinline{cpp}|BACK|: \mintinline{cpp}|glFrontFace(GL_CCW)|, \mintinline{cpp}|glFrontFace(GL_CW)|
+\pause
+\item По умолчанию стоит \mintinline{cpp}|glFrontFace(GL_CCW)|, лучше всего его \textit{никогда не менять} -- большинство форматов и инструментов следуют этой договорённости
 \end{itemize}
 \end{frame}
 
@@ -617,7 +622,7 @@ vec3 reflect(vec3 v, vec3 n) {
 \begin{itemize}
 \item Для некоторых \textit{типов данных}: кватернионы, цвета (rgba)
 \pause
-\item Для \textit{перспективной проекции} (следующая лекция)
+\item Для \textit{перспективной проекции} (4ая лекция)
 \pause
 \item Для \textit{аффинных преобразований}
 \end{itemize}
@@ -903,6 +908,8 @@ A & b \\
 \item Композиция преобразований = умножение матриц
 \pause
 \item \begin{math}\Rightarrow\end{math} Позволяет удобно комбинировать преобразования (напр. масштабирование + сдвиг + поворот + другой сдвиг)
+\pause
+\item \begin{math}\Rightarrow\end{math} Позволяет собрать положение и ориентацию камеры и её проекцию в одну матрицу (обсудим на 4ой лекции)
 \end{itemize}
 \end{frame}
 
@@ -1000,7 +1007,7 @@ v_z\\
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Матрица масштабирования на константу}
+\frametitle{Матрица изотропного масштабирования}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
@@ -1051,7 +1058,7 @@ s v_z\\
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Матрица поворота на угол в плоскости XY}
+\frametitle{Матрица поворота на угол \begin{math}\theta\end{math} в плоскости XY}
 \begin{center}
 \begin{math}
 \begin{pmatrix}
