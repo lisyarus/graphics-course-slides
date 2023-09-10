@@ -339,6 +339,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \begin{itemize}
 \item Мы пропустили много важных частей конвейера
 \item Будем их по чуть-чуть добавлять в течение курса
+\item \href{https://www.khronos.org/opengl/wiki/Rendering_Pipeline_Overview}{\nolinkurl{khronos.org/opengl/wiki/Rendering_Pipeline_Overview}}
 \end{itemize}
 \end{frame}
 
@@ -483,6 +484,62 @@ for (int x = xmin; x <= xmax; ++x) {
 \frametitle{Язык описания шейдеров GLSL}
 \usemintedstyle{solarized-light}
 \begin{itemize}
+\item Версионируется параллельно OpenGL
+\pause
+\item До OpenGL \texttt{3.3}:
+\begin{itemize}
+\item OpenGL \texttt{2.0} \begin{math}\rightarrow\end{math} GLSL \texttt{1.10}
+\item OpenGL \texttt{2.1} \begin{math}\rightarrow\end{math} GLSL \texttt{1.20}
+\item OpenGL \texttt{3.0} \begin{math}\rightarrow\end{math} GLSL \texttt{1.30}
+\item OpenGL \texttt{3.1} \begin{math}\rightarrow\end{math} GLSL \texttt{1.40}
+\item OpenGL \texttt{3.2} \begin{math}\rightarrow\end{math} GLSL \texttt{1.50}
+\end{itemize}
+\pause
+\item Начиная с OpenGL \texttt{3.3} версии GLSL и OpenGL совпадают:
+\begin{itemize}
+\item OpenGL \texttt{3.3} \begin{math}\rightarrow\end{math} GLSL \texttt{3.30}
+\item OpenGL \texttt{4.0} \begin{math}\rightarrow\end{math} GLSL \texttt{4.00}
+\item OpenGL \texttt{4.1} \begin{math}\rightarrow\end{math} GLSL \texttt{4.10}
+\item И т.д.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item OpenGL ES и WebGL используют язык GLSL ES
+\begin{itemize}
+\item OpenGL ES \texttt{2.0} \begin{math}\rightarrow\end{math} GLSL ES \texttt{1.00}
+\item OpenGL ES \texttt{3.0} \begin{math}\rightarrow\end{math} GLSL ES \texttt{3.00}
+\item OpenGL ES \texttt{3.1} \begin{math}\rightarrow\end{math} GLSL ES \texttt{3.10}
+\item OpenGL ES \texttt{3.2} \begin{math}\rightarrow\end{math} GLSL ES \texttt{3.20}
+\item WebGL \texttt{1.0} \begin{math}\rightarrow\end{math} GLSL ES \texttt{1.00}
+\item WebGL \texttt{2.0} \begin{math}\rightarrow\end{math} GLSL ES \texttt{3.00}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Программа должна начинаться с \mintinline{glsl}|#version <версия> [ <профиль> ]|
+\begin{itemize}
+\item У нас будет \mintinline{glsl}|#version 330 core|
+\pause
+\item Для GLSL ES \mintinline{glsl}|#version <версия> es|
+\end{itemize}
+\pause
+\item Программа должна содержать функцию \mintinline{glsl}|void main()|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\usemintedstyle{solarized-light}
+\begin{itemize}
 \item Похож на C
 \pause
 \item Типы данных:
@@ -508,16 +565,6 @@ for (int x = xmin; x <= xmax; ++x) {
 \end{itemize}
 \pause
 \item Подробнее: \href{https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)}{\nolinkurl{khronos.org/opengl/wiki/Data\_Type\_(GLSL)}}
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Язык описания шейдеров GLSL}
-\usemintedstyle{solarized-light}
-\begin{itemize}
-\item Программа должна начинаться с \mintinline{glsl}|#version <версия> [ <профиль> ]|
-\pause
-\item Программа должна содержать функцию \mintinline{glsl}|void main()|
 \end{itemize}
 \end{frame}
 
@@ -577,8 +624,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Циклы: \mintinline{glsl}|for (int i = 0; i < 10; ++i) { ... }|
 \begin{itemize}
-\item Число итераций цикла должно быть константой, известной на момент компиляции шейдера
-\item \alert{\textbf{Не может зависеть}} от uniform-переменных, аттрибутов вершин, и т.д.
+\item Бесконечные циклы могут проявиться по-разному, вплоть до креша всей системы :)
 \end{itemize}
 \pause
 \usemintedstyle{lightbulb}
@@ -593,6 +639,24 @@ vec3 reflect(vec3 v, vec3 n) {
 \pause
 \item Рекурсия \alert{\textbf{запрещена}}
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\begin{itemize}
+\item GLSL ES строже, чем GLSL
+\begin{itemize}
+\item Нет неявных преобразований типов
+\item Нет бесконечных циклов (цикл должен быть ограничен константным значением)
+\end{itemize}
+\pause
+\item Драйверы часто разрешают писать нестандартный GLSL-код, или код, не соответствующий выбранной версии GLSL
+\begin{itemize}
+\item Например, не разрешают неявные преобразования или сложные циклы
+\end{itemize}
+\pause
+\item Как и в обычных компиляторах, в компиляторах шейдеров могут быть баги :)
 \end{itemize}
 \end{frame}
 
@@ -813,7 +877,7 @@ vec3 reflect(vec3 v, vec3 n) {
 \pause
 \item \begin{math}\Rightarrow\end{math} Проинтерполированные значения лежат в выпуклой оболочке значений в вершинах
 \begin{itemize}
-\item Если \mintinline{cpp}|out|-значения величины в вершинах были \begin{math}1.5\end{math}, \begin{math}0.3\end{math} и \begin{math}5.7\end{math}, то \mintinline{cpp}|in|-значения в пикселях будут в диапазоне \begin{math}[0.3, 5.7]\end{math} \textit{(с точностью до floating-point ошибок)}
+\item Например, если \mintinline{cpp}|out|-значения величины в вершинах были \begin{math}1.5\end{math}, \begin{math}0.3\end{math} и \begin{math}5.7\end{math}, то \mintinline{cpp}|in|-значения в пикселях будут в диапазоне \begin{math}[0.3, 5.7]\end{math} \textit{(с точностью до floating-point ошибок)}
 \end{itemize}
 \pause
 \item N.B. Это может нарушаться при \textit{мультисэмплинге}, о котором мы поговорим позднее
@@ -882,6 +946,8 @@ vec3 reflect(vec3 v, vec3 n) {
 \item Трюк: можно вложить \textit{вектор} размерности \begin{math}N\end{math} в векторное пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}0\end{math} в качестве последней координаты
 \pause
 \item Трюк: можно вложить \textit{точку} размерности \begin{math}N\end{math} в векторное пространство размерности \begin{math}N+1\end{math}, добавив \begin{math}1\end{math} в качестве последней координаты
+\pause
+\item Такое представление точек и векторов называется \textit{однородными координатами}
 \pause
 \item Согласуется с операциями на векторах и точках
 \pause
