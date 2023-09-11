@@ -19,6 +19,7 @@
 \usetheme{metropolis}
 
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
 \definecolor{codebg}{RGB}{29,35,49}
 \setminted{fontsize=\footnotesize}
 
@@ -45,24 +46,6 @@
 
 \frame{\titlepage}
 
-% \begin{frame}
-% \frametitle{Два слова о GPU}
-% \pause
-% \begin{itemize}
-% \item SIMD -- Single Instruction, Multiple Data
-% \pause
-% \item Как SIMD-расширения процессоров (SSE, AVX), но на более крупном масштабе -- сотни/тысячи одновременных вычислений
-% \pause
-% \item Для производительности вычислительные ядра организованы в группы (wavefronts) по 32/64 элемента
-% \pause
-% \item Все ядра одного wavefront'а выполняют одну и ту же операцию (но над разными данными)
-% \pause
-% \item Если мы рисуем только один треугольник, под него всё равно выделяется целый wavefront и большинство его ядер делают бесполезную работу
-% \pause
-% \item Максимизация загрузки wavefront'ов -- важная часть низкоуровневой оптимизации GPU
-% \end{itemize}
-% \end{frame}
-
 \begin{frame}
 \frametitle{Растеризация}
 \begin{itemize}
@@ -73,6 +56,28 @@
 \item За нас её делает OpenGL!
 \pause
 \item Некоторые современные графические движки GPU (Unreal 5 Nanite) делают растеризацию сами с помощью compute шейдеров
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Почему растеризация?}
+\begin{itemize}
+\item Исторически было очень много разных способов рисовать трёхмерные сцены; см. \href{https://dl.acm.org/doi/pdf/10.1145/356625.356626}{\texttt{Sutherland et al - A Characterization of Ten Hidden-Surface Algorithms}}
+\pause
+\item В современности есть два основных алгоритма: \textbf{растеризация} и \textbf{трассировка лучей/путей}
+\pause
+\item Особенности растеризации:
+\begin{itemize}
+\item {\color{green}\texttt{+}} Быстрее в теории (зависит от сцены)
+\pause
+\item {\color{green}\texttt{+}} Легче параллелится
+\pause
+\item {\color{green}\texttt{+}} Лучше ложится на железо
+\pause
+\item {\color{green}\texttt{+}} Лучше работает с памятью (data locality)
+\pause
+\item {\color{red}\texttt{-}} Сложнее добиться фотореалистичной графики
+\end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -234,14 +239,14 @@ for (int x = xmin; x <= xmax; ++x) {
 
 \begin{frame}
 \frametitle{Растеризация в OpenGL}
-Не будет ``дырок'':
-\slideimage{triangle-rasterization-hole.png}
+Не будет наложения пикселей:
+\slideimage{triangle-rasterization-overlap.png}
 \end{frame}
 
 \begin{frame}
 \frametitle{Растеризация в OpenGL}
-Не будет наложения пикселей:
-\slideimage{triangle-rasterization-overlap.png}
+Не будет ``дырок'':
+\slideimage{triangle-rasterization-hole.png}
 \end{frame}
 
 \againframe<2-3>{rasterization}
@@ -274,9 +279,9 @@ for (int x = xmin; x <= xmax; ++x) {
 \item Для более сложных геометрических фигур (круг, многоугольник, и т.д.):
 \pause
 \begin{itemize}
-\item Сложнее алгоритм разтеризации
+\item {\color{red}\texttt{-}} Сложнее алгоритм разтеризации (особенно с учётом перспективной проекции)
 \pause
-\item Сложнее задавать и интерполировать атрибуты (накладывать цвет и текстуру, вычислять освещение)
+\item {\color{red}\texttt{-}} Сложнее задавать и интерполировать атрибуты (накладывать цвет и текстуру, вычислять освещение)
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -286,17 +291,17 @@ for (int x = xmin; x <= xmax; ++x) {
 Плюсы треугольника:
 \pause
 \begin{itemize}
-\item Образ под действием перспективной проекции -- тоже треугольник
+\item {\color{green}\texttt{+}} Образ под действием перспективной проекции -- тоже треугольник
 \pause
-\item Есть единственный разумный способ интерполяции (линейная, с барицентрическими координатами)
+\item {\color{green}\texttt{+}} Есть единственный разумный способ интерполяции (линейная, с барицентрическими координатами)
 \pause
-\item Позволяет рисовать спрайты (прямоугольник -- два треугольника)
+\item {\color{green}\texttt{+}} Позволяет рисовать спрайты (прямоугольник -- два треугольника)
 \pause
-\item Позволяет рисовать многоугольники (посредством триангуляции)
+\item {\color{green}\texttt{+}} Позволяет рисовать многоугольники (посредством триангуляции)
 \pause
-\item Позволяет рисовать линии (превращая их в тонкие многоугольники)
+\item {\color{green}\texttt{+}} Позволяет рисовать линии (превращая их в тонкие многоугольники)
 \pause
-\item Позволяет рисовать более сложные фигуры (аппроксимируя)
+\item {\color{green}\texttt{+}} Позволяет рисовать более сложные фигуры (аппроксимируя)
 \end{itemize}
 \end{frame}
 
@@ -304,6 +309,8 @@ for (int x = xmin; x <= xmax; ++x) {
 \frametitle{Графический конвейер (graphics pipeline)}
 \begin{itemize}
 \item Последовательность операций на GPU, превращающих входные данные в картинку на экране
+\pause
+\item Что происходит от вызова \mintinline{cpp}|glDrawArrays| до появления картинки на экране
 \pause
 \item Почти не отличается для разных графических API
 \end{itemize}
@@ -340,6 +347,37 @@ for (int x = xmin; x <= xmax; ++x) {
 \item Мы пропустили много важных частей конвейера
 \item Будем их по чуть-чуть добавлять в течение курса
 \item \href{https://www.khronos.org/opengl/wiki/Rendering_Pipeline_Overview}{\nolinkurl{khronos.org/opengl/wiki/Rendering_Pipeline_Overview}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Два слова о GPU}
+\pause
+\begin{itemize}
+\item SIMD -- Single Instruction, Multiple Data
+\pause
+\item GPU -- как SIMD-расширения процессоров (SSE, AVX), но на более крупном масштабе: сотни/тысячи одновременных вычислений
+\pause
+\item Для производительности вычислительные ядра организованы в группы (wavefronts) по 32/64 элемента
+\pause
+\item Все ядра одного wavefront'а выполняют одну и ту же операцию (но над разными данными)
+\pause
+\item Если мы рисуем только один треугольник, под него всё равно выделяется целый wavefront и большинство его ядер делают бесполезную работу
+\pause
+\item Максимизация загрузки wavefront'ов -- важная часть низкоуровневой оптимизации GPU
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Графический конвейер (graphics pipeline)}
+\begin{itemize}
+\item Конвейер -- удобная абстракция, внутри GPU всё устроено сложнее
+\pause
+\item Каждая часть конвейера выполняется сразу на большом объёме входных данных параллельно
+\pause
+\item Разные части конвейера могут выполняться одновременно (на разных данных)
+\pause
+\item Разные вызовы команд рисования (\mintinline{cpp}|glDrawArrays| и др.) могут обрабатываться параллельно
 \end{itemize}
 \end{frame}
 
