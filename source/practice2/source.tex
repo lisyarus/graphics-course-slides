@@ -1,13 +1,15 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
+
+\usetheme{metropolis}
 
 \usepackage{adjustbox}
 
@@ -16,8 +18,9 @@
 
 \usepackage{hyperref}
 
-\definecolor{blue}{rgb}{0,0,1}
-\definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
+
+\setminted{fontsize=\footnotesize}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -31,7 +34,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 2: Uniform'ы и матрицы преобразований}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -46,18 +49,19 @@
 \begin{frame}[fragile]
 \frametitle{Задание 1}
 Уменьшим треугольник в 2 раза, используя uniform переменную
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item В коде вершинного шейдера:
 \begin{itemize}
-\item \verb|uniform float scale;|
-\item Нужно где-то умножить вектор координат на \verb|scale|
-\item NB: последняя координата \verb|gl_Position| должна остаться равной 1
+\item \mintinline{glsl}|uniform float scale;|
+\item Нужно где-то умножить вектор координат на \mintinline{glsl}|scale|
+\item \textbf{\alert{NB}}: последняя координата \mintinline{glsl}|gl_Position| \textit{должна остаться равной 1}
 \end{itemize}
 \item После создания программы, до основного цикла:
 \begin{itemize}
-\item \verb|glUseProgram|
-\item \verb|glGetUniformLocation| -- возвращает уникальный идентификатор, ползволяющий работать с этой uniform-переменной
-\item \verb|glUniform1f| -- устанавливает значение конкретной uniform-переменной типа \verb|float|
+\item \mintinline{cpp}|glUseProgram|
+\item \mintinline{cpp}|glGetUniformLocation| -- возвращает уникальный идентификатор, ползволяющий работать с этой uniform-переменной
+\item \mintinline{cpp}|glUniform1f| -- устанавливает значение конкретной uniform-переменной типа \mintinline{cpp}|float|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -69,28 +73,29 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 2}
-Заставим треугольник постоянно крутиться
+Добавим анимацию вращения
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item В коде вершинного шейдера:
 \begin{itemize}
-\item \verb|uniform float angle;|
-\item Нужно где-то повернуть вектор координат на \verb|angle|
+\item \mintinline{glsl}|uniform float angle;|
+\item Нужно где-то повернуть вектор координат на \mintinline{glsl}|angle|
 \item Формула поворота есть в слайдах лекции (пока нужны только первые 2 координаты)
 \end{itemize}
 \item После создания программы, до основного цикла:
 \begin{itemize}
-\item \verb|glUseProgram|
-\item \verb|glGetUniformLocation|
-\item \verb|float time = 0.f;|
+\item \mintinline{cpp}|glUseProgram|
+\item \mintinline{cpp}|glGetUniformLocation|
+\item \mintinline{cpp}|float time = 0.f;|
 \end{itemize}
-\item В теле основного цикла рендеринга, после вычисления \verb|dt|
+\item В теле основного цикла рендеринга, после вычисления \mintinline{cpp}|dt|
 \begin{itemize}
-\item \verb|time += dt;|
+\item \mintinline{cpp}|time += dt;|
 \end{itemize}
-\item В теле основного цикла рендеринга, после \verb|glUseProgram|, до \verb|glDrawArrays|
+\item В теле основного цикла рендеринга, после \mintinline{cpp}|glUseProgram|, до \mintinline{cpp}|glDrawArrays|
 \begin{itemize}
-\item \verb|glUniform1f|
-\item В качестве значения можно использовать \verb|time|
+\item \mintinline{cpp}|glUniform1f|
+\item В качестве значения можно использовать \mintinline{cpp}|time|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -102,18 +107,28 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 3}
+\usemintedstyle{solarized-light}
 Заменим ручное применение преобразования на матрицу
 \begin{itemize}
 \item В коде шейдера:
 \begin{itemize}
-\item Заменяем две uniform-переменные на одну: \verb|uniform mat4 transform|
-\item Заменяем ручное вращение и масштабирование на умножение на матрицу: \verb|gl_Position = transform * vec4(...);|
+\item Заменяем две uniform-переменные на одну: \mintinline{glsl}|uniform mat4 transform|
+\item Заменяем ручное вращение и масштабирование на умножение на матрицу: \mintinline{glsl}|gl_Position = transform * vec4(...);|
 \end{itemize}
-\item Обновляем вызов \verb|glGetUniformLocation|
+\item Обновляем вызов \mintinline{cpp}|glGetUniformLocation|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+\usemintedstyle{solarized-light}
+Заменим ручное применение преобразования на матрицу
+\begin{itemize}
 \item В теле основного цикла рендеринга
 \begin{itemize}
-\item Создаём матрицу \begin{math}4\times 4\end{math} - массив из 16 \verb|float|'ов
-\begin{verbatim}
+\item Создаём матрицу \begin{math}4\times 4\end{math} -- массив из 16 \mintinline{cpp}|float|'ов
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 float transform[16] =
 {
     ?, ?, ?, ?, // 1 строка
@@ -121,9 +136,10 @@ float transform[16] =
     ?, ?, ?, ?, // 3 строка
     ?, ?, ?, ?, // 4 строка
 };
-\end{verbatim}
+\end{minted}
+\usemintedstyle{solarized-light}
 \item Заполняем матрицу значениями, чтобы это была матрица применения поворота и масштабирования
-\item \verb|glUniformMatrix4fv|, \verb|count = 1|, \verb|transpose = GL_TRUE|
+\item \mintinline{cpp}|glUniformMatrix4fv|, \mintinline{cpp}|count = 1|, \mintinline{cpp}|transpose = GL_TRUE|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -135,19 +151,16 @@ float transform[16] =
 
 \begin{frame}[fragile]
 \frametitle{Задание 4}
+\usemintedstyle{solarized-light}
 Добавляем в матрицу сдвиг, зависящий от времени
 \begin{itemize}
 \item В теле основного цикла рендеринга
 \begin{itemize}
 \item Заводим переменные под сдвиг:
-\begin{verbatim}
-float x = ?;
-float y = ?;
-\end{verbatim}
+\mintinline{cpp}|float x = ?;|
+\mintinline{cpp}|float y = ?;|
 \item Обновляем матрицу преобразования:
-\begin{verbatim}
-float transform[16] = ...;
-\end{verbatim}
+\mintinline{cpp}|float transform[16] = ...;|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -159,25 +172,24 @@ float transform[16] = ...;
 
 \begin{frame}[fragile]
 \frametitle{Задание 5}
-Добавляем учёт aspect ratio экрана
+\usemintedstyle{solarized-light}
+Добавляем учёт \textit{aspect ratio} экрана
 \begin{itemize}
 \item В коде шейдера:
 \begin{itemize}
-\item Добавляем uniform-переменную \verb|view|, аналогичную переменной \verb|transform|
-\item Применяем обе матрицы: \verb|gl_Position = view * transform * ...;|
+\item Добавляем uniform-переменную \mintinline{cpp}|view|, аналогичную переменной \mintinline{cpp}|transform|
+\item Применяем обе матрицы: \mintinline{glsl}|gl_Position = view * transform * ...;|
 \end{itemize}
 \item После создания программы, до основного цикла:
 \begin{itemize}
-\item Добавляем \verb|glGetUniformLocation|
+\item Добавляем \mintinline{cpp}|glGetUniformLocation|
 \end{itemize}
 \item В теле основного цикла рендеринга
 \begin{itemize}
-\item Вычисляем \verb|aspect_ratio = width / height| (N.B.: если написать так, будет целочисленное деление; нам нужно деление во floating point)
-\item Создаём новую матрицу, которая делит x-координату на \verb|aspect_ratio|
-\begin{verbatim}
-float view[16] = ...;
-\end{verbatim}
-\item Устанавливаем значение новой uniform-переменной с помозью \verb|glUniformMatrix4fv|
+\item Вычисляем \mintinline{cpp}|aspect_ratio = width / height| (\textbf{\alert{NB}}: если написать буквально так, будет целочисленное деление; нам нужно деление во floating point)
+\item Создаём новую матрицу, которая делит x-координату на \mintinline{cpp}|aspect_ratio|:
+\mintinline{cpp}|float view[16] = ...;|
+\item Устанавливаем значение новой uniform-переменной с помозью \mintinline{cpp}|glUniformMatrix4fv|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -189,32 +201,38 @@ float view[16] = ...;
 
 \begin{frame}[fragile]
 \frametitle{Задание 6}
+\usemintedstyle{solarized-light}
 Выключаем VSync
 \begin{itemize}
 \item В теле основного цикла рендеринга
 \begin{itemize}
-\item Выводим в лог значение переменной \verb|dt| (время, потраченное на один кадр в секундах) - скорее всего, будет в районе \verb|0.016|
+\item Выводим в лог значение переменной \mintinline{cpp}|dt| (время, потраченное на один кадр в секундах) -- скорее всего, будет в районе \mintinline{cpp}|0.016|
 \end{itemize}
 \item После создания OpenGL-контекста:
 \begin{itemize}
-\item \verb|SDL_GL_SetSwapInterval(0);|
-\item Проверяем значение переменной \verb|dt| - должно стать значительно меньше (например, \verb|0.001|)
+\item \mintinline{cpp}|SDL_GL_SetSwapInterval(0);|
+\item Проверяем значение переменной \mintinline{cpp}|dt| -- должно стать значительно меньше (например, \mintinline{cpp}|0.001|)
 \end{itemize}
 \item В теле основного цикла рендеринга
 \begin{itemize}
-\item Заменяем вычисление \verb|dt| на какую-нибудь константу, например \verb|float dt = 0.016f;|
-\item Должен получиться эффект, похожий на \href{https://en.wikipedia.org/wiki/Wagon-wheel_effect}{wagon-wheel effect}
+\item Заменяем вычисление \mintinline{cpp}|dt| на какую-нибудь константу, например \mintinline{cpp}|float dt = 0.016f;|
+\item Должен получиться эффект, похожий на \href{https://en.wikipedia.org/wiki/Wagon-wheel_effect}{\texttt{wagon-wheel effect}}
 \end{itemize}
-\item N.B.: может не сработать (зависит от системы, драйвера, и т.п.), ничего страшного
+\item \textbf{\alert{NB}}: может не сработать (зависит от системы, драйвера, и т.п.), ничего страшного
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Задание 7*}
-Заменяем треугольник на шестиугольник
+\usemintedstyle{solarized-light}
+Заменяем треугольник на управляемый шестиугольник
 \begin{itemize}
-\item Нужно поменять количество вершин в вызове \verb|glDrawArrays|
+\item Нужно поменять количество вершин в вызове \mintinline{cpp}|glDrawArrays|
 \item Нужно правильно вычислить координаты вершин в вершинном шейдере
+\item Нужно, чтобы шестиугольник можно было двигать по обеим осям
+\begin{itemize}
+\item Вам пригодится словарь \mintinline{cpp}|key_down| и константы \mintinline{cpp}|SDL_SCANCODE_LEFT|, \mintinline{cpp}|SDL_SCANCODE_RIGHT|, \mintinline{cpp}|SDL_SCANCODE_UP|, \mintinline{cpp}|SDL_SCANCODE_DOWN|
+\end{itemize}
 \end{itemize}
 \end{frame}
 
