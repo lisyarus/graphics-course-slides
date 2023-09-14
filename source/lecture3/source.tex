@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -19,8 +19,13 @@
 
 \usepackage{hyperref}
 
-\definecolor{blue}{rgb}{0,0,1}
+\usetheme{metropolis}
+
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{green}{rgb}{0,0.5,0}
+\definecolor{blue}{rgb}{0,0,1}
+\definecolor{codebg}{RGB}{29,35,49}
+\setminted{fontsize=\footnotesize}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -34,7 +39,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 3: Объекты OpenGL, буферы, аттрибуты вершин, индексированный рендеринг}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -45,17 +50,32 @@
 \begin{frame}[fragile]
 \frametitle{Объекты OpenGL}
 \begin{itemize}
-\item Шейдеры, шейдерные программы -- программируемая часть конвейера
+\item Основные строительные блоки, через которые мы работаем с OpenGL
 \pause
-\item Буферы -- хранят данные на GPU
+\item Хранят настройки рендеринга, запоминают состояние
 \pause
-\item Vertex Array -- описывают формат и хранение вершин
+\item Принадлежат текущему контексту OpenGL
 \pause
-\item Текстуры -- изображения в памяти GPU, которые можно читать из шейдера, и в которые можно рисовать
+\begin{itemize}
+\item Часть объектов можно делить между разными контекстами, см. \textit{OpenGL context sharing}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Примеры объектов OpenGL}
+\begin{itemize}
+\item \textbf{Шейдеры, шейдерные программы} -- программируемая часть конвейера
 \pause
-\item Renderbuffer -- буферы, в которые можно рисовать
+\item \textbf{Буферы} -- хранят данные на GPU
 \pause
-\item Framebuffer -- содержит настройки рисования в текстуры и renderbuffer'ы
+\item \textbf{Vertex Array} -- описывают формат и хранение вершин
+\pause
+\item \textbf{Текстуры} -- изображения в памяти GPU, которые можно читать из шейдера, и в которые можно рисовать
+\pause
+\item \textbf{Renderbuffer} -- буферы, в которые можно рисовать
+\pause
+\item \textbf{Framebuffer} -- содержит настройки рисования в текстуры и renderbuffer'ы
 \pause
 \item И другие
 \end{itemize}
@@ -63,36 +83,42 @@
 
 \begin{frame}[fragile]
 \frametitle{Создание/удаление объектов OpenGL}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item В коде объект представляется идентификатором типа \verb|GLuint|
+\item В коде объект представляется идентификатором типа \mintinline{cpp}|GLuint|
 \begin{itemize}
 \item Id уникален среди объектов одного типа (шейдеры, программы, ...)
 \end{itemize}
 \pause
 \item Шейдеры и программы:
 \begin{itemize}
-\item \verb|glCreateShader()|/\verb|glDeleteShader(shader)|
-\item \verb|glCreateProgram()|/\verb|glDeleteProgram(program)|
+\item \mintinline{cpp}|glCreateShader () / glDeleteShader (shader)|
+\item \mintinline{cpp}|glCreateProgram() / glDeleteProgram(program)|
 \end{itemize}
 \pause
 \item Остальные объекты:
-\begin{verbatim}
-glGenBuffers(count, ptr)/glDeleteBuffers(count, ptr)
-glGenVertexArrays/glDeleteVertexArrays
-glGenTextures/glDeleteTextures
-glGenRenderbuffers/glDeleteRenderbuffers
-glGenFramebuffers/glDeleteFramebuffers
-\end{verbatim}
-\pause
+\begin{itemize}
+\item \mintinline{cpp}|glGenBuffers(count, ptr) / glDeleteBuffers(count, ptr)|
+\item \mintinline{cpp}|glGenVertexArrays        / glDeleteVertexArrays|
+\item \mintinline{cpp}|glGenTextures            / glDeleteTextures|
+\item \mintinline{cpp}|glGenRenderbuffers       / glDeleteRenderbuffers|
+\item \mintinline{cpp}|glGenFramebuffers        / glDeleteFramebuffers|
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Создание/удаление объектов OpenGL}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Можно создать/удалить один объект:
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 GLuint texture;
 glGenTextures(1, &texture);
 ...
 glDeleteTexture(1, &texture);
-\end{verbatim}
-\end{itemize}
+\end{minted}
 \end{itemize}
 \end{frame}
 
@@ -112,13 +138,13 @@ glDeleteTexture(1, &texture);
 \pause
 \item Исключения:
 \begin{itemize}
-\item Framebuffer с нулевым id -- default framebuffer, рисует в окно, привязанное к контексту OpenGL, его нельзя настраивать
+\item \textbf{Framebuffer} с нулевым id -- \textit{default framebuffer}, рисует в окно, привязанное к контексту OpenGL, его \textit{нельзя настраивать}
 \pause
-\item \textit{В OpenGL ES}: vertex array с нулевым id -- ничем не отличается от других vertex array'ев, но существует (создан) по умолчанию
+\item В \textbf{OpenGL ES}: \textbf{vertex array} с нулевым id -- ничем не отличается от других vertex array'ев, но существует (создан) по умолчанию
 \end{itemize}
 \pause
-\item Функции создания объектов никогда не возвращают нулевой id
-\item Функции удаления объектов игнорируют нулевой id (т.е. удалить нулевой объект -- не ошибка)
+\item Функции создания объектов \textit{никогда} не возвращают нулевой id
+\item Функции удаления объектов \textit{игнорируют} нулевой id (т.е. удалить нулевой объект -- не ошибка)
 \pause
 \item Нулевой id можно использовать как маркер отсутствия объекта
 \end{itemize}
@@ -135,6 +161,7 @@ glDeleteTexture(1, &texture);
 
 \begin{frame}[fragile]
 \frametitle{Работа с объектами OpenGL}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Почти всегда чтобы работать с объектом, нужно сделать его `текущим'
 \begin{itemize}
@@ -142,7 +169,7 @@ glDeleteTexture(1, &texture);
 \item Если вы работаете с одним контекстом, можно считать, что id текущего объекта -- глобальная константа
 \end{itemize}
 \pause
-\item Некоторые функции не требуют выставления объекта текущим: \verb|glShaderSource|, \verb|glCompileShader|, \verb|glLinkProgram|, \verb|glGetUniformLocation|, ...
+\item Некоторые функции не требуют выставления объекта текущим, а принимают объект напрямую: \mintinline{cpp}|glShaderSource|, \mintinline{cpp}|glCompileShader|, \mintinline{cpp}|glLinkProgram|, \mintinline{cpp}|glGetUniformLocation|, ...
 \pause
 \item Некоторые объекты нельзя сделать текущими: шейдеры
 \end{itemize}
@@ -150,65 +177,74 @@ glDeleteTexture(1, &texture);
 
 \begin{frame}[fragile]
 \frametitle{Текущий объект}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Сделать программу текущей: \verb|glUseProgram(program)|
+\item Сделать программу текущей: \mintinline{cpp}|glUseProgram(program)|
 \begin{itemize}
-\item Функции \verb|glUniform1f|, ... работают с текущей программой
+\item Функции \mintinline{cpp}|glUniform1f|, ... работают с \textit{текущей программой}
 \end{itemize}
 \pause
-\item Сделать vertex array текущим: \verb|glBindVertexArray(vao)|
+\item Сделать vertex array текущим: \mintinline{cpp}|glBindVertexArray(vao)|
 \begin{itemize}
-\item Функции работы с vertex array используют текущий vertex array
+\item Функции работы с vertex array используют \textit{текущий vertex array}
 \end{itemize}
 \pause
-\item Функции рисования (\verb|glDrawArrays| и др.) используют текущую шейдерную программу и текущий vertex array
+\item Функции рисования (\mintinline{cpp}|glDrawArrays| и др.) используют \textit{текущую шейдерную программу} и \textit{текущий vertex array}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Текущий объект}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item \verb|glBindBuffer(target, id)|
-\item \verb|glBindTexture(target, id)|
-\item \verb|glBindRenderbuffer(target, id)|
-\item \verb|glBindFramebuffer(target, id)|
+\item Сделать текущим буфер, текстуру, и т.д.:
+\begin{itemize}
+\item \mintinline{cpp}|glBindBuffer      (target, id)|
+\item \mintinline{cpp}|glBindTexture     (target, id)|
+\item \mintinline{cpp}|glBindRenderbuffer(target, id)|
+\item \mintinline{cpp}|glBindFramebuffer (target, id)|
+\end{itemize}
 \pause
-\item Что такое \verb|target|?
+\item Что такое \mintinline{cpp}|target|?
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Текущий объект: target}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Для каждого вида объектов (буферы, текстуры, ...) есть отдельный набор возможных значений target
+\item Для большинства видов объектов (буферы, текстуры, ...) есть отдельный набор возможных значений \mintinline{cpp}|target|
 \pause
-\item Для буферов, текстур, framebuffer'ов и renderbuffer'ов нет одного текущего объекта, но есть текущий объект для каждого конкретного target'а
+\item Для таких объектов нет одного глобального текущего объекта, но есть текущий объект для каждого конкретного значения \mintinline{cpp}|target|
 \pause
-\item Можно считать, что есть словарь \begin{math}\operatorname{target} \rightarrow \operatorname{id}\end{math} текущих объектов
+\item Можно считать, что есть глобальный словарь \begin{math}\operatorname{target} \rightarrow \operatorname{id}\end{math} текущих объектов (отдельный для буферов, текстур, и т.д.)
 \pause
-\item Смысл и особенности разных значений target зависят от вида объекта
+\item Смысл и особенности разных значений \mintinline{cpp}|target| зависят от типа объекта
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Буферы}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Могут хранить произвольные данные на GPU
 \pause
-\item \verb|glGenBuffers|/\verb|glDeleteBuffers|
+\item \mintinline{cpp}|glGenBuffers / glDeleteBuffers|
 \pause
-\item Возможные значения target для \verb|glBindBuffer|:
+\item Возможные значения \mintinline{cpp}|target| для \mintinline{cpp}|glBindBuffer|:
 \begin{itemize}
-\item \verb|GL_ARRAY_BUFFER| (VBO) -- массив вершин
+\item \mintinline{cpp}|GL_ARRAY_BUFFER| (VBO) -- массив вершин
 \pause
-\item \verb|GL_ELEMENT_ARRAY_BUFFER| (EBO/IBO) -- массив индексов вершин
+\item \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| (EBO/IBO) -- массив индексов вершин
 \pause
-\item \verb|GL_UNIFORM_BUFFER| (UBO) -- массив для uniform-блоков
+\item \mintinline{cpp}|GL_UNIFORM_BUFFER| (UBO) -- массив для uniform-блоков
 \pause
 \item ...и другие
 \end{itemize}
 \pause
-\item Текущий \verb|GL_ELEMENT_ARRAY_BUFFER| хранится не глобально, а {\color{red}в текущем VAO!}
+\item Один и тот же буфер \textit{можно} использовать с разными значениями \mintinline{cpp}|target|
+\pause
+\item Текущий \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| хранится не глобально, а {\color{red}в текущем VAO!}
 \end{itemize}
 \end{frame}
 
@@ -216,114 +252,138 @@ glDeleteTexture(1, &texture);
 \frametitle{Буферы: запись данных}
 \begin{itemize}
 \item Выделить память на GPU и загрузить данные:
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 glBufferData(GLenum target, GLsizeiptr size,
     const GLvoid * data, GLenum usage)
-\end{verbatim}
+\end{minted}
+\vspace*{-0.5cm}
 \pause
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item \verb|target| -- \verb|GL_ARRAY_BUFFER| и т.п.
-\item \verb|size| -- размер данных в байтах
-\item \verb|data| -- указатель на данные
-\item \verb|usage| -- подсказка драйверу о том, как данные будут использоваться
+\item \mintinline{cpp}|target| -- \mintinline{cpp}|GL_ARRAY_BUFFER| и т.п.
+\item \mintinline{cpp}|size| -- размер данных в байтах
+\item \mintinline{cpp}|data| -- указатель на данные
+\item \mintinline{cpp}|usage| -- подсказка драйверу о том, как данные будут использоваться
 \end{itemize}
 \pause
-\item Если \verb|data = nullptr|, буфер будет выделен, но данные будут не инициализированы
+\item Если \mintinline{cpp}|data = nullptr|, буфер будет выделен, но данные будут не инициализированы
 \pause
 \item Если буфер уже содержал данные, они заменяются новыми (и происходит реаллокация памяти)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы: запись данных}
+\begin{itemize}
+\usemintedstyle{solarized-light}
+\item \mintinline{cpp}|target| буфера нужен для взаимодействия с другими объектами OpenGL; при загрузке данных в буфер этот параметр не очень важен и используется только чтобы обратиться к \textit{текущему буферу}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Буферы: запись данных}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item После вызова \mintinline{cpp}|glBufferData| с данными по указателю \mintinline{cpp}|data| можно делать всё, что угодно (в т.ч. удалить)
 \pause
-\item После вызова \verb|glBufferData| с данными по указателю \verb|data| можно делать всё, что угодно (в т.ч. удалить)
 \item Копирование данных в память GPU тоже происходит асинхронно
 \pause
-\begin{itemize}
-\item \begin{math}\Rightarrow\end{math} Драйвер, возможно, сначала копирует данные в собственную память
-\end{itemize}
+\item \begin{math}\Longrightarrow\end{math} Драйвер, скорее всего, сначала копирует данные в собственную память, а потом инициирует отложенную загрузку на GPU
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Буферы: параметр usage}
+\usemintedstyle{solarized-light}
 \begin{table}
 \centering
 \begin{tabular}{ c c c }
- \verb|GL_STATIC_DRAW| & \verb|GL_STATIC_READ| & \verb|GL_STATIC_COPY| \\ 
- \verb|GL_DYNAMIC_DRAW| & \verb|GL_DYNAMIC_READ| & \verb|GL_DYNAMIC_COPY| \\
- \verb|GL_STREAM_DRAW| & \verb|GL_STREAM_READ| & \verb|GL_STREAM_COPY|
+ \mintinline{cpp}|GL_STATIC_DRAW| & \mintinline{cpp}|GL_STATIC_READ| & \mintinline{cpp}|GL_STATIC_COPY| \\ 
+ \mintinline{cpp}|GL_DYNAMIC_DRAW| & \mintinline{cpp}|GL_DYNAMIC_READ| & \mintinline{cpp}|GL_DYNAMIC_COPY| \\
+ \mintinline{cpp}|GL_STREAM_DRAW| & \mintinline{cpp}|GL_STREAM_READ| & \mintinline{cpp}|GL_STREAM_COPY|
 \end{tabular}
 \end{table}
 \pause
 \begin{itemize}
 \item Данные будут обновляться
 \begin{itemize}
-\item \verb|STATIC| -- один раз
-\item \verb|DYNAMIC| -- иногда
-\item \verb|STREAM| -- почти каждый кадр
+\item \mintinline{cpp}|STATIC| -- один раз
+\item \mintinline{cpp}|DYNAMIC| -- иногда
+\item \mintinline{cpp}|STREAM| -- почти каждый кадр
 \end{itemize}
 \pause
 \item Буфер будет использоваться для:
 \begin{itemize}
-\item \verb|DRAW| -- записи данных в него
-\item \verb|READ| -- чтения данных из него
-\item \verb|COPY| -- и записи, и чтения
+\item \mintinline{cpp}|DRAW| -- записи данных в него
+\item \mintinline{cpp}|READ| -- чтения данных из него
+\item \mintinline{cpp}|COPY| -- и записи, и чтения
 \end{itemize}
 \pause
-\item Это только подсказка драйверу и не влияет на корректность работы
+\item Это только \textit{подсказка} драйверу и не влияет на корректность работы
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Буферы: запись и чтение данных}
+\usemintedstyle{lightbulb}
 \begin{itemize}
 \item Загрузить данные в часть буфера:
-\begin{verbatim}
+\begin{minted}[bgcolor=codebg]{cpp}
 glBufferSubData(GLenum target, GLintptr offset,
     GLsizeiptr size, const GLvoid * data)
-\end{verbatim}
+\end{minted}
+\vspace*{-0.5cm}
 \pause
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Гарантированно не реаллоцирует память GPU
-\item Память уже должна быть выделена (\verb|glBufferData|)
+\item Память уже должна быть выделена с помощью \mintinline{cpp}|glBufferData|
 \end{itemize}
 \pause
 \item Прочитать данные из буфера:
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 glGetBufferSubData(GLenum target, GLintptr offset,
     GLsizeiptr size, GLvoid * data)
-\end{verbatim}
+\end{minted}
+\vspace*{-0.5cm}
 \pause
 \begin{itemize}
 \item К моменту выхода из этой функции данные уже прочитаны
-\item \begin{math}\Rightarrow\end{math} Синхронная функция, блокирующая исполнение
+\item \begin{math}\Rightarrow\end{math} Синхронная функция, \textbf{блокирующая исполнение}
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Mapped buffer}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Можно получить виртуальный указатель на буфер или его часть и пользоваться им для чтения/записи
 \pause
-\item \verb|glMapBuffer(target, access)| -- возвращает особый \textit{mapped} указатель
-\item \verb|access| может принимать значения
+\item \mintinline{cpp}|glMapBuffer(target, access)| -- возвращает особый \textit{mapped} указатель
+\item \mintinline{cpp}|access| может принимать значения
 \begin{itemize}
-\item \verb|GL_READ_ONLY| -- по указателю можно читать
-\item \verb|GL_WRITE_ONLY| -- по указателю можно писать
-\item \verb|GL_READ_WRITE| -- по указателю можно читать и писать
+\item \mintinline{cpp}|GL_READ_ONLY| -- по указателю можно читать
+\item \mintinline{cpp}|GL_WRITE_ONLY| -- по указателю можно писать
+\item \mintinline{cpp}|GL_READ_WRITE| -- по указателю можно читать и писать
 \end{itemize}
 \pause
-\item \verb|glUnmapBuffer(target)|
+\item \mintinline{cpp}|glUnmapBuffer(target)|
 \pause
-\item Между \verb|glMapBuffer| и \verb|glUnmapBuffer| работать с буфером (загружать данные другими методами, использовать данные для рисования) нельзя
+\item Между \mintinline{cpp}|glMapBuffer| и \mintinline{cpp}|glUnmapBuffer| работать с буфером (загружать данные другими методами, использовать данные для рисования) нельзя
 \pause
-\item После \verb|glUnmapBuffer| mapped указатель использовать нельзя
+\item После \mintinline{cpp}|glUnmapBuffer| mapped указатель использовать нельзя
 \pause
-\item \verb|glUnmapBuffer| может вернуть \verb|GL_FALSE|, если что-то пошло не так, и память буфера при этом остаётся непроинициализированной
+\item \mintinline{cpp}|glUnmapBuffer| может вернуть \mintinline{cpp}|GL_FALSE|, если что-то пошло не так, и память буфера при этом остаётся непроинициализированной
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Буферы: типичный пример использования}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 GLuint vbo;
 glGenBuffers(1, &vbo);
 
@@ -334,7 +394,7 @@ glBindBuffer(GL_ARRAY_BUFFER, vbo);
 glBufferData(GL_ARRAY_BUFFER,
     vertices.size() * sizeof(vertices[0]),
     vertices.data(), GL_STATIC_DRAW);
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -347,12 +407,15 @@ glBufferData(GL_ARRAY_BUFFER,
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин}
+\usemintedstyle{solarized-light}
 \begin{itemize}
+\item Вершины -- основные входные данные графического конвейера
+\pause
 \item С точки зрения OpenGL, вершины характеризуются набором \textit{атрибутов}
 \pause
 \item Каждый атрибут имеет свой тип и размерность
 \pause
-\item Все вершины в рамках одного вызова команды рисования (\verb|glDrawArrays| и др.) имеет один набор атрибутов
+\item Все вершины в рамках одного вызова команды рисования (\mintinline{cpp}|glDrawArrays| и др.) имеет один набор атрибутов
 \pause
 \item Все настройки атрибутов конкретного набора вершин хранятся в VAO
 \end{itemize}
@@ -360,50 +423,53 @@ glBufferData(GL_ARRAY_BUFFER,
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: шейдер}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 #version 330 core
 
 //             index     type  name
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec4 color;
-layout (location = 3) in int materialID;
+layout (location = 3) in uint materialID;
 
 void main() {
     ...
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Индекс: \verb|0, 1, ... glGet(GL_MAX_VERTEX_ATTRIBS) - 1|
+\item Индекс: \mintinline{cpp}|0, 1, ... glGet(GL_MAX_VERTEX_ATTRIBS) - 1|
 \begin{itemize}
-\item \verb|glGet(GL_MAX_VERTEX_ATTRIBS)| \begin{math}\geq\end{math} 16
+\item \mintinline{cpp}|glGet(GL_MAX_VERTEX_ATTRIBS)| \begin{math}\geq\end{math} 16
 \end{itemize}
 \pause
 \item Включен/выключен
 \begin{itemize}
-\item \verb|glEnableVertexAttribArray(index)| -- включить аттрибут
+\item \mintinline{cpp}|glEnableVertexAttribArray(index)| -- включить аттрибут
 \item Выключены по умолчанию
-\item Состояние хранится в vertex array
+\item Состояние включенности хранится в \textbf{vertex array}
 \end{itemize}
 \pause
 \item Если у вершины есть атрибут, не соответствующий атрибуту в шейдере, он просто игнорируется
 \pause
 \item Если в шейдере есть атрибут, не соответствующий атрибуту у вершин, он принимает значение по умолчанию:
 \begin{itemize}
-\item \verb|float: 0.0|
-\item \verb|vec2: (0.0, 0.0)|
-\item \verb|vec3: (0.0, 0.0, 0.0)|
-\item \verb|vec4: (0.0, 0.0, 0.0, 1.0)|
+\item \mintinline{glsl}|float: 0.0|
+\item \mintinline{glsl}| vec2: 0.0, 0.0|
+\item \mintinline{glsl}| vec3: 0.0, 0.0, 0.0|
+\item \mintinline{glsl}| vec4: 0.0, 0.0, 0.0, 1.0|
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: хранение}
+\usemintedstyle{solarized-light}
 Параметры хранения данных атрибута:
 \begin{itemize}
 \pause
@@ -411,7 +477,7 @@ void main() {
 \begin{itemize}
 \item Количество компонент -- 1, 2, 3, 4
 \pause
-\item Тип -- \verb|GL_BYTE|, \verb|GL_UNSIGNED_BYTE|, \verb|GL_SHORT|, \verb|GL_UNSIGNED_SHORT|, \verb|GL_INT|, \verb|GL_UNSIGNED_INT|, \verb|GL_HALF_FLOAT|, \verb|GL_FLOAT|, \verb|GL_DOUBLE|, \verb|GL_INT_2_10_10_10_REV|, \verb|GL_UNSIGNED_INT_2_10_10_10_REV|
+\item Тип -- \mintinline{cpp}|GL_BYTE|, \mintinline{cpp}|GL_UNSIGNED_BYTE|, \mintinline{cpp}|GL_SHORT|, \mintinline{cpp}|GL_UNSIGNED_SHORT|, \mintinline{cpp}|GL_INT|, \mintinline{cpp}|GL_UNSIGNED_INT|, \mintinline{cpp}|GL_HALF_FLOAT|, \mintinline{cpp}|GL_FLOAT|, \mintinline{cpp}|GL_DOUBLE|, \mintinline{cpp}|GL_INT_2_10_10_10_REV|, \mintinline{cpp}|GL_UNSIGNED_INT_2_10_10_10_REV|
 \pause
 \item Нормированный / не нормированный
 \end{itemize}
@@ -422,68 +488,74 @@ void main() {
 \item Расстояние (в байтах) между значениями этого атрибута, соответствующими соседним вершинам
 \end{itemize}
 \pause
-\item Всё это запоминается в vertex array
+\item Всё это запоминается в \textbf{vertex array}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: нормированность}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Как интерпретировать значение атрибута, который в шейдере объявлен как floating-point (\verb|float|, \verb|vec3|, и т.п.), но в данных он хранится как целочисленный?
+\item Как интерпретировать значение атрибута, который в шейдере объявлен как floating-point (\mintinline{glsl}|float|, \mintinline{glsl}|vec3|, и т.п.), но в данных он хранится как целочисленный?
 \pause
 \item 2 варианта:
 \begin{itemize}
-\item Не нормированный: передавать, как есть, делая преобразование \verb|int -> float|
+\item \textbf{Не нормированный}: передавать, как есть, делая преобразование \mintinline{glsl}|int -> float|
 \pause
-\item Нормированный: преобразовывать диапазон целочисленных значений в \begin{math}[-1, 1]\end{math} (для знаковых) или \begin{math}[0, 1]\end{math} (для беззнаковых)
+\item \textbf{Нормированный}: преобразовывать диапазон целочисленных значений в \begin{math}[-1, 1]\end{math} (для знаковых) или \begin{math}[0, 1]\end{math} (для беззнаковых)
 \newline
-\verb|unsigned short: x -> x / 65535|
+\mintinline{cpp}|unsigned short: x -> x / 65535|
 \newline
-\verb|short: x -> (2 x + 1) / 65535|
+\mintinline{cpp}|short: x -> (2 x + 1) / 65535|
 \end{itemize}
 \pause
-\item Полезно для передачи цвета: \verb|0 .. 255| превращаются в стандартные для OpenGL \verb|0.0 .. 1.0|
+\item Полезно для передачи цвета: \mintinline{cpp}|0 .. 255| превращаются в стандартные для OpenGL \mintinline{cpp}|0.0 .. 1.0|
 \pause
-\item Полезно для компактного хранения атрибутов
+\item Полезно для компактного хранения атрибутов (например, нормалей)
 \pause
-\item Имеет смысл только для floating-point аттрибутов
+\item Имеет смысл \textit{только} для floating-point аттрибутов
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Перед настройкой конкретного атрибута нужно сделать текущим VAO, который вы хотите настроить
 \pause
-\item Если атрибут объявлен в шейдере как floating-point (\verb|vec3| и т.п.), нужно использовать функцию \verb|glVertexAttribPointer|, но храниться он \textit{может} как целочисленный
-\item Если атрибут объявлен в шейдере как целочисленный (\verb|ivec3,uvec4| и т.п.), нужно использовать функцию \verb|glVertexAttribIPointer|, и храниться он \textit{должен} как целочисленный
+\item Если атрибут объявлен в шейдере как floating-point (\mintinline{glsl}|vec3| и т.п.), нужно использовать функцию \mintinline{cpp}|glVertexAttribPointer|, но храниться он \textit{может} как целочисленный
+\pause
+\item Если атрибут объявлен в шейдере как целочисленный (\mintinline{glsl}|ivec3,uvec4| и т.п.), нужно использовать функцию \mintinline{cpp}|glVertexAttribIPointer|, и храниться он \textit{должен} как целочисленный
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: floating-point}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 glVertexAttribPointer(GLuint index, GLint size,
     GLenum type, GLboolean normalized,
     GLsizei stride, const GLvoid * pointer)
-\end{verbatim}
+\end{minted}
+\vspace*{-0.5cm}
+\pause
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item \mintinline{cpp}|index| -- индекс аттрибута (\mintinline{glsl}|layout (location = index)| в шейдере)
+\pause
+\item \mintinline{cpp}|size| -- размерность (число компонент)
+\pause
+\item \mintinline{cpp}|type| -- тип каждой компоненты
+\pause
+\item \mintinline{cpp}|normalized| -- нормированный или нет
+\pause
+\item \mintinline{cpp}|stride| -- расстояние между соседними значениями (в байтах)
+\pause
+\item \mintinline{cpp}|pointer| -- указатель на данные
 \pause
 \begin{itemize}
-\item \verb|index| -- индекс аттрибута (\verb|layout (location = index)| в шейдере)
-\pause
-\item \verb|size| -- размерность (число компонент)
-\pause
-\item \verb|type| -- тип каждой компоненты
-\pause
-\item \verb|normalized| -- нормированный или нет
-\pause
-\item \verb|stride| -- расстояние между соседними значениями (в байтах)
-\pause
-\item \verb|pointer| -- указатель на данные
-\pause
-\begin{itemize}
-\item На самом деле, \verb|pointer| -- сдвиг в байтах относительно начала памяти текущего \verb|GL_ARRAY_BUFFER|
-\item Например, если данные этого атрибута начинаются на 12ом байте текущего \verb|GL_ARRAY_BUFFER|, нужно передать \verb|(void *)(12)|
+\item На самом деле, \mintinline{cpp}|pointer| -- сдвиг в байтах относительно начала памяти текущего \mintinline{cpp}|GL_ARRAY_BUFFER|
+\item Например, если данные этого атрибута начинаются на 12ом байте текущего \mintinline{cpp}|GL_ARRAY_BUFFER|, нужно передать \mintinline{cpp}|(void *)(12)|
 \pause
 \item Разные атрибуты могут лежать в разных буферах
 \end{itemize}
@@ -492,36 +564,42 @@ glVertexAttribPointer(GLuint index, GLint size,
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: целочисленные}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 glVertexAttribIPointer(GLuint index, GLint size,
     GLenum type,
     GLsizei stride, const GLvoid * pointer)
-\end{verbatim}
+\end{minted}
+\vspace*{-0.5cm}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Всё то же самое, но 
 \begin{itemize}
-\item Нет параметра \verb|normalized|
-\item \verb|type| может быть только целочисленным
+\item Нет параметра \mintinline{cpp}|normalized|
+\item \mintinline{cpp}|type| может быть только целочисленным
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: stride}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Пусть \verb|start| -- смещение, указанное в параметре \verb|pointer| функции \verb|glVertexAttribPointer|
-\item Тогда соответстующий аттрибут вершины с номером \verb|i| будет взят по смещению \verb|start + stride * i|
+\item Пусть \mintinline{cpp}|start| -- смещение, указанное в параметре \mintinline{cpp}|pointer| функции \mintinline{cpp}|glVertexAttribPointer|
+\pause
+\item Тогда соответстующий аттрибут вершины с номером \mintinline{cpp}|i| будет взят по смещению \mintinline{cpp}|start + stride * i|
 \pause
 \begin{itemize}
-\item Нулевая вершина: \verb|start|
-\item Первая вершина: \verb|start + stride|
-\item Вторая вершина: \verb|start + 2 * stride|
+\item Нулевая вершина: \mintinline{cpp}|start|
+\item Первая вершина: \mintinline{cpp}|start + stride|
+\item Вторая вершина: \mintinline{cpp}|start + 2 * stride|
 \item И т.д.
 \end{itemize}
 \pause
-\item Если \verb|stride = 0|, \verb|stride| считается равным размеру аттрибута \verb|stride = size * sizeof(type)|
+\item Если \mintinline{cpp}|stride = 0|, \mintinline{cpp}|stride| считается равным размеру аттрибута \mintinline{cpp}|stride = size * sizeof(type)|
+\pause
 \begin{itemize}
-\item Например, для \verb|size = 3| и \verb|type = GL_UNSIGNED_INT|, \verb|stride| будет вычислен как \verb|stride = 3 * sizeof(unsigned int) = 3 * 4 = 12|
+\item Например, для \mintinline{cpp}|size = 3| и \mintinline{cpp}|type = GL_UNSIGNED_INT|, \mintinline{cpp}|stride| будет вычислен как \mintinline{cpp}|stride = 3 * sizeof(unsigned int) = 3 * 4 = 12|
 \pause
 \item Можно использовать, если значения конкретного атрибута идут в памяти подряд, друг за другом, без пропусков
 \end{itemize}
@@ -532,8 +610,9 @@ glVertexAttribIPointer(GLuint index, GLint size,
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: размерность}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Размерность атрибута, указанная в \verb|glVertexAttribPointer| (т.е. реальное количество хранимых в памяти компонент), не обязана совпадать с размерностью, указанной в шейдере
+\item Размерность атрибута, указанная в \mintinline{cpp}|glVertexAttribPointer| (т.е. реальное количество хранимых в памяти компонент), не обязана совпадать с размерностью, указанной в шейдере
 \pause
 \item Если компонент больше, чем надо, они отбрасываются
 \pause
@@ -543,8 +622,8 @@ glVertexAttribIPointer(GLuint index, GLint size,
 
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: пример array-of-structs, один буфер}
-\fontsize{8pt}{8pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{cpp}
 struct vertex {
     float position[3];
     float normal[3];
@@ -565,7 +644,8 @@ glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
 glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
     sizeof(vertex), (void*)(24));
-\end{verbatim}
+\end{minted}
+\vspace*{-1.125cm}
 \begin{center}
 \begin{tikzpicture}
 \foreach \x
@@ -595,8 +675,8 @@ in {0, 1, 2}
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример struct-of-arrays, один буфер}
-\fontsize{8pt}{8pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{cpp}
 float positions[3 * N];
 float normal[3 * N];
 unsigned char color[4 * N];
@@ -614,7 +694,8 @@ glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
 glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
     0, (void*)(24 * N));
-\end{verbatim}
+\end{minted}
+\vspace*{-1cm}
 \begin{center}
 \begin{tikzpicture}
 \node[] at (0.0, 0.75) {0};
@@ -640,8 +721,8 @@ in {0, 1, 2}
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример struct-of-arrays, три буфера}
-\fontsize{8pt}{8pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{cpp}
 float positions[3 * N];
 float normal[3 * N];
 unsigned char color[4 * N];
@@ -660,7 +741,8 @@ glBindBuffer(GL_ARRAY_BUFFER, color_vbo);
 glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
     0, (void*)(0));
-\end{verbatim}
+\end{minted}
+\vspace*{-1cm}
 \begin{center}
 \begin{tikzpicture}
 \node[] at (0.0, 0.75) {0};
@@ -688,8 +770,9 @@ in {0, 1, 2}
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: как хранить?}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Если не можете выбрать, используйте array-of-structs
+\item Если не можете выбрать, используйте array-of-structs (например, если вершины хранятся непрерывано в памяти, e.g. \mintinline{cpp}|std::vector<vertex>|)
 \pause
 \item Если часть аттрибутов постоянны, а другую часть нужно иногда обновлять -- разделите эти части по двум разным VBO
 \end{itemize}
@@ -697,10 +780,11 @@ in {0, 1, 2}
 
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример полностью}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{cpp}
 // Инициализация:
 program = createProgram()
-vertices = generateVertices()
+vertices = createVertices()
 vbo = createVBO(vertices)
 vao = createVAO()
 setupAttributes(vao, vbo) // glVertexAttribPointer, ...
@@ -709,7 +793,7 @@ setupAttributes(vao, vbo) // glVertexAttribPointer, ...
 glUseProgram(program)
 glBindVertexArray(vao)
 glDrawArrays(GL_TRIANGLES, 0, count)
-\end{verbatim}
+\end{minted}
 \pause
 \begin{itemize}
 \item \href{https://www.khronos.org/opengl/wiki/Vertex_Specification}{\nolinkurl{khronos.org/opengl/wiki/Vertex\_Specification}}
@@ -718,13 +802,14 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 
 \begin{frame}[fragile]
 \frametitle{Индексированный рендеринг}
+\usemintedstyle{solarized-light}
 \slideimage{spheres.png}
 \begin{itemize}
 \item В моделях одна вершина часто входит в несколько треугольников (в среднем, 6)
 \pause
-\item Если использовать \verb|GL_TRIANGLES|, придётся копировать каждую вершину несколько раз
+\item Если использовать \mintinline{cpp}|GL_TRIANGLES|, придётся копировать каждую вершину несколько раз
 \pause
-\item \verb|GL_TRIANGLE_STRIP| и т.п. только частично решают проблему
+\item \mintinline{cpp}|GL_TRIANGLE_STRIP| и т.п. только частично решают проблему
 \pause
 \item \begin{math}\Rightarrow\end{math} Индексированный рендеринг
 \end{itemize}
@@ -732,8 +817,9 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 
 \begin{frame}[fragile]
 \frametitle{Индексированный рендеринг}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item \verb|glDrawArrays(mode, 3, 5)|:
+\item \mintinline{cpp}|glDrawArrays(mode, 3, 5)|:
 \begin{center}
 \begin{tikzpicture}
 \foreach \x in {0, ..., 9}
@@ -750,7 +836,7 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 
 \vspace{1cm}
 
-\item \verb|glDrawElements(mode, ...)|:
+\item \mintinline{cpp}|glDrawElements(mode, ...)|:
 \begin{center}
 \begin{tikzpicture}
 \foreach \x in {0, ..., 9}
@@ -793,6 +879,7 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 
 \begin{frame}[fragile]
 \frametitle{Индексированный рендеринг: квадрат}
+\usemintedstyle{solarized-light}
 \begin{center}
 \begin{tikzpicture}
 \draw[black,thick] (0, 0) rectangle (3, 3);
@@ -805,49 +892,62 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 \end{center}
 \pause
 \begin{itemize}
-\item Без индексов, \verb|GL_TRIANGLES|:
+\item Без индексов, \mintinline{cpp}|GL_TRIANGLES|:
 \begin{itemize}
-\item Вершины: \verb|v0, v1, v2, v2, v1, v3|
+\item Вершины: \mintinline{cpp}|v0, v1, v2, v2, v1, v3|
 \end{itemize}
 \pause
-\item Без индексов, \verb|GL_TRIANGLE_STRIP|:
+\item Без индексов, \mintinline{cpp}|GL_TRIANGLE_STRIP|:
 \begin{itemize}
-\item Вершины: \verb|v0, v1, v2, v3|
+\item Вершины: \mintinline{cpp}|v0, v1, v2, v3|
 \end{itemize}
 \pause
-\item С индексами, \verb|GL_TRIANGLES|:
+\item С индексами, \mintinline{cpp}|GL_TRIANGLES|:
 \begin{itemize}
-\item Вершины: \verb|v0, v1, v2, v3|
-\item Индексы: \verb|0, 1, 2, 2, 1, 3|
+\item Вершины: \mintinline{cpp}|v0, v1, v2, v3|
+\item Индексы: \mintinline{cpp}|0, 1, 2, 2, 1, 3|
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Индексированный рендеринг}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Индексы хранятся в \verb|GL_ELEMENT_ARRAY_BUFFER|
-\item id текущего \verb|GL_ELEMENT_ARRAY_BUFFER| хранится {\color{red}в текущем VAO!}
+\item Индексы хранятся в \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER|
 \pause
-\begin{verbatim}
+\item id текущего \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| хранится {\color{red}в текущем VAO!}
+\pause
+\item \begin{math}\Longrightarrow\end{math} \mintinline{cpp}|glBindVertexArray| автоматически делает текущим нужный \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| с индексами
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Индексированный рендеринг}
+\usemintedstyle{solarized-light}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 glDrawElements(GLenum mode, GLsizei count,
     GLenum type, const GLvoid * indices)
-\end{verbatim}
+\end{minted}
+\vspace*{-0.5cm}
 \pause
-\item \verb|mode| -- как в \verb|glDrawArrays|: \verb|GL_TRIANGLES|, ...
+\begin{itemize}
+\usemintedstyle{solarized-light}
+\item \mintinline{cpp}|mode| -- как в \mintinline{cpp}|glDrawArrays|: \mintinline{cpp}|GL_TRIANGLES|, ...
 \pause
-\item \verb|count| -- количество индексов
+\item \mintinline{cpp}|count| -- количество индексов
 \pause
-\item \verb|type| -- тип индексов: \verb|GL_UNSIGNED_BYTE|, \verb|GL_UNSIGNED_SHORT|, \verb|GL_UNSIGNED_INT|
+\item \mintinline{cpp}|type| -- тип индексов: \mintinline{cpp}|GL_UNSIGNED_BYTE|, \mintinline{cpp}|GL_UNSIGNED_SHORT|, \mintinline{cpp}|GL_UNSIGNED_INT|
 \pause
-\item \verb|indices| -- смещение в текущем \verb|GL_ELEMENT_ARRAY_BUFFER| до места, где начинаются индексы
+\item \mintinline{cpp}|indices| -- смещение в текущем \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| до места, где начинаются индексы
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Индексированный рендеринг: пример}
-\fontsize{10pt}{10pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 // Инициализация:
 program = createProgram()
 vertices, indices = generateMesh()
@@ -867,28 +967,26 @@ glUseProgram(program)
 glBindVertexArray(vao)
 glDrawElements(GL_TRIANGLES, count,
     GL_UNSIGNED_SHORT, (void*)(0))
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Primitive restart}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item При использовании \verb|GL_LINE_STRIP|, \verb|GL_LINE_LOOP|, \verb|GL_TRIANGLE_STRIP|, \verb|GL_TRIANGLE_FAN| все входные вершины образуют один line strip, line loop, triangle strip, triangle fan соответственно
+\item При использовании \mintinline{cpp}|GL_LINE_STRIP|, \mintinline{cpp}|GL_LINE_LOOP|, \mintinline{cpp}|GL_TRIANGLE_STRIP|, \mintinline{cpp}|GL_TRIANGLE_FAN| все входные вершины образуют один line strip, line loop, triangle strip, triangle fan соответственно
 \pause
 \item Что, если мы хотим одну последовательность вершин разбить на несколько примитивов?
 \pause
-\item Можно сделать несколько вызовов \verb|glDraw*|, но это медленно
+\item Можно сделать несколько вызовов \mintinline{cpp}|glDraw*|, но это медленно
 \pause
 \item Специальное значение индекса вершины означает что со следующей вершины нужно начать новый примитив:
-\begin{verbatim}
-GL_TRIANGLE_STRIP:
-[0, 1, 2, 3, 65535, 4, 5, 6, 7] эквивалентно
-[0, 1, 2, 3], [4, 5, 6, 7]
-\end{verbatim}
+\mintinline{python}|[0, 1, 2, 3, 65535, 4, 5, 6, 7] эквивалентно|
+\mintinline{python}|[0, 1, 2, 3], [4, 5, 6, 7]|
 \pause
-\item \verb|glEnable(GL_PRIMITIVE_RESTART)|
+\item Включить: \mintinline{cpp}|glEnable(GL_PRIMITIVE_RESTART)|
 \pause
-\item \verb|glPrimitiveRestartIndex(index)|
+\item Настроить специальное значение: \mintinline{cpp}|glPrimitiveRestartIndex(index)|
 \end{itemize}
 \end{frame}
 
@@ -974,7 +1072,8 @@ GL_TRIANGLE_STRIP:
 \begin{frame}[fragile]
 \frametitle{Рендеринг нескольких объектов}
 Инициализация:
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 for (o in objects) {
     glGenVertexArrays(1, &o.vao)
     glGenBuffers(1, &o.vbo)
@@ -987,16 +1086,17 @@ for (o in objects) {
         glVertexAttribPointer(i, ...)
     }
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
-        o.ebo) // хранится в o.vao
+    // запомнится в o.vao
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, o.ebo)
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Рендеринг нескольких объектов}
 Загрузка данных:
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 for (o in objects) {
     glBindBuffer(GL_ARRAY_BUFFER, o.vbo)
     glBufferData(GL_ARRAY_BUFFER, o.vertices)
@@ -1004,20 +1104,21 @@ for (o in objects) {
     glBindBuffer(GL_ARRAY_BUFFER, o.ebo)
     glBufferData(GL_ARRAY_BUFFER, o.indices)
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Рендеринг нескольких объектов}
 Рендеринг:
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 glUseProgram(program)
 glUniform(...)
 for (o in objects) {
     glBindVertexArray(o.vao)
     glDrawElements(o.indexCount)
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \end{document}
