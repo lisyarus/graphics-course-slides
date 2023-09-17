@@ -244,7 +244,7 @@ glDeleteTexture(1, &texture);
 \pause
 \item Один и тот же буфер \textit{можно} использовать с разными значениями \mintinline{cpp}|target|
 \pause
-\item Текущий \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| хранится не глобально, а {\color{red}в текущем VAO!}
+\item Текущий \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| хранится не глобально, а \alert{\textbf{в текущем VAO!}}
 \end{itemize}
 \end{frame}
 
@@ -623,7 +623,7 @@ glVertexAttribIPointer(GLuint index, GLint size,
 \begin{frame}[fragile]
 \frametitle{Атрибуты вершин: пример array-of-structs, один буфер}
 \usemintedstyle{lightbulb}
-\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{cpp}
+\begin{minted}[bgcolor=codebg,fontsize=\tiny]{cpp}
 struct vertex {
     float position[3];
     float normal[3];
@@ -632,18 +632,18 @@ struct vertex {
 vertex vertices[N];
 
 glBindBuffer(GL_ARRAY_BUFFER, vbo);
+glBufferData(GL_ARRAY_BUFFER, N * sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+glBindVertexArray(vao);
 
 glEnableVertexAttribArray(0);
-glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-    sizeof(vertex), (void*)(0));
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(0));
 
 glEnableVertexAttribArray(1);
-glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-    sizeof(vertex), (void*)(12));
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(12));
 
 glEnableVertexAttribArray(2);
-glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-    sizeof(vertex), (void*)(24));
+glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex), (void*)(24));
 \end{minted}
 \vspace*{-1.125cm}
 \begin{center}
@@ -676,24 +676,27 @@ in {0, 1, 2}
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример struct-of-arrays, один буфер}
 \usemintedstyle{lightbulb}
-\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{cpp}
+\begin{minted}[bgcolor=codebg,fontsize=\tiny]{cpp}
 float positions[3 * N];
-float normal[3 * N];
-unsigned char color[4 * N];
+float normals[3 * N];
+unsigned char colors[4 * N];
 
 glBindBuffer(GL_ARRAY_BUFFER, vbo);
+glBufferData(GL_ARRAY_BUFFER, N * 28, nullptr, GL_STATIC_DRAW);
+glBufferSubData(GL_ARRAY_BUFFER, 0, N * 12, positions);
+glBufferSubData(GL_ARRAY_BUFFER, N * 12, N * 12, normals);
+glBufferSubData(GL_ARRAY_BUFFER, N * 24, N * 4, colors);
+
+glBindVertexArray(vao);
 
 glEnableVertexAttribArray(0);
-glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-    0, (void*)(0));
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));
 
 glEnableVertexAttribArray(1);
-glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-    0, (void*)(12 * N));
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)(12 * N));
     
 glEnableVertexAttribArray(2);
-glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-    0, (void*)(24 * N));
+glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void*)(24 * N));
 \end{minted}
 \vspace*{-1cm}
 \begin{center}
@@ -722,27 +725,29 @@ in {0, 1, 2}
 \begin{frame}[fragile]
 \frametitle{Аттрибуты вершин: пример struct-of-arrays, три буфера}
 \usemintedstyle{lightbulb}
-\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{cpp}
+\begin{minted}[bgcolor=codebg,fontsize=\tiny]{cpp}
 float positions[3 * N];
-float normal[3 * N];
-unsigned char color[4 * N];
+float normals[3 * N];
+unsigned char colors[4 * N];
+
+glBindVertexArray(vao);
 
 glBindBuffer(GL_ARRAY_BUFFER, position_vbo);
+glBufferData(GL_ARRAY_BUFFER, 3 * N * sizeof(float), positions, GL_STATIC_DRAW);
 glEnableVertexAttribArray(0);
-glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-    0, (void*)(0));
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));
 
 glBindBuffer(GL_ARRAY_BUFFER, normal_vbo);
+glBufferData(GL_ARRAY_BUFFER, 3 * N * sizeof(float), normals, GL_STATIC_DRAW);
 glEnableVertexAttribArray(1);
-glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-    0, (void*)(0));
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)(0));
 
 glBindBuffer(GL_ARRAY_BUFFER, color_vbo);
+glBufferData(GL_ARRAY_BUFFER, 4 * N * sizeof(unsigned char), colors, GL_STATIC_DRAW);
 glEnableVertexAttribArray(2);
-glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-    0, (void*)(0));
+glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void*)(0));
 \end{minted}
-\vspace*{-1cm}
+\vspace*{-1.5cm}
 \begin{center}
 \begin{tikzpicture}
 \node[] at (0.0, 0.75) {0};
@@ -775,6 +780,8 @@ in {0, 1, 2}
 \item Если не можете выбрать, используйте array-of-structs (например, если вершины хранятся непрерывано в памяти, e.g. \mintinline{cpp}|std::vector<vertex>|)
 \pause
 \item Если часть аттрибутов постоянны, а другую часть нужно иногда обновлять -- разделите эти части по двум разным VBO
+\pause
+\item Некоторые форматы 3D сцен (напр. \href{https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html}{\texttt{glTF}}) хранят вершины в бинарном формате, удобном для загрузки в OpenGL: поддерживают несколько буферов и разный \mintinline{cpp}|stride|
 \end{itemize}
 \end{frame}
 
@@ -916,9 +923,11 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 \begin{itemize}
 \item Индексы хранятся в \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER|
 \pause
-\item id текущего \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| хранится {\color{red}в текущем VAO!}
+\item id текущего \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| хранится \alert{\textbf{в текущем VAO!}}
 \pause
 \item \begin{math}\Longrightarrow\end{math} \mintinline{cpp}|glBindVertexArray| автоматически делает текущим нужный \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| с индексами
+\pause
+\item Если вы хотите только \textit{загрузить} индексы, но пока не \textit{использовать} их, лучше использовать \mintinline{cpp}|target = GL_ARRAY_BUFFER|, чтобы случайно не испортить текущий VAO
 \end{itemize}
 \end{frame}
 
@@ -940,7 +949,13 @@ glDrawElements(GLenum mode, GLsizei count,
 \pause
 \item \mintinline{cpp}|type| -- тип индексов: \mintinline{cpp}|GL_UNSIGNED_BYTE|, \mintinline{cpp}|GL_UNSIGNED_SHORT|, \mintinline{cpp}|GL_UNSIGNED_INT|
 \pause
-\item \mintinline{cpp}|indices| -- смещение в текущем \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| до места, где начинаются индексы
+\item \mintinline{cpp}|indices| -- смещение в байтах в текущем \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| до места, где начинаются индексы
+\pause
+\begin{itemize}
+\item id текущего \mintinline{cpp}|GL_ELEMENT_ARRAY_BUFFER| хранится \alert{\textbf{в текущем VAO!}}
+\pause
+\item \begin{math}\Longrightarrow\end{math} Для рендеринга \alert{\textbf{не нужно}} делать текущим буфер с индексами, достаточно сделать текущим VAO
+\end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -965,8 +980,8 @@ glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo)
 // Рендеринг:
 glUseProgram(program)
 glBindVertexArray(vao)
-glDrawElements(GL_TRIANGLES, count,
-    GL_UNSIGNED_SHORT, (void*)(0))
+glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT,
+    (void*)(0))
 \end{minted}
 \end{frame}
 
