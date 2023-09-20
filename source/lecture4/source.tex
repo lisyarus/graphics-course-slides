@@ -1044,11 +1044,7 @@ X_z & Y_z & Z_z & C_z \\
 \end{align*}
 \end{itemize}
 \pause
-\item Ресурсы с выводом этих формул:
-\begin{itemize}
-\item \href{https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation}{\texttt{StackOverflow: How exactly does OpenGL do perspectively correct linear interpolation}}
-\item \href{https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/perspective-correct-interpolation-vertex-attributes.html}{\texttt{ScratchAPixel: Perspective-correct interpolation of vertex attributes}}
-\end{itemize}
+\item Можно выключить это поведения для конкретного атрибута с помощью модификатора \mintinline{glsl}|noperspective| в шейдере
 \end{itemize}
 \end{frame}
 
@@ -1058,6 +1054,15 @@ X_z & Y_z & Z_z & C_z \\
 \end{frame}
 
 \againframe<1->{perspective_correct}
+
+\begin{frame}<1>[fragile]
+\frametitle{Perspective-correct интерполяция атрибутов}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item \href{https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation}{\texttt{StackOverflow: How exactly does OpenGL do perspectively correct linear interpolation}}
+\item \href{https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/perspective-correct-interpolation-vertex-attributes.html}{\texttt{ScratchAPixel: Perspective-correct interpolation of vertex attributes}}
+\end{itemize}
+\end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Бонус: как перевести их экранных координат в мировые?}
