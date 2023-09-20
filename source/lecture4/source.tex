@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -20,6 +20,9 @@
 \usetikzlibrary{decorations}
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
+
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
 
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
@@ -38,7 +41,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 4: Камера, ортографическая и перспективная проекции, буфер глубины}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -49,21 +52,21 @@
 \begin{frame}[fragile]
 \frametitle{Проекции}
 \begin{itemize}
-\item Мир -- двухмерный/трёхмерный, произвольного размера, смотрим с произвольного ракурса
+\item В большинстве ситуаций виртуальный мир -- двухмерный/трёхмерный, произвольного размера, наблюдаемый с произвольного ракурса
 \pause
-\item Экран -- двухмерный, \begin{math}[-1, 1] \times [-1, 1]\end{math}
+\item Экран -- двухмерный, в системе координат OpenGL \begin{math}[-1, 1] \times [-1, 1]\end{math}
 \pause
 \begin{itemize}
 \item Координата Z тоже \begin{math}[-1, 1]\end{math}
 \item Про неё поговорим подробнее чуть позже
 \end{itemize}
 \pause
-\item За преобразование отвечает т.н. проекция
+\item \begin{math}\Longrightarrow\end{math} Нам нужно преобразование из первого во второе, т.н. \textit{проекция}
 \pause
 \item Два основных вида проекции:
 \begin{itemize}
-\item Ортографическая проекция
-\item Перспективная проекция
+\item \textbf{Ортографическая} проекция
+\item \textbf{Перспективная} проекция
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -71,7 +74,7 @@
 \begin{frame}[fragile]
 \frametitle{Ортографическая проекция}
 \begin{itemize}
-\item Самый простой способ: \pause игнорировать третью координату
+\item Самый простой способ проекции: \pause игнорировать третью координату
 \begin{center}Концептуально: \begin{math}(x, y, z) \mapsto (x, y)\end{math}\end{center}
 \begin{center}
 \begin{math}
@@ -84,7 +87,8 @@
 \end{math}
 \end{center}
 \pause
-\item Именно это делает OpenGL (если \verb|gl_Position.w = 1|)
+\usemintedstyle{solarized-light}
+\item Именно это делает OpenGL (если \mintinline{glsl}|gl_Position.w = 1|)
 \pause
 \item X и Y всё ещё \begin{math}[-1, 1]\end{math}
 \pause
@@ -130,21 +134,24 @@
 \end{center}
 \pause
 \item Если размер области \begin{math}W\end{math}, нужно разделить на \begin{math}W\end{math}
+\pause
 \item Если центр в \begin{math}X_0\end{math}, нужно сдвинуть на \begin{math}-X_0\end{math}
 \pause
-\item Общая идея: если камера получена каким-то преобразованием, нужно применить обратное преобразование
+\item \begin{math}\Longrightarrow\end{math} Общая идея: если камера получена каким-то преобразованием, нужно применить \textit{обратное преобразование}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Ортографическая проекция: обратное преобразование}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Можно считать, что по умолчанию (если \verb|gl_Position.w = 1|) OpenGL делает ортографическую проекцию на квадрат \begin{math}[-1, 1]^2\end{math} в плоскости XY параллельно оси Z
+\item Можно считать, что по умолчанию (если \mintinline{glsl}|gl_Position.w = 1|) OpenGL делает ортографическую проекцию на квадрат \begin{math}[-1, 1]^2\end{math} в плоскости XY параллельно оси Z
+\pause
 \item Камера находится в начале координат и никак явным образом не настраивается
 \pause
 \item Если ко всему виртуальному миру (включая камеру!) применить аффинное преобразование, изображение не изменится
 \pause
-\item \begin{math}\Rightarrow\end{math} Если наша камера получена аффинным преобразованием из стандартной камеры OpenGL, к объектам мира нужно применить обратное преобразование
+\item \begin{math}\Longrightarrow\end{math} Если наша камера получена аффинным преобразованием из стандартной камеры OpenGL, к объектам мира нужно применить обратное преобразование
 \end{itemize}
 \end{frame}
 
@@ -164,11 +171,15 @@
 \item Осями координат камеры \begin{math}X = (X_x, X_y, X_z), Y = (Y_x, Y_y, Y_z), Z = (Z_x, Z_y, Z_z)\end{math}
 \end{itemize}
 \pause
-\item Делает проекцию параллельно вектору \begin{math}Z\end{math} на параллелограмм \begin{math}C \pm X \pm Y\end{math}
-\item Параллелограмм отождествляется с экраном
+\item Делает проекцию параллельно вектору \begin{math}Z\end{math} на параллелограмм \begin{math}C \pm X \pm Y\end{math}, который отождествляется с экраном
 \pause
 \item Обычно \begin{math}X, Y, Z\end{math} взаимно ортогональны
-\pause
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция: общий случай}
+\begin{itemize}
 \item Как выразить эту проекцию матрицей?
 \pause
 \item Преобразование из стандартной системы координат OpenGL \begin{math}[-1, 1]^3\end{math} в координаты области, видимой через эту камеру: смена системы координат + параллельный перенос
@@ -345,7 +356,7 @@ X_z & Y_z & Z_z & C_z \\
 \pause
 \item Нельзя оценить расстояние до объекта по его изображению
 \pause
-\item Реальные камеры и глаза работают не так
+\item Реальные камеры и глаза работают \textit{не так}
 \end{itemize}
 \end{frame}
 
@@ -425,16 +436,17 @@ X_z & Y_z & Z_z & C_z \\
 \end{math}
 \end{center}
 \pause
-\item Как выразить эту проекцию матрицей? \pause Никак: матрицы не умеют делить одни координаты на другие
+\item Как выразить эту проекцию матрицей? \pause \textbf{\alert{Никак}}: матрицы не позволяют делить одни координаты на другие (это нелинейная операция)
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Perspective divide}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Чтобы поддержать перспективную проекцию, в графическом конвейере (после вершинного шейдера, перед переводом в экранные координаты) есть специальный обязательный шаг: perspective divide
+\item Чтобы поддержать перспективную проекцию, в графическом конвейере (после вершинного шейдера, перед переводом в экранные координаты) есть специальный \textit{обязательный} шаг: \textbf{perspective divide}
 \pause
-\item \verb|gl_Position| делится на последнюю координату \verb|gl_Position.w|
+\item \mintinline{glsl}|gl_Position| делится на последнюю координату \mintinline{glsl}|gl_Position.w|
 \begin{center}
 \begin{math}
 (x, y, z, w) \mapsto \left(\frac{x}{w}, \frac{y}{w}, \frac{z}{w}\right)
@@ -475,7 +487,7 @@ x/z \\ y/z \\ 1
 \end{math}
 \end{center}
 \pause
-\item Обычно матрица перспективной проекции выглядит \textbf{не так}
+\item Обычно матрица перспективной проекции выглядит \textbf{\alert{не так}} из-за \textit{буфера глубины}
 \end{itemize}
 \end{frame}
 
@@ -493,50 +505,62 @@ x/z \\ y/z \\ 1
 \pause
 \item UI: фон виджета, потом рисунок кнопки, потом текст кнопки
 \end{itemize}
-\pause
-\item В 3D можно сортировать треугольники в порядке убывания расстояния до камеры (painter's algorithm), но это очень медленно:
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Наложение объектов}
+\begin{itemize}
+\item В 3D можно сортировать треугольники в порядке убывания расстояния до камеры (painter's algorithm), но это плохое решение:
 \pause
 \begin{itemize}
-\item Нужно отсортировать миллионы треугольников каждый кадр
+\item Нужно отсортировать миллионы треугольников каждый кадр и загрузить их на GPU \begin{math}\Longrightarrow\end{math} хуже производительность
 \pause
-\item Нужно загрузить их на GPU
+\item Треугольники одного объекта не идут непрерывно \begin{math}\Longrightarrow\end{math} больше изменений состояния (переключений шейдеров, etc) при рендеринге \begin{math}\Longrightarrow\end{math} хуже производительность
 \pause
-\item Треугольники одного объекта не идут непрерывно \begin{math}\Rightarrow\end{math} больше изменений состояния (переключений шейдеров, etc) при рендеринге
+\item Всё равно решает проблему не во всех случаях (напр. когда в графе наложений объектов есть циклы)
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Случай, когда painter's algorithm не работает}
+\slideimage{painters-fail.png}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Z-буфер}
+\usemintedstyle{solarized-light}
 \begin{itemize}
-\item Решение: буфер глубины (z-buffer)
+\item Решение: \textit{буфер глубины} (z-buffer)
 \pause
 \item Хранит для каждого пикселя экрана расстояние до камеры
 \pause
 \item Тест глубины: при рисовании очередного пикселя (после фрагментного шейдера) проверим: если уже нарисованный пиксель ближе к камере, то новый рисовать не будем
 \pause
-\item Включить: \verb|glEnable(GL_DEPTH_TEST)|
+\item Включить: \mintinline{cpp}|glEnable(GL_DEPTH_TEST)|
 \pause
-\item Настроить поведение теста глубины: \verb|glDepthFunc(func)|
+\item Настроить поведение теста глубины: \mintinline{cpp}|glDepthFunc(func)|
 \begin{itemize}
-\item Значения \verb|func|: \verb|GL_NEVER|, \verb|GL_LESS|, \verb|GL_EQUAL|, \verb|GL_LEQUAL|, \verb|GL_GREATER|, \verb|GL_NOTEQUAL|, \verb|GL_GEQUAL|, \verb|GL_ALWAYS|
+\item Значения \mintinline{cpp}|func|: \mintinline{cpp}|GL_NEVER|, \mintinline{cpp}|GL_LESS|, \mintinline{cpp}|GL_EQUAL|, \mintinline{cpp}|GL_LEQUAL|, \mintinline{cpp}|GL_GREATER|, \mintinline{cpp}|GL_NOTEQUAL|, \mintinline{cpp}|GL_GEQUAL|, \mintinline{cpp}|GL_ALWAYS|
 \pause
-\item Например, \verb|GL_LEQUAL| = less or equal: пиксель рисуется, если его расстояние до камеры меньше или равно расстояния, записанного в z-буфер
+\item Например, \mintinline{cpp}|GL_LEQUAL| = less or equal: пиксель рисуется, если его расстояние до камеры меньше или равно расстоянию, записанному в z-буфер
 \pause
-\item По умолчанию \verb|GL_LESS|
+\item По умолчанию \mintinline{cpp}|GL_LESS|
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Z-буфер}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item К координате Z после perspective divide применяется преобразование \begin{math}[-1, 1] \mapsto [0, 1]\end{math} (т.е. \begin{math}z \mapsto \frac{z+1}{2}\end{math}), и это значение записывается в z-буфер
 \pause
 \begin{itemize}
-\item Доступно во фрагментном шейдере: \verb|gl_FragDepth|
+\item Доступно во фрагментном шейдере: \mintinline{glsl}|gl_FragDepth|
 \pause
-\item Интервал \begin{math}[0, 1]\end{math} можно заменить с помощью \verb|glDepthRange|
+\item Интервал \begin{math}[0, 1]\end{math} можно заменить с помощью \mintinline{cpp}|glDepthRange|
 \end{itemize}
 \pause
 \item Z-буфер хранит или в формате unsigned normalized (16/24/32-bit), или floating-point (32-bit)
@@ -544,7 +568,7 @@ x/z \\ y/z \\ 1
 \item Обычно unsigned normalized 24-bit
 \end{itemize}
 \pause
-\item Нужно очищать перед каждым кадром: \verb|glClear(GL_DEPTH_BUFFER_BIT)|
+\item Нужно очищать перед каждым кадром: \mintinline{cpp}|glClear(GL_DEPTH_BUFFER_BIT)|
 \pause
 \item Default framebufer (тот, что используется по умолчанию, для рисования в окно) может иметь свой z-буфер -- это нужно настраивать перед созданием OpenGL-контекста
 \pause
@@ -555,6 +579,7 @@ x/z \\ y/z \\ 1
 
 \begin{frame}[fragile]
 \frametitle{Depth clipping/clamping}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Z-координата (после perspective divide) должна быть в диапазоне \begin{math}[-1, 1]\end{math}
 \pause
@@ -566,7 +591,7 @@ x/z \\ y/z \\ 1
 \item Depth clamping: отсечения не происходит, но после растеризации глубина всех пикселей, не попавших в диапазон \begin{math}[-1, 1]\end{math}, сжимается до \begin{math}[-1, 1]\end{math}
 \pause
 \item По умолчанию -- depth clipping
-\item Включить depth clamping: \verb|glEnable(GL_DEPTH_CLAMP)|
+\item Включить depth clamping: \mintinline{cpp}|glEnable(GL_DEPTH_CLAMP)|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -612,26 +637,27 @@ x/z \\ y/z \\ 1
 \end{center}
 
 \pause
-\item Если \begin{math}W<0\end{math}, точка не попадает на экран
+\item Если \begin{math}W<0\end{math}, точка \textbf{\alert{не попадает}} на экран
 \end{itemize}
 
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Полный путь координат}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Входные данные: точка \begin{math}q_{object}\end{math} в системе координат объекта (object space)
 \pause
 \item Позиционируем объект: \begin{math}q_{world} = \operatorname{Transform} \cdot q_{object}\end{math} в мировых координатах (world space)
 \pause
-\item Учитываем расположение камеры: \begin{math}q_{camera} = \operatorname{View} \cdot q_{world}\end{math} в координатах камеры (view/camera space)
+\item Учитываем расположение камеры: \begin{math}q_{view} = \operatorname{View} \cdot q_{world}\end{math} в координатах камеры (view/camera space)
 \pause
-\item Проекция камеры: \verb|gl_Position = |\begin{math}q_{clip} = \operatorname{Projection} \cdot q_{camera}\end{math} в clip space
+\item Проекция камеры: \mintinline{glsl}|gl_Position = |\begin{math}q_{clip} = \operatorname{Projection} \cdot q_{view}\end{math} в clip space
 \pause
 \item Perspective divide: \begin{math}q_{ndc} = xyz_{clip} / w_{clip}\end{math} в normalized device coordinates
 \pause
 \begin{itemize}
-\item \begin{math}x_{ndc}\end{math} и \begin{math}y_{ndc}\end{math} определяют координату пикселя на экране (через \verb|glViewport|)
+\item \begin{math}x_{ndc}\end{math} и \begin{math}y_{ndc}\end{math} определяют координату пикселя на экране (через \mintinline{cpp}|glViewport|)
 \item \begin{math}z_{ndc}\end{math} определяет глубину
 \end{itemize}
 \end{itemize}
@@ -895,7 +921,7 @@ F = \frac{top + bottom}{top - bottom}
 \end{math}
 \end{center}
 \begin{itemize}
-\item Это самый часто встречающийся вид матрицы перспективной проекции
+\item Это \textit{самый часто встречающийся} вид матрицы перспективной проекции
 \pause
 \item Эту матрицы мы передаём в шейдер и применяем к входным вершинам
 \end{itemize}
@@ -906,7 +932,7 @@ F = \frac{top + bottom}{top - bottom}
 \begin{itemize}
 \item Как выбирать параметры камеры?
 \pause
-\item Пусть хотим камеру с шириной обзора по X равной \begin{math}\theta\end{math} радиан, и с aspect ratio (отношение ширины к высоте) равным \begin{math}R\end{math}
+\item Пусть хотим камеру с шириной обзора по X равной \begin{math}\theta\end{math} радиан, и с \textit{aspect ratio} (отношение ширины к высоте) равным \begin{math}R\end{math}
 \pause
 \item \begin{math}-left=right=near \cdot \tan\left(\frac{\theta}{2}\right)\end{math}
 \item \begin{math}-bottom=top=\frac{1}{R} \cdot right = \frac{near}{R} \cdot \tan\left(\frac{\theta}{2}\right)\end{math}
@@ -918,11 +944,11 @@ F = \frac{top + bottom}{top - bottom}
 \begin{itemize}
 \item Как выбирать параметры near и far?
 \pause
-\item Всё ближе near или дальше far обрезается - почему не взять near\begin{math}\approx 0\end{math} и far=\begin{math}\infty\end{math}?
+\item Все объекты ближе near или дальше far обрезаются -- почему не взять near\begin{math}= 0\end{math} и far=\begin{math}\infty\end{math}?
 \pause
 \item Если near = 0, третья строка матрицы проекции вырождается в \begin{math}\begin{pmatrix}0 & 0 & -1 & 0\end{pmatrix}\end{math}, и у всех точек будет одинаковая глубина, т.е. не получится использовать z-буфер
 \pause
-\item Если far \begin{math}\rightarrow\infty\end{math}, третья строка стремится к \begin{math}\begin{pmatrix}0 & 0 & -1 & -2near\end{pmatrix}\end{math}
+\item Если far \begin{math}\rightarrow\infty\end{math}, третья строка стремится к \begin{math}\begin{pmatrix}0 & 0 & -1 & -2near\end{pmatrix}\end{math}, что само по себе ничего не ломает
 \end{itemize}
 \end{frame}
 
@@ -1000,6 +1026,38 @@ X_z & Y_z & Z_z & C_z \\
 \item \href{http://songho.ca/opengl/gl_projectionmatrix.html}{\nolinkurl{songho.ca/opengl/gl\_projectionmatrix.html}}
 \end{itemize}
 \end{frame}
+
+\begin{frame}<1>[fragile,label=perspective_correct]
+\frametitle{Perspective-correct интерполяция атрибутов}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Перспективная проекция портит интерполяцию атрибутов между вершинным и фрагментным шейдерами
+\pause
+\item На самом деле, барицентрические координаты вычисляются с учётом перспективной проекции:
+\pause
+\begin{itemize}
+\item Между вершинами линейно интерполируется \mintinline{glsl}|1 / gl_Position.w|
+\pause
+\item Исходные барицентрические координаты \begin{math}\lambda_i\end{math} (посчитанные в экранных координатах) заменяются на
+\begin{align*}
+\frac{\lambda_i / w_i}{\sum \lambda_k / w_k}
+\end{align*}
+\end{itemize}
+\pause
+\item Ресурсы с выводом этих формул:
+\begin{itemize}
+\item \href{https://stackoverflow.com/questions/24441631/how-exactly-does-opengl-do-perspectively-correct-linear-interpolation}{\texttt{StackOverflow: How exactly does OpenGL do perspectively correct linear interpolation}}
+\item \href{https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/perspective-correct-interpolation-vertex-attributes.html}{\texttt{ScratchAPixel: Perspective-correct interpolation of vertex attributes}}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Perspective-correct интерполяция атрибутов}
+\slideimage{perspective-correct.png}
+\end{frame}
+
+\againframe<1->{perspective_correct}
 
 \begin{frame}[fragile]
 \frametitle{Бонус: как перевести их экранных координат в мировые?}
