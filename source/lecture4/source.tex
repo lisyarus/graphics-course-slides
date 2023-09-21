@@ -1065,25 +1065,39 @@ X_z & Y_z & Z_z & C_z \\
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\frametitle{Бонус: как перевести из экранных координат в мировые?}
 \begin{itemize}
-\item Есть точка на экране с координатами \begin{math}(P_X, P_Y) \in [-1, 1]^2\end{math} (например, координаты указателя мыши, переведённые из пиксельных координат в OpenGL-ные) и матрица камеры \begin{math}T=\operatorname{Projection}\cdot\operatorname{View}\end{math}
+\item Есть точка на экране с координатами \begin{math}(P_X, P_Y) \in [-1, 1]^2\end{math} (например, координаты указателя мыши, переведённые из пиксельных координат в OpenGL-ные)
 \pause
-\item В пространстве ей соответствует луч из камеры -- как его найти?
+\item Есть матрица камеры \begin{math}T=\operatorname{Projection}\cdot\operatorname{View}\end{math}
+\pause
+\item В пространстве точке на экране соответствует луч из камеры -- как его найти?
 \pause
 \item Найдём две точки, пересекающие этот луч, на near и far плоскостях
-\pause
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Бонус: как перевести из экранных координат в мировые?}
+\begin{itemize}
 \item Пусть \begin{math}\operatorname{Proj}\end{math} -- оператор, выполняющий perspective divide:
 \begin{center}
 \begin{math}
 \operatorname{Proj}\begin{pmatrix}x \\ y \\ z \\ w\end{pmatrix} = \begin{pmatrix}x/w \\ y/w \\ z/w\end{pmatrix}
 \end{math}
 \end{center}
+\pause
+\item Мы хотим решить уравнение
+\begin{center}
+\begin{math}
+\operatorname{Proj}\cdot T \begin{pmatrix}x \\ y \\ z \\ 1\end{pmatrix} = \begin{pmatrix}P_X \\ P_Y \\ \pm 1\end{pmatrix}
+\end{math}
+\end{center}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\frametitle{Бонус: как перевести из экранных координат в мировые?}
 \begin{itemize}
 \item Мы хотим решить уравнение
 \begin{center}
@@ -1104,7 +1118,7 @@ X_z & Y_z & Z_z & C_z \\
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\frametitle{Бонус: как перевести из экранных координат в мировые?}
 \begin{center}
 \begin{math}
 \begin{pmatrix}x \\ y \\ z \\ 1\end{pmatrix} = T^{-1} \begin{pmatrix}\lambda P_X \\ \lambda P_Y \\ \pm \lambda \\ \lambda\end{pmatrix} = \lambda T^{-1} \begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}
@@ -1112,7 +1126,7 @@ X_z & Y_z & Z_z & C_z \\
 \end{center}
 \pause
 \begin{itemize}
-\item С чего мы взяли, что последняя координата w будет равна 1? \pause Нужно подобрать \begin{math}\lambda\end{math}:
+\item Приравняем последнюю координату левой и правой стороны уравнения:
 \begin{center}
 \begin{math}
 1 = \lambda \cdot
@@ -1125,7 +1139,7 @@ T^{-1} \begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Бонус: как перевести их экранных координат в мировые?}
+\frametitle{Бонус: как перевести из экранных координат в мировые?}
 \begin{center}
 \begin{math}
 \lambda =
@@ -1136,12 +1150,43 @@ T^{-1} \begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}
 \end{math}
 \end{center}
 \pause
-Вектор \begin{math}T^{-1}\begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}\end{math} нужно разделить на последнюю координату!
+\begin{center}
+\begin{math}
+\lambda T^{-1} \begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix} = \frac{T^{-1} \begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}}{\left[
+T^{-1} \begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}
+\right]_w}
+\end{math}
+\end{center}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Бонус: как перевести из экранных координат в мировые?}
+\begin{itemize}
+\item Вектор \begin{math}T^{-1}\begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}\end{math} нужно \textit{разделить на последнюю координату}!
 \pause
 \begin{center}
 \begin{math}
 \begin{pmatrix}x \\ y \\ z\end{pmatrix} =
 \operatorname{Proj} T^{-1} \begin{pmatrix}P_X \\ P_Y \\ \pm 1 \\ 1\end{pmatrix}
+\end{math}
+\end{center}
+\pause
+\item Работает для \textit{любой проекции} (и перспективной, и ортографической)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Бонус: как перевести из экранных координат в мировые?}
+\begin{center}
+\begin{math}
+\operatorname{Proj} T \begin{pmatrix}x \\ y \\ z \\ 1\end{pmatrix} =
+\begin{pmatrix}a \\ b \\ c\end{pmatrix}
+\end{math}
+\end{center}
+\begin{center}
+\begin{math}
+\Longrightarrow \begin{pmatrix}x \\ y \\ z\end{pmatrix} =
+\operatorname{Proj} T^{-1} \begin{pmatrix}a \\ b \\ c \\ 1\end{pmatrix}
 \end{math}
 \end{center}
 \end{frame}
