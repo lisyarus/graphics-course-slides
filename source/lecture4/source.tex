@@ -73,6 +73,11 @@
 
 \begin{frame}[fragile]
 \frametitle{Ортографическая проекция}
+\slideimage{orthographic.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Ортографическая проекция}
 \begin{itemize}
 \item Самый простой способ проекции: \pause игнорировать третью координату
 \begin{center}Концептуально: \begin{math}(x, y, z) \mapsto (x, y)\end{math}\end{center}
@@ -153,11 +158,6 @@
 \pause
 \item \begin{math}\Longrightarrow\end{math} Если наша камера получена аффинным преобразованием из стандартной камеры OpenGL, к объектам мира нужно применить обратное преобразование
 \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Ортографическая проекция}
-\slideimage{orthographic.png}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -375,19 +375,19 @@ X_z & Y_z & Z_z & C_z \\
 \begin{tikzpicture}
 \only<1->{
   \draw[blue,thick] (2.0, -2.0) -- (2.0, 2.0);
-  \node at (0.0, 0.0) {\color{blue}\textbullet};
+  \node[circle,draw=blue,fill=blue] at (0.0, 0.0) {};
 }
 \only<1->{
   \phantom{
     \draw[magenta,thick,dashed] (0.0, 0.0) -- (6.0, 1.5);
-    \node at (2.0, 0.5) {\color{red}\textbullet};
-    \node at (6.0, 1.5) {\color{green}\textbullet};
+    \node[circle,draw=red,fill=red] at (2.0, 0.5) {};
+    \node[circle,draw=green,fill=green] at (6.0, 1.5) {};
   }
 }
 \only<2->{
   \draw[magenta,thick,dashed] (0.0, 0.0) -- (6.0, 1.5);
-  \node at (2.0, 0.5) {\color{red}\textbullet};
-  \node at (6.0, 1.5) {\color{green}\textbullet};
+  \node[circle,draw=red,fill=red] at (2.0, 0.5) {};
+  \node[circle,draw=green,fill=green] at (6.0, 1.5) {};
 }
 \end{tikzpicture}
 \end{center}
@@ -402,9 +402,9 @@ X_z & Y_z & Z_z & C_z \\
 \draw[black,dashed,-stealth] (-2.0, 0.0) -- (8.0, 0.0);
 \draw[black,dashed,-stealth] (0.0, -3.0) -- (0.0, 3.0);
 \draw[black,dashed] (6.0, 1.5) -- (6.0, -1.0);
-\node at (0.0, 0.0) {\color{blue}\textbullet};
-\node at (2.0, 0.5) {\color{red}\textbullet};
-\node at (6.0, 1.5) {\color{green}\textbullet};
+\node[circle,draw=blue,fill=blue] at (0.0, 0.0) {};
+\node[circle,draw=red,fill=red] at (2.0, 0.5) {};
+\node[circle,draw=green,fill=green] at (6.0, 1.5) {};
 
 \node at (8.0, -0.25) {Z};
 \node at (-0.25, 3.0) {Y};
@@ -518,7 +518,7 @@ x/z \\ y/z \\ 1
 \pause
 \item Треугольники одного объекта не идут непрерывно \begin{math}\Longrightarrow\end{math} больше изменений состояния (переключений шейдеров, etc) при рендеринге \begin{math}\Longrightarrow\end{math} хуже производительность
 \pause
-\item Всё равно решает проблему не во всех случаях (напр. когда в графе наложений объектов есть циклы)
+\item Всё равно решает проблему не во всех случаях (напр. когда в графе наложений объектов есть циклы, или треугольники пересекаются)
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -534,11 +534,29 @@ x/z \\ y/z \\ 1
 \begin{itemize}
 \item Решение: \textit{буфер глубины} (z-buffer)
 \pause
-\item Хранит для каждого пикселя экрана расстояние до камеры
+\item Одноцветное изображение такого же размера, как экран/окно
 \pause
-\item Тест глубины: при рисовании очередного пикселя (после фрагментного шейдера) проверим: если уже нарисованный пиксель ближе к камере, то новый рисовать не будем
+\item Каждый пиксель хранит расстояние от нарисованного на экране пикселя до камеры
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Z-буфер}
+\slideimage{gta5_zbuffer.jpg}
+\end{frame}
+
+\begin{frame}
+\frametitle{Z-буфер}
+\slideimage{gta5.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Тест глубины}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Тест глубины (depth test): при рисовании очередного пикселя (\textit{после} фрагментного шейдера) проверим: если уже нарисованный пиксель ближе к камере, то новый рисовать не будем
 \pause
-\item Включить: \mintinline{cpp}|glEnable(GL_DEPTH_TEST)|
+\item Включить: \mintinline{cpp}|glEnable(GL_DEPTH_TEST)| (по умолчанию выключен)
 \pause
 \item Настроить поведение теста глубины: \mintinline{cpp}|glDepthFunc(func)|
 \begin{itemize}
@@ -555,19 +573,37 @@ x/z \\ y/z \\ 1
 \frametitle{Z-буфер}
 \usemintedstyle{solarized-light}
 \begin{itemize}
-\item К координате Z после perspective divide применяется преобразование \begin{math}[-1, 1] \mapsto [0, 1]\end{math} (т.е. \begin{math}z \mapsto \frac{z+1}{2}\end{math}), и это значение записывается в z-буфер
-\pause
-\begin{itemize}
-\item Доступно во фрагментном шейдере: \mintinline{glsl}|gl_FragDepth|
-\pause
-\item Интервал \begin{math}[0, 1]\end{math} можно заменить с помощью \mintinline{cpp}|glDepthRange|
-\end{itemize}
-\pause
-\item Z-буфер хранит или в формате unsigned normalized (16/24/32-bit), или floating-point (32-bit)
+\item Z-буфер хранит значения в формате unsigned normalized (16/24/32-bit) или floating-point (32-bit)
 \begin{itemize}
 \item Обычно unsigned normalized 24-bit
 \end{itemize}
 \pause
+\item К координате Z после perspective divide применяется преобразование \begin{math}[-1, 1] \mapsto [0, 1]\end{math} (т.е. \begin{math}z \mapsto \frac{z+1}{2}\end{math}), и это значение записывается в z-буфер
+\pause
+\begin{itemize}
+\item Доступно во фрагментном шейдере: \mintinline{glsl}|gl_FragCoord.z|
+\pause
+\item Интервал \begin{math}[0, 1]\end{math} можно заменить с помощью \mintinline{cpp}|glDepthRange|
+\pause
+\item Во многих графических API исходный диапазон глубин -- \begin{math}[0, 1]\end{math}, и Z-координата после perspective divide записывается в буфер глубины без преобразований
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Z-буфер: early depth test}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Фрагментный шейдер может изменить глубину фрагмента, записав новую глубину в \mintinline{glsl}|gl_FragDepth|
+\pause
+\item Это почти никогда не нужно и выключает \textit{early depth test} -- оптимизацию, при которой depth test происходит \textit{до} фрагментного шейдера, а не после, и пропускает шейдер, если фрагмент всё равно не попадёт на экран
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Z-буфер}
+\usemintedstyle{solarized-light}
+\begin{itemize}
 \item Нужно очищать перед каждым кадром: \mintinline{cpp}|glClear(GL_DEPTH_BUFFER_BIT)|
 \pause
 \item Default framebufer (тот, что используется по умолчанию, для рисования в окно) может иметь свой z-буфер -- это нужно настраивать перед созданием OpenGL-контекста
@@ -666,11 +702,11 @@ x/z \\ y/z \\ 1
 \begin{frame}[fragile]
 \frametitle{Перспективная проекция: near \& far clip planes}
 \begin{itemize}
-\item Если записывать в w координату z, то после perspective divide z = 1, т.е. у всех точек одинаковая глубина \begin{math}\Rightarrow\end{math} нам нужна другая формула проекции!
+\item Если записывать в w координату z, то после perspective divide z = 1, т.е. у всех точек одинаковая глубина, и не работает тест глубины \begin{math}\Longrightarrow\end{math} нам нужна другая формула проекции!
 \pause
-\item Итоговый диапазон глубин ограничен \begin{math}\Rightarrow\end{math} нужно как-то ограничить диапазон возможных расстояний до камеры
+\item Итоговый диапазон глубин ограничен \begin{math}\Longrightarrow\end{math} нужно как-то ограничить диапазон возможных расстояний до камеры
 \pause
-\item \begin{math}0 < near < far < \infty\end{math}
+\item \textit{Near} и \textit{far} clip planes: \begin{math}0 < near < far < \infty\end{math}
 \pause
 \item Хотим, чтобы диапазон \begin{math}z\in [near,far]\end{math} после применения матрицы проекции и perspective divide превратился в \begin{math}[-1,1]\end{math}
 \end{itemize}
@@ -923,7 +959,7 @@ F = \frac{top + bottom}{top - bottom}
 \begin{itemize}
 \item Это \textit{самый часто встречающийся} вид матрицы перспективной проекции
 \pause
-\item Эту матрицы мы передаём в шейдер и применяем к входным вершинам
+\item Эту матрицы мы передаём в шейдер и применяем к входным вершинам (после других преобразований)
 \end{itemize}
 \end{frame}
 
@@ -966,7 +1002,9 @@ F = \frac{top + bottom}{top - bottom}
 \item При этом камера искуственно держится на некотором расстоянии от любых объектов
 \end{itemize}
 \pause
-\item far: максимально возможный, при котором не возникает Z-fighting'а
+\item far: минимально возможный, при котором видно всю сцену
+\pause
+\item Нехватка точности z-буфера приводит к \textit{z-fighting}'у
 \end{itemize}
 \end{frame}
 
@@ -1042,9 +1080,11 @@ X_z & Y_z & Z_z & C_z \\
 \begin{align*}
 \frac{\lambda_i / w_i}{\sum \lambda_k / w_k}
 \end{align*}
+\pause
+\item Проинтерполированное значение \begin{math}1/w\end{math} доступно в шейдере: \mintinline{glsl}|gl_FragCoord.w|
 \end{itemize}
 \pause
-\item Можно выключить это поведения для конкретного атрибута с помощью модификатора \mintinline{glsl}|noperspective| в шейдере
+\item Можно выключить это поведение для конкретного атрибута с помощью модификатора \mintinline{glsl}|noperspective| в шейдере
 \end{itemize}
 \end{frame}
 
@@ -1073,7 +1113,7 @@ X_z & Y_z & Z_z & C_z \\
 \pause
 \item В пространстве точке на экране соответствует луч из камеры -- как его найти?
 \pause
-\item Найдём две точки, пересекающие этот луч, на near и far плоскостях
+\item Найдём две точки, пересекающие этот луч, на near и far плоскостях, и по ним восстановим луч
 \end{itemize}
 \end{frame}
 
