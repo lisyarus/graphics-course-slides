@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
 \documentclass{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -17,6 +17,9 @@
 \usepackage{soul}
 
 \usepackage{hyperref}
+
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
 
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
@@ -32,8 +35,8 @@
 \makeatother
 
 \title{Компьютерная графика}
-\subtitle{Домашнее задание 1: график функции на плоскости}
-\date{2021}
+\subtitle{Домашнее задание 1: График функции на плоскости с изолиниями}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -61,7 +64,7 @@
 
 \begin{frame}[fragile]
 \frametitle{Пример}
-\slideimage{matlab-plot.png}
+\slideimage{example-plot.png}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -91,10 +94,10 @@
 \begin{frame}[fragile]
 \frametitle{Изолинии}
 \begin{itemize}
-\item Линии \begin{math}z = f(x,y,t) = C_i\end{math} для некоторых \begin{math}C_i\end{math}, разного цвета
+\item Линии \begin{math}z = f(x,y,t) = C_i\end{math} для некоторых значений \begin{math}C_i\end{math}
 \item Набор значений \begin{math}C_1, C_2, C_3, \dots, C_k\end{math} выбрать на основе вашей функции
 \pause
-\item Строить алгоритмом marching squares с линейной интерполяцией (или аналогичным алгоритмом на треугольниках) на основе той же сетки, что и график
+\item Строить алгоритмом \textit{marching squares} с линейной интерполяцией (или аналогичным алгоритмом на треугольниках) на основе той же сетки, что и график
 \end{itemize}
 \end{frame}
 
@@ -108,15 +111,15 @@
 \draw[black,thick] (0.0, 2.0) -- (2.0, 0.0);
 \draw[black,thick] (6.0, 3.5) -- (7.0, 0.0);
 
-\node at (0.0, 0.0) {\color{blue}\textbullet};
-\node at (4.0, 0.0) {\color{red}\textbullet};
-\node at (0.0, 4.0) {\color{red}\textbullet};
-\node at (4.0, 4.0) {\color{red}\textbullet};
+\node[circle,draw=blue,fill=blue] at (0.0, 0.0) {};
+\node[circle,draw=red,fill=red] at (4.0, 0.0) {};
+\node[circle,draw=red,fill=red] at (0.0, 4.0) {};
+\node[circle,draw=red,fill=red] at (4.0, 4.0) {};
 
-\node at (6.0, 0.0) {\color{blue}\textbullet};
-\node at (10.0, 0.0) {\color{red}\textbullet};
-\node at (6.0, 4.0) {\color{red}\textbullet};
-\node at (10.0, 4.0) {\color{red}\textbullet};
+\node[circle,draw=blue,fill=blue] at (6.0, 0.0) {};
+\node[circle,draw=red,fill=red] at (10.0, 0.0) {};
+\node[circle,draw=red,fill=red] at (6.0, 4.0) {};
+\node[circle,draw=red,fill=red] at (10.0, 4.0) {};
 
 \node at (0.0, -0.5) {\color{blue}\begin{math}f<C\end{math}};
 \node at (4.0, -0.5) {\color{red}\begin{math}f>C\end{math}};
@@ -128,54 +131,77 @@
 \node at (6.0, 4.5) {\color{red}\begin{math}f>C\end{math}};
 \node at (10.0, 4.5) {\color{red}\begin{math}f>C\end{math}};
 
-\node at (0.0, 2.0) {\color{black}\textbullet};
-\node at (2.0, 0.0) {\color{black}\textbullet};
+\node[circle,draw=black,fill=black] at (0.0, 2.0) {};
+\node[circle,draw=black,fill=black] at (2.0, 0.0) {};
 
-\node at (6.0, 3.5) {\color{black}\textbullet};
-\node at (7.0, 0.0) {\color{black}\textbullet};
+\node[circle,draw=black,fill=black] at (6.0, 3.5) {};
+\node[circle,draw=black,fill=black] at (7.0, 0.0) {};
 \end{tikzpicture}
 \end{center}
-\begin{itemize}
-\item Есть вариант алгоритма, соединящий центры рёбер
-\item Есть вариант алгоритма, линейно интерполирующий значение функции вдоль ребра чтобы найти точку \begin{math}f = C\end{math} -- {\color{red}нужно использовать его}
-\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Marching triangles}
+\frametitle{Marching squares}
 \begin{itemize}
-\item Есть вариант алгоритма (иногда называется marching triangles), использующий треугольники и избавляющийся от неоднозначностей алгоритма на квадратах, -- можно использовать его
+\item Есть вариант алгоритма, соединящий центры рёбер, -- его \textbf{\alert{не нужно использовать}}
+\item Есть вариант алгоритма, линейно интерполирующий значение функции вдоль ребра чтобы найти точку \begin{math}f = C\end{math} -- \textbf{\alert{нужно использовать именно его}}
 \pause
-\item Ещё marching triangles называют трёхмерный алгоритм построения модели по облаку точек -- это \textbf{не оно}
+\item Есть вариант алгоритма (иногда называется marching triangles), использующий треугольники и избавляющийся от неоднозначностей алгоритма на квадратах, -- \textbf{\alert{можно}} использовать его
+\pause
+\item Ещё marching triangles называют трёхмерный алгоритм построения модели по облаку точек -- это \textbf{\alert{не то, что нам нужно}}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Немного деталей}
+\usemintedstyle{solarized-light}
 \begin{itemize}
 \item Часть данных вершин будут обновляться каждый кадр -- цвета точек графика, координаты изолиний
 \item Часть данных постоянна -- XY-координаты вершин сетки -- их имеет смысл хранить в отдельном VBO
 \item Как для графика, так и для изолиний имеет смысл использовать индексированный рендеринг
-\item Можно использовать простые \verb|GL_LINES| и \verb|GL_TRIANGLES|, а можно \verb|GL_LINE_STRIP/GL_LINE_LOOP| и \verb|GL_TRIANGLE_STRIP| вместе с \verb|primitive restart|
-\item Чтобы избавиться от дублирования вершин в изолиниях, придётся для каждого ребра исходной сетки запомнить индекс вершины изолинии, лежащей на этом ребре: можно использовать, например, \verb|std::unordered_map| или просто \verb|std::vector|, придумав какую-то нумерацию для рёбер
+\item Можно использовать простые \mintinline{cpp}|GL_LINES| и \mintinline{cpp}|GL_TRIANGLES|, а можно \mintinline{cpp}|GL_LINE_STRIP/GL_LINE_LOOP| и \mintinline{cpp}|GL_TRIANGLE_STRIP| вместе с \mintinline{cpp}|primitive restart|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Немного деталей}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Чтобы избавиться от дублирования вершин в изолиниях, придётся для каждого ребра исходной сетки запомнить индекс вершины изолинии, лежащей на этом ребре: можно использовать, например, \mintinline{cpp}|std::unordered_map| или просто \mintinline{cpp}|std::vector|, придумав какую-то нумерацию для рёбер
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Немного деталей}
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Обратите особое внимание на работу с VAO и буферами:
+\begin{itemize}
+\item Создание VAO и буферов должно быть \textbf{только} в начале программы
+\item Настройка атрибутов вершин (т.е. настройка VAO) должна быть \textbf{один раз} в начале программы
+\item Данные в буферы должны загружаться \textbf{только} при их реальном изменении
+\end{itemize}
+\pause
+\item В идеале у вас должно быть 2 \textit{draw call} (вызова функции \mintinline{cpp}|glDraw*|) на кадр: один на график, один на изолинии
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Баллы}
+\scriptsize
 \begin{itemize}
-\item 3 балла: рисуется динамический график функции (т.е. цвета меняются во времени)
-\item 3 балла: рисуются динамические изолинии
-\item 2 балла: все данные в VBO обновляются только при их изменении, статические данные хранятся в отдельных VBO
-\item 2 балла: используется индексированный рендеринг для графика и его вершины не дублируются
-\item 2 балла: используется индексированный рендеринг для изолиний и их вершины не дублируются
-\item 1 балл:  можно динамически менять количество изолиний
-\item 1 балл:  можно динамически менять детализацию сетки
-\item 1 балл:  корректно обрабатывается aspect ratio (т.е. соотношение ширины к высоте видимого графика не меняется при изменении размеров экрана)
+\item \textbf{3 балла}: рисуется динамический график функции (т.е. цвета вершин меняются во времени) за один draw call
+\item \textbf{3 балла}: рисуются динамические изолинии за один draw call
+\item \textbf{2 балла}: все данные в VBO обновляются только при их изменении, статические данные хранятся в отдельных VBO
+\item \textbf{2 балла}: используется индексированный рендеринг для графика и его вершины не дублируются
+\item \textbf{2 балла}: используется индексированный рендеринг для изолиний и их вершины не дублируются
+\item \textbf{1 балл}:  можно динамически менять количество изолиний
+\item \textbf{1 балл}:  можно динамически менять детализацию сетки
+\item \textbf{1 балл}:  корректно обрабатывается \textit{aspect ratio}, т.е. соотношение ширины к высоте видимого графика не меняется при изменении размеров экрана (свободное пространство экрана можно оставить пустым)
 \end{itemize}
-Всего: 15 баллов
+Всего: \textbf{15 баллов}
 
-Защита заданий на практике 3 октября (через 2 недели).
+Защита заданий на практике \textbf{7 октября} (через 2 недели).
 \end{frame}
 
 \begin{frame}[fragile]
