@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,10 +23,15 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -40,7 +45,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 6: Ошибки OpenGL, расширения OpenGL, blending, stencil buffer, framebuffer, renderbuffer, пост-обработка}
-\date{2022}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -48,44 +53,46 @@
 
 \frame{\titlepage}
 
+\usemintedstyle{solarized-light}
+
 \begin{frame}[fragile]
 \frametitle{Ошибки OpenGL}
 \begin{itemize}
-\item Часто драйвер может понять, что в определённом OpenGL-вызове содержится ошибка
+\item Часто драйвер может легко понять, что в определённом OpenGL-вызове содержится ошибка
 \pause
 \begin{itemize}
-\item \verb|glTexImage2D| с параметром \verb|target|, не являющимся одним из типов текстур
+\item \mintinline{cpp}|glTexImage2D| с параметром \mintinline{cpp}|target|, не являющимся одним из типов текстур
 \pause
-\item \verb|glTexParameteri| устанавливающая mag filter в что-то отличное от \verb|GL_LINEAR| или \verb|GL_NEAREST|
+\item \mintinline{cpp}|glTexParameteri| устанавливающая mag filter в что-то отличное от \mintinline{cpp}|GL_LINEAR| или \mintinline{cpp}|GL_NEAREST|
 \pause
-\item \verb|glBindBuffer| с ID буффера, который не был получен через \verb|glGenBuffers|
+\item \mintinline{cpp}|glBindBuffer| с ID буффера, который не был получен через \mintinline{cpp}|glGenBuffers|
 \pause
 \item etc.
 \end{itemize}
 \pause
-\item В таких случаях генерируется ошибка как особое значение типа \verb|GLenum|
+\item В таких случаях генерируется ошибка как особое значение типа \mintinline{cpp}|GLenum|
 \pause
 \item Как правило, вызвавшая ошибку операция не выполняется
 \pause
-\item \verb|glGetError()| -- получить значение ошибки, если она была
+\item \mintinline{cpp}|glGetError()| -- получить значение ошибки, если она была
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Ошибки OpenGL}
-Возможные значения ошибок:
+Возможные ошибки:
 \begin{itemize}
-\item \verb|GL_NO_ERROR| -- ошибки нет
+\item \mintinline{cpp}|GL_NO_ERROR| -- ошибки нет
 \pause
-\item \verb|GL_INVALID_ENUM| -- недопустимое значения перечисления (например, \verb|GL_TEXTURE_2D| как первый параметр \verb|glBindBuffer|)
+\item \mintinline{cpp}|GL_INVALID_ENUM| -- недопустимое значения перечисления (например, \mintinline{cpp}|GL_TEXTURE_2D| как первый параметр \mintinline{cpp}|glBindBuffer|)
 \pause
-\item \verb|GL_INVALID_VALUE| -- недопустимое значение числового аргумента (например, отрицательная ширина текстуры в \verb|glTexImage2D|)
+\item \mintinline{cpp}|GL_INVALID_VALUE| -- недопустимое значение числового аргумента (например, отрицательная ширина текстуры в \mintinline{cpp}|glTexImage2D|)
 \pause
-\item \verb|GL_INVALID_OPERATION| -- недопустимая операция (например, \verb|glUniform1i| при отсутствии текущей шейдерной программы)
+\item \mintinline{cpp}|GL_INVALID_OPERATION| -- недопустимая операция (например, \mintinline{cpp}|glUniform1i| при отсутствии текущей шейдерной программы)
 \pause
-\item \verb|GL_INVALID_FRAMEBUFFER_OPERATION| -- операция рисования/чтения пикселей с невалидным framebuffer'ом (о них чуть позже)
+\item \mintinline{cpp}|GL_INVALID_FRAMEBUFFER_OPERATION| -- операция рисования/чтения пикселей с невалидным framebuffer'ом (о них чуть позже)
 \pause
-\item \verb|GL_OUT_OF_MEMORY| -- закончилась память на GPU (может быть вызвана любой OpenGL-командой, обычно не обрабатывается)
+\item \mintinline{cpp}|GL_OUT_OF_MEMORY| -- закончилась память на GPU (может быть вызвана любой OpenGL-командой, обычно не обрабатывается)
 \end{itemize}
 \end{frame}
 
@@ -95,15 +102,19 @@
 \item Документация к каждой функции описывает все возможные ошибки, которые эта функция может вызвать, и в каких случаях
 \pause
 \begin{itemize}
-\item N.B. \verb|GL_OUT_OF_MEMORY| нигде не указан, потому что может появиться где угодно
+\item \textbf{\alert{N.B.}} \mintinline{cpp}|GL_OUT_OF_MEMORY| нигде не указан, потому что может появиться \textit{где угодно}
 \end{itemize}
 \pause
-\item Не все ошибки покрываются этим механизмом (например: \verb|glDrawArrays| с правильно настроенным VAO но с пустым VBO с вершинами)
+\item Не все ошибки покрываются этим механизмом
+\pause
+\begin{itemize}
+\item Например, \mintinline{cpp}|glDrawArrays| с правильно настроенным VAO но с пустым VBO с вершинами
+\end{itemize}
 \pause
 \item Нет информации о том, какая именно функция вызвала ошибку (любая из тех, что были вызваны до \verb|glGetError|)
 \pause
 \begin{itemize}
-\item \begin{math}\Rightarrow\end{math} Придётся расставлять проверку после каждого OpenGL-вызова
+\item \begin{math}\Rightarrow\end{math} Придётся расставлять проверку после \textit{каждого} OpenGL-вызова
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -111,31 +122,35 @@
 \begin{frame}[fragile]
 \frametitle{Ошибки OpenGL}
 \begin{itemize}
-\item Драйвер может хранить один флаг ошибки, и пропускать все последующие ошибки до вызова \verb|glGetError|
+\item Драйвер может хранить один флаг ошибки, и пропускать все последующие ошибки до вызова \mintinline{cpp}|glGetError|
 \pause
-\item Драйвер может хранить несколько флагов, и \verb|glGetError| возвращает и очищает любой из них
+\item Драйвер может хранить несколько флагов, и \mintinline{cpp}|glGetError| возвращает и очищает любой из них
 \pause
-\item \begin{math}\Rightarrow\end{math} Чтобы очистить ошибки, нужно вызывать \verb|glGetError| в цикле:
+\item Драйвер может хранить очередь ошибок, и \mintinline{cpp}|glGetError| возвращает их в порядке появления
+\pause
+\item \begin{math}\Longrightarrow\end{math} Чтобы очистить ошибки, нужно вызывать \mintinline{cpp}|glGetError| в цикле:
 \end{itemize}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 while (glGetError() != GL_NO_ERROR);
-\end{verbatim}
+\end{minted}
+\usemintedstyle{solarized-light}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Ошибки OpenGL}
 \begin{itemize}
-\item OpenGL 4.3+ (или расширение \verb|GL_ARB_debug_output|): более удобный механизм, \verb|glDebugMessageCallback|
+\item OpenGL 4.3+ (или расширение \mintinline{cpp}|GL_ARB_debug_output|): более удобный механизм, \mintinline{cpp}|glDebugMessageCallback|
 \pause
-\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Error}{\nolinkurl{khronos.org/opengl/wiki/OpenGL\_Error}}
-\item \href{https://docs.gl/gl3/glGetError}{\nolinkurl{docs.gl/gl3/glGetError}}
+\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Error}{\texttt{khronos.org/opengl/wiki/OpenGL\_Error}}
+\item \href{https://docs.gl/gl3/glGetError}{\texttt{docs.gl/gl3/glGetError}}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Расширения OpenGL}
 \begin{itemize}
-\item Предоставляют дополнительную функциональность за рамками возможностей конкретной версии OpenGL\only<2->{, например}
+\item Предоставляют дополнительную функциональность за рамками возможностей конкретной версии OpenGL
 \pause
 \begin{itemize}
 \item Конкретный производитель выпустил новую функциональность
@@ -151,12 +166,18 @@ while (glGetError() != GL_NO_ERROR);
 \frametitle{Расширения OpenGL}
 \begin{itemize}
 \item Имя расширения имеет особый префикс:
+\pause
 \begin{itemize}
 \item ARB (\textit{Architectural Review Board}) -- функциональность, которая (скорее всего) войдёт в следующий стандарт
+\pause
 \item EXT -- широко распространённая функциональность
+\pause
 \item NV -- расширение от Nvidia (возможно, доступно и на других видеокартах)
+\pause
 \item AMD -- расширение от AMD (возможно, доступно и на других видеокартах)
+\pause
 \item APPLE -- расширение от APPLE (возможно, доступно и на других видеокартах)
+\pause
 \item И т.д.
 \end{itemize}
 \end{itemize}
@@ -167,18 +188,18 @@ while (glGetError() != GL_NO_ERROR);
 \begin{itemize}
 \item Расширение -- набор констант и функций (как и конкретная версия OpenGL)
 \pause
-\item Функции нужно загружать, так же, как и функции самого OpenGL
+\item Функции нужно загружать так же, как и функции самого OpenGL
 \pause
 \item Константы и перечисления заканчиваются на суффикс в зависимости от типа расширения:
 \begin{itemize}
-\item \verb|ARB_debug_output|: \verb|glDebugMessageCallbackARB|, \verb|GL_DEBUG_SEVERITY_HIGH_ARB|
-\item \verb|EXT_texture_filter_anisotropic|: \verb|GL_TEXTURE_MAX_ANISOTROPY_EXT|
-\item \verb|NV_texture_barrier|: \verb|glTextureBarrierNV|
+\item \mintinline{cpp}|ARB_debug_output|: \mintinline{cpp}|glDebugMessageCallbackARB|, \mintinline{cpp}|GL_DEBUG_SEVERITY_HIGH_ARB|
+\item \mintinline{cpp}|EXT_texture_filter_anisotropic|: \mintinline{cpp}|GL_TEXTURE_MAX_ANISOTROPY_EXT|
+\item \mintinline{cpp}|NV_texture_barrier|: \mintinline{cpp}|glTextureBarrierNV|
 \end{itemize}
 \pause
-\item Исключение: core extensions -- предоставляют функциональность новых версий OpenGL в старых версиях OpenGL
+\item Исключение: \textit{core extensions} -- предоставляют функциональность новых версий OpenGL в старых версиях OpenGL
 \begin{itemize}
-\item Имеют тип \verb|ARB|
+\item Имеют префикс \mintinline{cpp}|ARB|
 \item Не имеют суффиксов в названиях функций и констант
 \end{itemize}  
 \end{itemize}
@@ -189,36 +210,38 @@ while (glGetError() != GL_NO_ERROR);
 \begin{itemize}
 \item Получить список поддерживаемых расширений:
 \end{itemize}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 GLint numExtensions;
 glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 for (GLint i = 0; i < numExtensions; ++i) {
     std::cout << glGetStringi(GL_EXTENSIONS, i) << "\n";
 }
-\end{verbatim}
+\end{minted}
 \pause
 \begin{itemize}
 \item GLEW загружает их автоматически:
 \end{itemize}
-\begin{verbatim}
+\begin{minted}[bgcolor=codebg]{cpp}
 if (GLEW_EXT_texture_filter_anisotropic) {
     std::cout << "Anisotropic filtering is supported\n";
 }
-\end{verbatim}
+\end{minted}
+\usemintedstyle{solarized-light}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Расширения OpenGL}
 \begin{itemize}
-\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Extension}{\nolinkurl{khronos.org/opengl/wiki/OpenGL\_Extension}}
-\item \href{https://www.khronos.org/registry/OpenGL/index_gl.php}{\nolinkurl{khronos.org/registry/OpenGL/index\_gl.php}} -- список всех зарегистрированных расширений
+\item \href{https://www.khronos.org/opengl/wiki/OpenGL_Extension}{\texttt{khronos.org/opengl/wiki/OpenGL\_Extension}}
+\item \href{https://www.khronos.org/registry/OpenGL/index_gl.php}{\texttt{khronos.org/registry/OpenGL/index\_gl.php}} -- список всех зарегистрированных расширений
 \end{itemize}
 \end{frame}
 
 \begin{frame}<1-3>[fragile,label=blending]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
-\item Результат фрагментного шейдера (\verb|layout (location = 0) vec4 out_color;|) записывается в пиксель экрана, стирая то, что было в нём до этого
+\item По умолчанию результат фрагментного шейдера (\mintinline{glsl}|layout (location = 0) vec4 out_color;|) записывается в пиксель экрана, стирая то, что было в нём до этого
 \pause
 \item Иногда мы хотим `смешать' результат и пиксель экрана, и записать результат смешивания
 \pause
@@ -284,7 +307,7 @@ if (GLEW_EXT_texture_filter_anisotropic) {
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
-\item Включается/выключается: \verb|glEnable(GL_BLEND)|
+\item Включается/выключается: \mintinline{cpp}|glEnable(GL_BLEND)|
 \pause
 \item Уравнение blending'а:
 \begin{center}
@@ -293,24 +316,33 @@ dst \leftarrow f(C_{src} \cdot src, C_{dst} \cdot dst)
 \end{math}
 \end{center}
 \pause
+\begin{itemize}
 \item \begin{math}src\end{math} -- результат фрагментного шейдера
+\pause
 \item \begin{math}dst\end{math} -- пиксель на экране
+\pause
 \item \begin{math}f\end{math} -- настраиваемая функция
+\pause
 \item \begin{math}C_{src}\end{math} и \begin{math}C_{dst}\end{math} -- настраиваемые веса
 \end{itemize}
+\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
-\item Настройка функции \begin{math}f\end{math}: \verb|glBlendEquation(GLenum equation)|:
+\item Настройка функции \begin{math}f\end{math}: \mintinline{cpp}|glBlendEquation(GLenum equation)|:
 \pause
 \begin{itemize}
-\item \verb|GL_FUNC_ADD|: \begin{math}f(src, dst) = src + dst\end{math}
-\item \verb|GL_FUNC_SUBTRACT|: \begin{math}f(src, dst) = src - dst\end{math}
-\item \verb|GL_FUNC_REVERSE_SUBTRACT|: \begin{math}f(src, dst) = dst - src\end{math}
-\item \verb|GL_MIN|: \begin{math}f(src, dst) = \min(src, dst)\end{math}
-\item \verb|GL_MAX|: \begin{math}f(src, dst) = \max(src, dst)\end{math}
+\item \mintinline{cpp}|GL_FUNC_ADD|: \begin{math}f(src, dst) = src + dst\end{math}
+\pause
+\item \mintinline{cpp}|GL_FUNC_SUBTRACT|: \begin{math}f(src, dst) = src - dst\end{math}
+\pause
+\item \mintinline{cpp}|GL_FUNC_REVERSE_SUBTRACT|: \begin{math}f(src, dst) = dst - src\end{math}
+\pause
+\item \mintinline{cpp}|GL_MIN|: \begin{math}f(src, dst) = \min(src, dst)\end{math}
+\pause
+\item \mintinline{cpp}|GL_MAX|: \begin{math}f(src, dst) = \max(src, dst)\end{math}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -318,15 +350,20 @@ dst \leftarrow f(C_{src} \cdot src, C_{dst} \cdot dst)
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
-\item Настройка весов \begin{math}C_{src}\end{math} и \begin{math}C_{dst}\end{math}: \verb|glBlendFunc(GLenum src, GLenum dst)|:
+\item Настройка весов \begin{math}C_{src}\end{math} и \begin{math}C_{dst}\end{math}: \mintinline{cpp}|glBlendFunc(GLenum src, GLenum dst)|:
 \pause
 \begin{itemize}
-\item \verb|GL_ZERO|: \begin{math}C = 0\end{math}
-\item \verb|GL_ONE|: \begin{math}C = 1\end{math}
-\item \verb|GL_SRC_COLOR|: \begin{math}C = src\end{math}
-\item \verb|GL_ONE_MINUS_SRC_COLOR|: \begin{math}C = 1 - src\end{math}
-\item \verb|GL_SRC_ALPHA|: \begin{math}C = src_A\end{math}
-\item \verb|GL_ONE_MINUS_SRC_ALPHA|: \begin{math}C = 1 - src_A\end{math}
+\item \mintinline{cpp}|GL_ZERO|: \begin{math}C = 0\end{math}
+\pause
+\item \mintinline{cpp}|GL_ONE|: \begin{math}C = 1\end{math}
+\pause
+\item \mintinline{cpp}|GL_SRC_COLOR|: \begin{math}C = src\end{math}
+\pause
+\item \mintinline{cpp}|GL_ONE_MINUS_SRC_COLOR|: \begin{math}C = 1 - src\end{math}
+\pause
+\item \mintinline{cpp}|GL_SRC_ALPHA|: \begin{math}C = src_A\end{math}
+\pause
+\item \mintinline{cpp}|GL_ONE_MINUS_SRC_ALPHA|: \begin{math}C = 1 - src_A\end{math}
 \item И т.д.
 \end{itemize}
 \end{itemize}
@@ -335,7 +372,7 @@ dst \leftarrow f(C_{src} \cdot src, C_{dst} \cdot dst)
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
-\item Обычно \begin{math}src=(R,G,B,A)\end{math} означает, что цвет имеет полупрозрачность \begin{math}A\end{math}
+\item Обычно \begin{math}src=(R,G,B,A)\end{math} означает, что цвет имеет полупрозрачность (точнее -- \textit{непрозрачность}, или \textit{opacity}) равную \begin{math}A\end{math}
 \begin{itemize}
 \item \begin{math}A=0\end{math} -- полностью прозрачный цвет
 \item \begin{math}A=1\end{math} -- полностью непрозрачный цвет
@@ -344,17 +381,19 @@ dst \leftarrow f(C_{src} \cdot src, C_{dst} \cdot dst)
 \item Для этого нужна такая формула смешивания:
 \begin{center}
 \begin{math}
-dst \leftarrow src_A \cdot src + (1 - src_A) \cdot dst
+dst \leftarrow src_A \cdot src + (1 - src_A) \cdot dst = \operatorname{lerp}(dst, src, src_A)
 \end{math}
 \end{center}
 \pause
 \item Этому соответстует настройка
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 glBlendEquation(GL_FUNC_ADD);
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-\end{verbatim}
+\end{minted}
+\usemintedstyle{solarized-light}
 \pause
-\item Это самый типичный способ использовать blending
+\item Это \textit{самый типичный} способ использовать blending
 \end{itemize}
 \end{frame}
 
@@ -362,7 +401,7 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \frametitle{Blending (смешивание)}
 \begin{itemize}
 \item Такое смешивание некоммутативно, т.е. результат зависит от порядка рисования
-\item Бывают конкретные ситуации, когда коммутативность не нарушается (наложение двух объектов с \verb|A = 0.5| или наложение нескольких объектов одинакового цвета)
+\item Бывают конкретные ситуации, когда коммутативность не нарушается (наложение двух объектов с \mintinline{cpp}|A = 0.5| или наложение нескольких объектов одинакового цвета)
 \end{itemize}
 \slideimage{two-squares.png}
 \end{frame}
@@ -379,21 +418,30 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \frametitle{Blending (смешивание)}
 \begin{itemize}
 \item В общем случае нужно сортировать полупрозрачные объекты и рисовать в порядке уменьшения расстояния до камеры
+\pause
 \begin{itemize}
 \item Что именно считать расстоянием до камеры (расстояние от центра объекта / от ближайшей вершины / от самой далёкой вершины / среднее между минимальным и максимальным расстоянием) -- большой вопрос
+\pause
 \item Для любого варианта можно найти примеры, ломающие его (цикл между объектами, накрывающими друг друга)
 \end{itemize}
+\pause
 \item Order-independent transparency (OIT) -- активная тема исследований
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Сортировка по расстоянию до камеры
+\end{itemize}
 \slideimage{blending_sorted.png}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Случай, когда сортировка не поможет
+\end{itemize}
 \slideimage{painters.png}
 \end{frame}
 
@@ -403,10 +451,10 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \item Один часто используемый вариант смешивания -- аддитивное смешивание
 \item \begin{math}dst \leftarrow src + dst\end{math} или \begin{math}dst \leftarrow src_A \cdot src + dst\end{math}
 \pause
-\item \verb|glBlendEquation(GL_FUNC_ADD)|
-\item \verb|glBlendFunc(GL_ONE, GL_ONE)| или \verb|glBlendFunc(GL_SRC_ALPHA, GL_ONE)|
+\item \mintinline{cpp}|glBlendEquation(GL_FUNC_ADD)|
+\item \mintinline{cpp}|glBlendFunc(GL_ONE, GL_ONE)| или \mintinline{cpp}|glBlendFunc(GL_SRC_ALPHA, GL_ONE)|
 \pause
-\item Такое смешивание коммутативно!
+\item Такое смешивание коммутативно \begin{math}\Longrightarrow\end{math} не важно, в каком порядке рисовать объекты
 \pause
 \item Heatmaps, облака точек
 \end{itemize}
@@ -429,9 +477,9 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
-\item \href{https://www.khronos.org/opengl/wiki/Blending}{\nolinkurl{khronos.org/opengl/wiki/Blending}}
-\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency/}{\nolinkurl{opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency}}
-\item \href{https://learnopengl.com/Advanced-OpenGL/Blending}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Blending}}
+\item \href{https://www.khronos.org/opengl/wiki/Blending}{\texttt{khronos.org/opengl/wiki/Blending}}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency/}{\texttt{opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Blending}{\texttt{learnopengl.com/Advanced-OpenGL/Blending}}
 \end{itemize}
 \end{frame}
 
@@ -440,28 +488,28 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{itemize}
 \item Особый буфер, хранящий произвольные данные (почти всегда unsigned 8-bit на каждый пиксель), с особыми побитовыми операциями над ними
 \pause
-\item Чем-то аналогичен буферу глубины: тоже хранит какие-то данные, такого же размера (как и цветовой буфер), тоже позволяет рисовать или не рисовать пиксель по какому-то условию (stencil test -- происходит перед depth test'ом)
+\item Чем-то аналогичен буферу глубины: тоже хранит какие-то данные, такого же размера (как и цветовой буфер), тоже позволяет рисовать или не рисовать пиксель по какому-то условию (stencil test -- происходит \textit{перед} depth test'ом)
 \pause
 \item У дефолтного фреймбуфера часто есть свой stencil буфер (зависит от настроек контекста OpenGL)
 \pause
-\item Можно (и нужно, если вы его используете) очищать как \verb|glClear(GL_STENCIL_BUFFER_BIT|)
+\item Можно (и нужно, если вы его используете) очищать как \mintinline{cpp}|glClear(GL_STENCIL_BUFFER_BIT|)
 \pause
-\item Настроить значение, которым очищается буфер: \verb|glClearStencil|
+\item Настроить значение, которым очищается буфер: \mintinline{cpp}|glClearStencil|
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Stencil тест}
 \begin{itemize}
-\item Включить/выключить stencil тест: \verb|glEnable/glDisable(GL_STENCIL_TEST)|
+\item Включить/выключить stencil тест: \mintinline{cpp}|glEnable/glDisable(GL_STENCIL_TEST)|
 \pause
-\item Настроить stencil тест: \verb|glStencilFunc(func, ref, mask)|
+\item Настроить stencil тест: \mintinline{cpp}|glStencilFunc(func, ref, mask)|
 \begin{itemize}
-\item \verb|func| -- одна из констант \verb|GL_ALWAYS|, \verb|GL_LESS|, \verb|GL_GREATER|, \verb|GL_EQUAL|, ...
-\item \verb|ref| -- референсное значение для теста
-\item \verb|mask| -- побитовая маска для теста
+\item \mintinline{cpp}|func| -- одна из констант \mintinline{cpp}|GL_ALWAYS|, \mintinline{cpp}|GL_LESS|, ...
+\item \mintinline{cpp}|ref| -- референсное значение для теста
+\item \mintinline{cpp}|mask| -- побитовая маска для теста
 \end{itemize}
-\item Stencil тест: \verb|func(ref & mask, stencil & mask)|
+\item Stencil тест: \mintinline{cpp}|func(ref & mask, stencil & mask)|
 \pause
 \item Так же, как с depth тестом: если stencil тест не прошёл, пиксель не будет нарисован
 \end{itemize}
@@ -470,23 +518,12 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{frame}[fragile]
 \frametitle{Stencil тест}
 \begin{itemize}
-\item Как записать значение в stencil буфер? \pause \verb|glStencilOp(sfail, dpfail, dppass)|
-\begin{itemize}
-\item \verb|sfail| -- что делать, если пиксель не прошёл stencil тест
-\item \verb|dpfail| -- что делать, если пиксель прошёл stencil тест, но не прошёл depth тест
-\item \verb|dppass| -- что делать, если пиксель прошёл оба теста
-\end{itemize}
+\item Как записать значение в stencil буфер? \pause \mintinline{cpp}|glStencilOp(sfail, dpfail, dppass)|
 \pause
-\item Возможные значение \verb|sfail|, \verb|dpfail| и \verb|dppass|:
 \begin{itemize}
-\item \verb|GL_KEEP| -- не менять записанное значение
-\item \verb|GL_ZERO| -- записать 0
-\item \verb|GL_INVERT| -- побитово обратить
-\item \verb|GL_REPLACE| -- записать \verb|ref| из функции \verb|glStencilFunc|
-\item \verb|GL_INCR| -- увеличить на 1, если значение меньше максимального
-\item \verb|GL_DECR| -- уменьшить на 1, если значение больше минимального (0)
-\item \verb|GL_INCR_WRAP| -- увеличить на 1 с целочисленным переполнением
-\item \verb|GL_DECR_WRAP| -- уменьшить на 1 с целочисленным переполнением
+\item \mintinline{cpp}|sfail| -- что делать, если пиксель не прошёл stencil тест
+\item \mintinline{cpp}|dpfail| -- что делать, если пиксель прошёл stencil тест, но не прошёл depth тест
+\item \mintinline{cpp}|dppass| -- что делать, если пиксель прошёл оба теста
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -494,9 +531,26 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{frame}[fragile]
 \frametitle{Stencil тест}
 \begin{itemize}
-\item Дополнительно можно включать/выключать запись отдельных битов stencil буфера: \verb|glStencilMask|
+\item Возможные значение \mintinline{cpp}|sfail|, \mintinline{cpp}|dpfail| и \mintinline{cpp}|dppass|:
+\begin{itemize}
+\item \mintinline{cpp}|GL_KEEP| -- не менять записанное значение
+\item \mintinline{cpp}|GL_ZERO| -- записать 0
+\item \mintinline{cpp}|GL_INVERT| -- побитово обратить
+\item \mintinline{cpp}|GL_REPLACE| -- записать \mintinline{cpp}|ref| из функции \mintinline{cpp}|glStencilFunc|
+\item \mintinline{cpp}|GL_INCR| -- увеличить на 1, если значение меньше максимального
+\item \mintinline{cpp}|GL_DECR| -- уменьшить на 1, если значение больше минимального (0)
+\item \mintinline{cpp}|GL_INCR_WRAP| -- увеличить на 1 с целочисленным переполнением
+\item \mintinline{cpp}|GL_DECR_WRAP| -- уменьшить на 1 с целочисленным переполнением
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Stencil тест}
+\begin{itemize}
+\item Дополнительно можно включать/выключать запись отдельных битов stencil буфера: \mintinline{cpp}|glStencilMask|
 \pause
-\item Все параметры stencil теста можно настраивать отдельно для front и back граней функциями \verb|glStencilFuncSeparate|, \verb|glStencilOpSeparate|, \verb|glStencilMaskSeparate|
+\item Все параметры stencil теста можно настраивать отдельно для front и back граней функциями \mintinline{cpp}|glStencilFuncSeparate|, \mintinline{cpp}|glStencilOpSeparate|, \mintinline{cpp}|glStencilMaskSeparate|
 \end{itemize}
 \end{frame}
 
@@ -523,7 +577,7 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \item Любая ситуация, в которой нужно ограничить рисование определённых пикселей:
 \pause
 \begin{itemize}
-\item Симулятор самолёта: сначала рисуется внутренность самолёта, затем -- окружающий мир, только там, где не был нарисован самолёт \begin{math}\Rightarrow\end{math} можно избежать проблем с точностью буфера глубины
+\item Симулятор самолёта: сначала рисуется внутренность самолёта, затем -- окружающий мир, только там, где не был нарисован самолёт \begin{math}\Longrightarrow\end{math} можно избежать проблем с точностью буфера глубины
 \pause
 \item UI, который нужно нарисовать в какой-то ограниченной области экрана (например, scroll)
 \pause
@@ -537,21 +591,21 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \slideimage{shadow-volumes.jpeg}
 \end{frame}
 
-\againframe<2-3>{stencil_examples}
+\againframe<1-3>{stencil_examples}
 
 \begin{frame}[fragile]
 \frametitle{Microsoft flight simulator}
 \slideimage{flight-simulator.jpg}
 \end{frame}
 
-\againframe<4>{stencil_examples}
+\againframe<3-4>{stencil_examples}
 
 \begin{frame}[fragile]
 \frametitle{Unity Scroll View}
 \slideimage{scroll-view.png}
 \end{frame}
 
-\againframe<5>{stencil_examples}
+\againframe<4-5>{stencil_examples}
 
 \begin{frame}[fragile]
 \frametitle{Невыпуклый полигон}
@@ -561,10 +615,10 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{frame}[fragile]
 \frametitle{Stencil буфер: ссылки}
 \begin{itemize}
-\item \href{https://www.khronos.org/opengl/wiki/Stencil_Test}{\nolinkurl{khronos.org/opengl/wiki/Stencil\_Test}}
-\item \href{https://learnopengl.com/Advanced-OpenGL/Stencil-testing}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Stencil-testing}}
-\item \href{https://open.gl/depthstencils}{\nolinkurl{open.gl/depthstencils}}
-\item \href{https://en.wikibooks.org/wiki/OpenGL_Programming/Stencil_buffer}{\nolinkurl{en.wikibooks.org/wiki/OpenGL\_Programming/Stencil\_buffer}}
+\item \href{https://www.khronos.org/opengl/wiki/Stencil_Test}{\texttt{khronos.org/opengl/wiki/Stencil\_Test}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Stencil-testing}{\texttt{learnopengl.com/Advanced-OpenGL/Stencil-testing}}
+\item \href{https://open.gl/depthstencils}{\texttt{open.gl/depthstencils}}
+\item \href{https://en.wikibooks.org/wiki/OpenGL_Programming/Stencil_buffer}{\nolinkurl{en.wikibooks.org/wiki/OpenGL_Programming/Stencil_buffer}}
 \end{itemize}
 \end{frame}
 
@@ -573,9 +627,9 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{itemize}
 \item OpenGL-объект, хранящий настройки того, куда осуществляется рисование
 \pause
-\item Не владеет памятью, только ссылается на неё
+\item \textbf{\alert{Не владеет}} памятью, только ссылается на неё
 \pause
-\item Может иметь depth buffer, stencil buffer, и несколько color buffer'ов
+\item Может иметь свой depth buffer, stencil buffer, и несколько color buffer'ов
 \pause
 \item Общепринятая аббревиатура: FBO
 \end{itemize}
@@ -584,30 +638,26 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{frame}[fragile]
 \frametitle{Framebuffer}
 \begin{itemize}
-\item Создание/удаление: \verb|glGenFramebuffers|/\verb|glDeleteFramebuffers|
+\item Создание/удаление: \mintinline{cpp}|glGenFramebuffers|/\mintinline{cpp}|glDeleteFramebuffers|
 \pause
-\item Сделать текущим: \verb|glBindFramebuffer|
+\item Сделать текущим: \mintinline{cpp}|glBindFramebuffer|
 \pause
 \item Два значения target:
 \begin{itemize}
-\item \verb|GL_DRAW_FRAMEBUFFER| -- в этот фреймбуфер рисуют все операции рисования (\verb|glDrawArrays|, etc), этот фреймбуфер очищает \verb|glClear|
+\item \mintinline{cpp}|GL_DRAW_FRAMEBUFFER| -- в этот фреймбуфер рисуют все операции рисования (\mintinline{cpp}|glDrawArrays|, etc), этот фреймбуфер очищает \mintinline{cpp}|glClear|
 \pause
-\item \verb|GL_READ_FRAMEBUFFER| -- из этого фреймбуфера читают операции чтения
+\item \mintinline{cpp}|GL_READ_FRAMEBUFFER| -- из этого фреймбуфера читают операции чтения
 \end{itemize}  
 \pause
-\item Можно вызвать \verb|glBindFramebuffer(GL_FRAMEBUFFER, fbo)| -- это эквивалентно
-\begin{verbatim}
-glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-\end{verbatim}
-\item Советую не использовать \verb|GL_FRAMEBUFFER|
+\item Значение target \mintinline{cpp}|GL_FRAMEBUFFER| иногда ведёт себя как \mintinline{cpp}|GL_DRAW_FRAMEBUFFER|, а иногда -- как \mintinline{cpp}|DRAW+READ|
+\item Советую \textit{не использовать} \mintinline{cpp}|GL_FRAMEBUFFER|
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Default framebuffer}
 \begin{itemize}
-\item Особый объект, имеет ID = 0
+\item Default framebuffer -- особый объект, имеет ID = 0
 \pause
 \item Создаётся при создании OpenGL-контекста
 \pause
@@ -615,7 +665,7 @@ glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 \pause
 \item Для него форматы цвета, буфера глубины и stencil буфера настраиваются при создании контекста
 \pause
-\item Нельзя настроить по-другому или удалить
+\item \textit{Нельзя} настроить по-другому или удалить
 \end{itemize}
 \end{frame}
 
@@ -624,84 +674,86 @@ glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 \begin{itemize}
 \item Напрямую писать во фреймбуфер нельзя!
 \pause
-\item Можно \textit{рисовать} с его помощью в текстуру
-\item Все операции рисования (\verb|glDraw*|) рисуют в текущий \verb|GL_DRAW_FRAMEBUFFER|
-\item \textit{Render to texture}
+\item Можно \textit{скопировать} пиксели из одного фреймбуфера в другой
+\pause
+\item Можно \textit{рисовать} с помощью фреймбуфера в текстуру
+\pause
+\item Все операции рисования \mintinline{cpp}|glDraw*| рисуют в текущий \mintinline{cpp}|GL_DRAW_FRAMEBUFFER|
+\pause
+\item Приём рисования в текстуру называется \textit{render to texture}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Чтение из фреймбуфера}
 \begin{itemize}
-\item \verb|glReadPixels| -- копирует на CPU пиксели из определённого участка текущего \verb|GL_READ_FRAMEBUFFER| (можно прочитать цвет, глубину или stencil)
+\item \mintinline{cpp}|glReadPixels| -- копирует на CPU пиксели из определённого участка текущего \mintinline{cpp}|GL_READ_FRAMEBUFFER| (можно прочитать цвет, глубину или stencil)
 \pause
-\item \verb|glBlitFramebuffer| -- копирует пиксели из определённого участка текущего \verb|GL_READ_FRAMEBUFFER| в определённый участок текущего \verb|GL_DRAW_FRAMEBUFFER| (можно скопировать цвет, глубину или stencil)
+\item \mintinline{cpp}|glBlitFramebuffer| -- копирует пиксели из определённого участка текущего \mintinline{cpp}|GL_READ_FRAMEBUFFER| в определённый участок текущего \mintinline{cpp}|GL_DRAW_FRAMEBUFFER| (можно скопировать цвет, глубину или stencil)
+\pause
+\item \mintinline{cpp}|glReadBuffer| -- настроить, из какого \textit{attachment}'а текущего \mintinline{cpp}|GL_READ_FRAMEBUFFER| мы хотим читать
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Framebuffer attachments}
 \begin{itemize}
-\item Текстура, на которую ссылается фреймбуфер, называется attachment
+\item Текстура, на которую ссылается фреймбуфер, называется \textit{attachment}
 \pause
-\item У каждого фреймбуфера есть набор attachment points
+\item У каждого фреймбуфера есть набор \textit{attachment points}
 \pause
-\item \verb|GL_COLOR_ATTACHMENT0|, ... \verb|GL_COLOR_ATTACHMENT7| -- цветовые буферы
-\pause
-\begin{itemize}
-\item Максимальное количество: \verb|glGet(GL_MAX_COLOR_ATTACHMENTS)|
-\end{itemize}
-\pause
-\item \verb|GL_DEPTH_ATTACHMENT| -- буфер глубины
-\item \verb|GL_STENCIL_ATTACHMENT| -- stencil буфер
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Framebuffer attachments}
-\begin{itemize}
-\item Связать текстуру с фреймбуфером: \verb|glFramebufferTexture(target, attachment, texture, level)|
+\item \mintinline{cpp}|GL_COLOR_ATTACHMENT0|, ... \mintinline{cpp}|GL_COLOR_ATTACHMENT7| -- цветовые буферы
 \pause
 \begin{itemize}
-\item \verb|target| -- текстура будет привязана к текущему фреймбуферу с таким таргетом (\verb|GL_READ_FRAMEBUFFER| или \verb|GL_DRAW_FRAMEBUFFER|)
-\pause
-\item \verb|attachment| -- \verb|GL_COLOR_ATTACHMENT0|, ...
-\pause
-\item \verb|texture| -- ID текстуры (делать саму текстуру текущей не нужно!)
-\pause
-\item \verb|level| -- mipmap-уровень текстуры, в который будет осуществляться рисование (обычно 0)
+\item Максимальное количество: \mintinline{cpp}|glGet(GL_MAX_COLOR_ATTACHMENTS)|
 \end{itemize}
+\pause
+\item \mintinline{cpp}|GL_DEPTH_ATTACHMENT| -- буфер глубины
+\item \mintinline{cpp}|GL_STENCIL_ATTACHMENT| -- stencil буфер
+\item \mintinline{cpp}|GL_DEPTH_STENCIL_ATTACHMENT| -- буфер глубины + stencil буфер в одной текстуре
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Framebuffer attachments}
 \begin{itemize}
-\item Можно привязать несколько текстур к одному фреймбуферу (в т.ч. иметь несколько цветовых буферов -- соответственно, несколько \verb|out|-переменных во фрагментном шейдере)
+\item Связать текстуру с фреймбуфером: \mintinline{cpp}|glFramebufferTexture(target, attachment, texture, level)|
+\pause
+\begin{itemize}
+\item \mintinline{cpp}|target| -- таргет фреймбуфера (\mintinline{cpp}|GL_READ_FRAMEBUFFER| или \mintinline{cpp}|GL_DRAW_FRAMEBUFFER|)
+\pause
+\item \mintinline{cpp}|attachment| -- \mintinline{cpp}|GL_COLOR_ATTACHMENT0|, ...
+\pause
+\item \mintinline{cpp}|texture| -- ID текстуры (делать саму текстуру текущей \textit{не нужно}!)
+\pause
+\item \mintinline{cpp}|level| -- mipmap-уровень текстуры, в который будет осуществляться рисование (обычно 0)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Framebuffer attachments}
+\begin{itemize}
+\item Можно привязать несколько текстур к одному фреймбуферу (в т.ч. иметь несколько цветовых буферов -- соответственно, несколько \mintinline{cpp}|out|-переменных во фрагментном шейдере)
 \pause
 \item Можно привязать одну текстуру к нескольким фреймбуферам
 \pause
 \item Можно привязать несколько разных mipmap-уровней одной текстуры к одному или нескольким фреймбуферам
 \pause
-\item Можно привязать одномерные и двумерные текстуры, грани cubemap-текстуры (\verb|glFramebufferTexture2D|), слои трёхмерных или 2D-array текстур (\verb|glFramebufferTexture3D| или \verb|glFramebufferTextureLayer|)
+\item Можно привязать одномерные и двумерные текстуры, грани cubemap-текстуры (\mintinline{cpp}|glFramebufferTexture2D|), слои трёхмерных или 2D-array текстур (\mintinline{cpp}|glFramebufferTexture3D| или \mintinline{cpp}|glFramebufferTextureLayer|)
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Framebuffer completeness}
 \begin{itemize}
-\item У фреймбуферов есть особое свойство -- completeness: правильно ли настроен фреймбуфер
+\item У фреймбуферов есть особое свойство -- \textit{completeness}: правильно ли настроен фреймбуфер
 \pause
-\item Фреймбуфер считается complete, если
-\begin{itemize}
-\item Размеры всех его attachment'ов совпадают
+\item В частности, чтобы фреймбуфер был \textit{complete}, нужно, чтобы все attachment'ы имели \textit{правильный формат}
 \pause
-\item Все attachment'ы имеют правильный формат
-\end{itemize}
+\item Проверить completeness -- \mintinline{cpp}|glCheckFramebufferStatus|: вернёт \mintinline{cpp}|GL_FRAMEBUFFER_COMPLETE| или некий код ошибки
 \pause
-\item Проверить completeness -- \verb|glCheckFramebufferStatus|: вернёт \verb|GL_FRAMEBUFFER_COMPLETE| или некий код ошибки
-\pause
-\item Рисовать в incomplete фреймбуфер нельзя!
+\item Рисовать в incomplete фреймбуфер -- ошибка
 \end{itemize}
 \end{frame}
 
@@ -710,13 +762,13 @@ glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 \begin{itemize}
 \item Что такое \textit{правильный формат}?
 \pause
-\item Для цветового буфера -- \textit{color-renderable} формат, т.е. любой цветовой формат: \verb|GL_RED|, \verb|GL_RGB8|, \verb|GL_RGBA8|, \verb|GL_RG32F|, ...
+\item Для цветового буфера -- \textit{color-renderable} формат, т.е. любой цветовой формат: \mintinline{cpp}|GL_RED|, \mintinline{cpp}|GL_RGB8|, \mintinline{cpp}|GL_RGBA8|, \mintinline{cpp}|GL_RG32F|, ...
 \pause
-\item Для буфера глубины -- \textit{depth-renderable} формат: \verb|GL_DEPTH_COMPONENT16|, \verb|GL_DEPTH_COMPONENT24|, \verb|GL_DEPTH_COMPONENT32F|, \verb|GL_DEPTH24_STENCIL8|, \verb|GL_DEPTH32F_STENCIL8|
+\item Для буфера глубины -- \textit{depth-renderable} формат: \mintinline{cpp}|GL_DEPTH_COMPONENT16|, \mintinline{cpp}|GL_DEPTH_COMPONENT24|, \mintinline{cpp}|GL_DEPTH_COMPONENT32F|, \mintinline{cpp}|GL_DEPTH24_STENCIL8|, \mintinline{cpp}|GL_DEPTH32F_STENCIL8|
 \pause
-\item Для stencil буфера -- \textit{stencil-renderable} формат: \verb|GL_DEPTH24_STENCIL8|, \verb|GL_DEPTH32F_STENCIL8|
+\item Для stencil буфера -- \textit{stencil-renderable} формат: \mintinline{cpp}|GL_DEPTH24_STENCIL8|, \mintinline{cpp}|GL_DEPTH32F_STENCIL8|
 \pause
-\item Некоторые форматы могут не поддерживаться конкретными драйверами/GPU
+\item Некоторые форматы могут \textit{не поддерживаться} конкретными драйверами/GPU
 \pause
 \item Есть небольшой список гарантированно поддерживаемых форматов (см. документацию)
 \end{itemize}
@@ -725,41 +777,42 @@ glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 \begin{frame}[fragile]
 \frametitle{Рисование во фреймбуфер}
 \begin{itemize}
-\item Все операции рисования (\verb|glDraw*|) рисуют в текущий \verb|GL_DRAW_FRAMEBUFFER|
+\item Все операции рисования \mintinline{cpp}|glDraw*| рисуют в текущий \mintinline{cpp}|GL_DRAW_FRAMEBUFFER|
 \pause
-\item Как связать attachments фреймбуфера с out-переменными фрагментного шейдера?
+\item Как связать attachments фреймбуфера с \mintinline{glsl}|out|-переменными фрагментного шейдера?
 \pause
-\item \verb|glDrawBuffers(n, buffers)|
+\item \mintinline{cpp}|glDrawBuffers(n, buffers)|
 \begin{itemize}
-\item \verb|buffers| -- массив констант \verb|GL_COLOR_ATTACHMENTi| или специальных значений для default фреймбуфера
-\item \verb|layout (location = k) out ...| будет писать в attachment, указанный в \verb|buffers[k]|
+\item \mintinline{cpp}|buffers| -- массив констант \mintinline{cpp}|GL_COLOR_ATTACHMENTi| или специальных значений для default фреймбуфера
+\item \mintinline{cpp}|layout (location = k) out ...| будет писать в attachment, указанный в \mintinline{cpp}|buffers[k]|
 \end{itemize}
 \pause
-\item N.B.: для рисования в default framebuffer обычно нужен \verb|buffers[] = {GL_FRONT_LEFT}|
+\item Эта настройка запоминается в самом фреймбуфере, её лучше делать один раз при создании фреймбуфера
 \pause
-\item Есть устаревшая функция \verb|glDrawBuffer| -- ей лучше не пользоваться
+\item Есть устаревшая функция \mintinline{cpp}|glDrawBuffer| -- ей лучше не пользоваться
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Viewport}
 \begin{itemize}
-\item \verb|glViewport| настраивает преобразование из координат \begin{math}[-1, 1]^2\end{math} в пиксельные координаты
+\item \mintinline{cpp}|glViewport| \textit{глобально} настраивает преобразование из координат \begin{math}[-1, 1]^2\end{math} в пиксельные координаты
 \pause
-\item Никак не связан с фреймбуфером
+\item Viewport \textit{никак не связан} с фреймбуфером
 \pause
-\item Но обычно мы хотим, чтобы viewport совпадал с размером текущего фреймбуфера
+\item Но обычно мы хотим, чтобы viewport совпадал с размером текущего фреймбуфера (он может не совпадать с размером экрана)
 \pause
-\item \begin{math}\Rightarrow\end{math} Перед рисованием с помощью фреймбуфера надо подумать о viewport'е
+\item \begin{math}\Longrightarrow\end{math} После каждого изменения текущего фреймбуфера полезно подумать о viewport'е
 \pause
-\item N.B. \verb|glClear| игнорирует viewport
+\item N.B. \mintinline{cpp}|glClear| \textit{игнорирует} viewport и очищает весь фреймбуфер
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Рисование в текстуру: инициализация}
 \fontsize{8pt}{8pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 GLuint fbo;
 glGenFramebuffers(1, &fbo);
 
@@ -768,19 +821,22 @@ glGenFramebuffers(1, &fbo);
 
 // привязываем текстуру
 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+glFramebufferTexture(GL_DRAW_FRAMEBUFFER,
+    GL_COLOR_ATTACHMENT0,
     fbo_color_texture, 0);
 
 // проверяем completeness
-if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)
+    != GL_FRAMEBUFFER_COMPLETE)
     throw std::runtime_error("Framebuffer incomplete");
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Рисование в текстуру: рисование}
+\frametitle{Рисование в текстуру: рендеринг}
 \fontsize{8pt}{8pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
 // Рисование в FBO
 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
@@ -798,8 +854,9 @@ GLenum draw_buffers[] = {GL_FRONT_LEFT};
 glDrawBuffers(1, draw_buffers);
 glClear(GL_COLOR_BUFFER_BIT);
 glViewport(0, 0, screen_width, screen_height);
-drawSomethingElse();
-\end{verbatim}
+drawSomethingElseUsing(fbo_color_texture);
+\end{minted}
+\usemintedstyle{solarized-light}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -807,7 +864,7 @@ drawSomethingElse();
 \begin{itemize}
 \item Объекты OpenGL, хранящие пиксели
 \pause
-\item Нельзя загрузить данные, нет режимов фильтрации, нет mipmaps \begin{math}\Rightarrow\end{math} могут быть быстрее текстур, и работать с ними проще
+\item Нельзя загрузить данные, нет режимов фильтрации, нет mipmaps \begin{math}\Longrightarrow\end{math} могут быть быстрее текстур, и работать с ними проще
 \pause
 \item Могут быть attachment'ами для фреймбуфера, вместо текстур
 \end{itemize}
@@ -816,13 +873,13 @@ drawSomethingElse();
 \begin{frame}[fragile]
 \frametitle{Renderbuffers}
 \begin{itemize}
-\item Создать/удалить: \verb|glGenRenderbuffers/glDeleteRenderbuffers|
+\item Создать/удалить: \mintinline{cpp}|glGenRenderbuffers/glDeleteRenderbuffers|
 \pause
-\item Сделать текущим: \verb|glBindRenderbuffer|, target = \verb|GL_RENDERBUFFER|
+\item Сделать текущим: \mintinline{cpp}|glBindRenderbuffer|, target = \mintinline{cpp}|GL_RENDERBUFFER|
 \pause
-\item Выделить память: \verb|glRenderbufferStorage|
+\item Выделить память: \mintinline{cpp}|glRenderbufferStorage|
 \pause
-\item Привязать renderbuffer к фреймбуферу: \verb|glFramebufferRenderbuffer|
+\item Привязать renderbuffer к фреймбуферу: \mintinline{cpp}|glFramebufferRenderbuffer|
 \end{itemize}
 \end{frame}
 
@@ -836,7 +893,7 @@ drawSomethingElse();
 \end{itemize}
 \end{frame}
 
-\begin{frame}<1-3>[fragile,label=fb_examples]
+\begin{frame}<1-2>[fragile,label=fb_examples]
 \frametitle{Примеры использования render to texture}
 \begin{itemize}
 \item Пост-обработка кадра -- реализуется рисованием кадра в текстуру, и затем рисованием полноэкранного прямоугольника на экран с нужным шейдером, читающим эту текстуру
@@ -861,7 +918,7 @@ drawSomethingElse();
 \pause
 \item Deferred shading
 \pause
-\item И много другого
+\item И очень много другого
 \end{itemize}
 \end{frame}
 
@@ -870,55 +927,55 @@ drawSomethingElse();
 \slideimage{blur.png}
 \end{frame}
 
-\againframe<4>{fb_examples}
+\againframe<2-3>{fb_examples}
 
 \begin{frame}[fragile]
 \frametitle{Свечение}
 \slideimage{bloom.png}
 \end{frame}
 
-\againframe<5>{fb_examples}
+\againframe<3-4>{fb_examples}
 
 \begin{frame}[fragile]
 \frametitle{Toon shading}
 \slideimage{toon-shading.jpg}
 \end{frame}
 
-\againframe<6-7>{fb_examples}
+\againframe<4-6>{fb_examples}
 
 \begin{frame}[fragile]
 \frametitle{FXAA}
 \slideimage{fxaa.jpg}
 \end{frame}
 
-\againframe<8-9>{fb_examples}
+\againframe<6-8>{fb_examples}
 
 \begin{frame}[fragile]
 \frametitle{Shadow mapping}
 \slideimage{shadow-maps.png}
 \end{frame}
 
-\againframe<10->{fb_examples}
+\againframe<8->{fb_examples}
 
 \begin{frame}[fragile]
 \frametitle{Размытие}
 \begin{itemize}
-\item Усреднение значений соседних пикселей
+\item Усреднение значений соседних пикселей в некоторой окрестности
 \pause
 \item Box blur: все веса одинаковые, получается слегка угловатым
 \pause
 \item Gaussian blur: веса пропорциональны гауссиане \begin{math}\exp\left(-\frac{x^2+y^2}{r^2}\right)\end{math}, получается равномерное сглаживание
 \pause
-\item Несколько итераций box blur похожи на один gaussian blur
+\item Несколько итераций box blur похожи на один gaussian blur (~центральная предельная теорема)
 \pause
-\item Обычно gaussian blur делают в два прохода: один размывает по горизонтали, второй -- по вертикали
+\item Обычно gaussian blur делают в два прохода: один размывает по горизонтали, второй -- по вертикали (\textit{separable blur})
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Box blur}
-\fontsize{10pt}{10pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
 uniform sampler2D source;
 
 in vec2 texcoord;
@@ -939,13 +996,14 @@ void main()
 
     out_color = sum / float((2*N+1)*(2*N+1));
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Gaussian blur}
 \fontsize{10pt}{10pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
 uniform sampler2D source;
 
 in vec2 texcoord;
@@ -970,7 +1028,7 @@ void main()
 
     out_color = sum / sum_w;
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -983,7 +1041,7 @@ void main()
 \begin{itemize}
 \item Edge detection + color grading
 \pause
-\item Edge detection: шейдер находит и выделяет резкие перепады цвета или глубины (используя, например, Sobel filter)
+\item Edge detection: шейдер находит и выделяет резкие перепады цвета или глубины (используя, например, \textit{Sobel filter})
 \pause
 \item Color grading: палитра цветов искусственно уменьшается (например, сжимается до 2-3 бит на канал)
 \end{itemize}
@@ -993,7 +1051,7 @@ void main()
 \frametitle{Ссылки}
 \begin{itemize}
 \item \href{https://learnopengl.com/Advanced-Lighting/Bloom}{\nolinkurl{learnopengl.com/Advanced-Lighting/Bloom}}
-\item \href{https://www.youtube.com/watch?v=uZlwbWqQKpc}{Gaussian blur (youtube video tutorial)}
+\item \href{https://www.youtube.com/watch?v=uZlwbWqQKpc}{\texttt{Gaussian blur (youtube video tutorial)}}
 \end{itemize}
 \end{frame}
 
