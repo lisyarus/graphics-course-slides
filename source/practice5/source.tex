@@ -1,13 +1,15 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
+
+\usetheme{metropolis}
 
 \usepackage{adjustbox}
 
@@ -16,8 +18,10 @@
 
 \usepackage{hyperref}
 
-\definecolor{blue}{rgb}{0,0,1}
-\definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
+\definecolor{red}{RGB}{255,0,0}
+\definecolor{green}{RGB}{0,191,0}
+\definecolor{blue}{RGB}{0,0,255}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -31,7 +35,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 5: Текстуры}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -43,16 +47,18 @@
 \slideimage{0.png}
 \end{frame}
 
+\usemintedstyle{solarized-light}
+
 \begin{frame}[fragile]
 \frametitle{Задание 1}
-Загружаем модель \verb|cow|, как в предыдущей практике:
+Загружаем модель \verb|cow|, аналогично предыдущей практике:
 \begin{itemize}
-\item Создаём VAO, VBO, EBO
-\item Загружаем вершины в VBO
-\item Загружаем индексы в EBO
-\item Настраиваем атрибуты в VAO (пока только первые два)
-\item Связываем индексы с VAO
-\item Рисуем с помощью \verb|glDrawElements|
+\item Создаём \textbf{VAO}, \textbf{VBO}, \textbf{EBO}
+\item Загружаем вершины в \textbf{VBO}
+\item Загружаем индексы в \textbf{EBO}
+\item Настраиваем атрибуты в \textbf{VAO} (пока только первые два)
+\item Связываем индексы с \textbf{VAO}
+\item Рисуем с помощью \mintinline{cpp}|glDrawElements|
 \item N.B. модель можно крутить и двигать стрелочками
 \end{itemize}
 \end{frame}
@@ -65,9 +71,9 @@
 \frametitle{Задание 2}
 Добавляем текстурные координаты
 \begin{itemize}
-\item Описываем новый (index=2) атрибут для VAO
-\item Добавляем входной атрибут типа \verb|vec2| в вершинном шейдере, и передаём его без изменений во фрагментный
-\item Во фрагментном шейдере используем текстурные координаты в качестве цвета (альбедо), например \verb|albedo = vec3(texcoord, 0.0)|
+\item Описываем новый (\mintinline{glsl}|index = 2|) атрибут для VAO, соответствующий полю \mintinline{cpp}|obj_data::vertex::texcoord|
+\item Добавляем входной атрибут типа \mintinline{glsl}|vec2| в вершинном шейдере, и передаём его во фрагментный
+\item Во фрагментном шейдере используем текстурные координаты в качестве цвета (альбедо), например \mintinline{glsl}|albedo = vec3(texcoord, 0.0)|
 \end{itemize}
 \end{frame}
 
@@ -77,22 +83,26 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 3}
-\fontsize{8pt}{8pt}\selectfont
-Создаём и используем текстуру шахматной раскраски
+Создаём текстуру шахматной раскраски
 \begin{itemize}
-\item Создаём объект текстуры типа \verb|GL_TEXTURE_2D|
-\item Выставляем для него min и mag фильтры в \verb|GL_NEAREST| (\verb|glTexParameteri|)
-\item Выбираем размер текстуры (лучше довольно большой, в духе 512 или 1024)
+\item Создаём объект текстуры типа \mintinline{cpp}|GL_TEXTURE_2D|
+\item Выставляем для него \mintinline{cpp}|MIN| и \mintinline{cpp}|MAG| фильтры в \mintinline{cpp}|GL_NEAREST| (функция \mintinline{cpp}|glTexParameteri|)
+\item Выбираем размер текстуры (лучше довольно большой, в духе \begin{math}512\times 512\end{math} или \begin{math}1024\times 1024\end{math})
 \item В качестве данных загружаем пиксели шахматной раскраски
-\begin{itemize}
-\item Пиксели удобнее всего хранить как \verb|std::uint32_t|
-\item Создать массив пикселей можно как \verb|std::vector<std::uint32_t> pixels(size * size);|
-\item Заполнить его чёрными \verb|0xFF000000u| и белыми \verb|0xFFFFFFFFu| пикселями в порядке шахматной раскраски
-\item Для \verb|glTexImage2D| параметры \verb|internalFormat = GL_RGBA8|, \verb|format = GL_RGBA|, \verb|type = GL_UNSIGNED_BYTE|
+\item Пиксели можно хранить, например, как \mintinline{cpp}|std::uint32_t|
+\item Создать массив пикселей можно как \mintinline{cpp}|std::vector<std::uint32_t> pixels(size * size);|
+\item Заполнить его чёрными \mintinline{cpp}|0xFF000000u| и белыми \mintinline{cpp}|0xFFFFFFFFu| пикселями в порядке шахматной раскраски
+\item Для \mintinline{cpp}|glTexImage2D| параметры \mintinline{cpp}|internalFormat = GL_RGBA8|, \mintinline{cpp}|format = GL_RGBA|, \mintinline{cpp}|type = GL_UNSIGNED_BYTE|
 \end{itemize}
-\item Во фрагментном шейдере добавляем uniform-переменную типа \verb|sampler2D| и берём из неё цвет (\verb|albedo|) функцией \verb|texture|
-\item В значение uniform-переменной записываем 0 (\verb|glUniform1i|)
-\item Перед рисованием делаем нашу текстуру текущей для texture unit'а номер 0 (\verb|glActiveTexture| + \verb|glBindTexture|)
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Используем созданную текстуру
+\begin{itemize}
+\item Во фрагментном шейдере добавляем uniform-переменную типа \mintinline{glsl}|sampler2D| и берём из неё цвет (\mintinline{glsl}|albedo|) функцией \mintinline{glsl}|texture|
+\item В значение uniform-переменной записываем 0 (\mintinline{cpp}|glUniform1i|)
+\item Перед рисованием делаем нашу текстуру текущей для texture unit'а номер 0 (\mintinline{cpp}|glActiveTexture| + \mintinline{cpp}|glBindTexture|)
 \end{itemize}
 \end{frame}
 
@@ -102,7 +112,7 @@
 
 \begin{frame}[fragile]
 \begin{itemize}
-\item Если подвигать и покрутить модель, будет видный сильный \textit{муар} -- эффект, возникающий, когда значения сигнала (в нашем случае -- текстура) читаются с частотой меньшей, чем частота самого сигнала (в нашем случае частоту определяют пиксели экрана)
+\item Если подвигать и покрутить модель, будет виден сильный \textit{муар} -- эффект, возникающий, когда значения сигнала (в нашем случае -- текстура) читаются (\textit{семплируются}) с частотой меньшей, чем частота самого сигнала (в нашем случае частоту определяют пиксели экрана)
 \end{itemize}
 \end{frame}
 
@@ -110,19 +120,13 @@
 \frametitle{Задание 4}
 Вручную добавляем mipmap-уровни
 \begin{itemize}
-\item Меняем min-фильтр текстуры на \verb|GL_NEAREST_MIPMAP_NEAREST|
-\item После загрузки данных текстуры вызываем \verb|glGenerateMipmap|, чтобы сгенирировались mipmap-уровни
-\item Перезаписываем 1-ый mipmap-уровень монохромной картинкой красного цвета
+\item Меняем \mintinline{cpp}|MIN|-фильтр текстуры на \mintinline{cpp}|GL_NEAREST_MIPMAP_NEAREST|
+\item После загрузки данных текстуры вызываем \mintinline{cpp}|glGenerateMipmap|, чтобы сгенирировались mipmap-уровни
+\item Перезаписываем \textbf{1-ый} mipmap-уровень монохромной картинкой \textbf{\color{red}красного} цвета
+\item Перезаписываем \textbf{2-ый} mipmap-уровень монохромной картинкой \textbf{\color{green}зелёного} цвета
+\item Перезаписываем \textbf{3-ый} mipmap-уровень монохромной картинкой \textbf{\color{blue}синего} цвета
 \begin{itemize}
-\item Размер по обеим осям должен быть ровно в 2 раза меньше, чем размер исходного изображения
-\end{itemize}
-\item Перезаписываем 2-ый mipmap-уровень монохромной картинкой зелёного цвета
-\begin{itemize}
-\item Размер по обеим осям должен быть ровно в 4 раза меньше, чем размер исходного изображения
-\end{itemize}
-\item Перезаписываем 3-ый mipmap-уровень монохромной картинкой синего цвета
-\begin{itemize}
-\item Размер по обеим осям должен быть ровно в 8 раз меньше, чем размер исходного изображения
+\item Размер \textbf{1-ого} уровня должен быть \textbf{ровно в 2 раза меньше} исходной текстуры \textbf{по обеим осям}, \textbf{2-ого} уровня -- \textbf{ровно в 4 раза меньше}, и т.д.
 \end{itemize}
 \item Подвигайте модель, чтобы увидеть, как меняется выбранный mipmap-уровень
 \end{itemize}
@@ -136,12 +140,13 @@
 \frametitle{Задание 5}
 Загружаем настоящую текстуру
 \begin{itemize}
-\item Создаём \textit{новую} текстуру
-\item Настраиваем для неё mag и min фильтры в \verb|GL_LINEAR| и \verb|GL_LINEAR_MIPMAP_LINEAR| соответственно
-\item Загружаем её данные из файла с помощью функции \verb|stbi_load|, путь до изображения есть в переменной \verb|cow_texture_path|, число каналов \verb|desired_channels| указывать равным 4
-\item Загружаем эти данные на GPU с помощью \verb|glTexImage2D| и не забываем сгенерировать mipmaps
-\item Очищаем данные на CPU с помощью \verb|stbi_image_free|
-\item Используем для этой текстуры texture unit с номером 1, шейдер на этом этапе меняться не должен
+\item Создаём \textbf{новую текстуру}
+\item Настраиваем для неё \mintinline{cpp}|MIN| и \mintinline{cpp}{MAG} фильтры в \mintinline{cpp}|GL_LINEAR_MIPMAP_LINEAR| и \mintinline{cpp}|GL_LINEAR| соответственно
+\item Загружаем её данные из файла с помощью функции \mintinline{cpp}|stbi_load|, путь до изображения есть в переменной \mintinline{cpp}|cow_texture_path|, число каналов \mintinline{cpp}|desired_channels| указывать равным 4
+\item Загружаем эти данные на GPU с помощью \mintinline{cpp}|glTexImage2D| и \textbf{не забываем сгенерировать mipmaps} (\mintinline{cpp}|glGenerateMipmap|)
+\item Очищаем данные на CPU с помощью \mintinline{cpp}|stbi_image_free|
+\item Используем для этой текстуры texture unit \textbf{с номером 1}, шейдер на этом этапе меняться не должен
+\item Старая текстура всё ещё должна остаться в texture unit'е \textbf{с номером 0}, за выбор текстуры отвечает только uniform-переменная
 \end{itemize}
 \end{frame}
 
