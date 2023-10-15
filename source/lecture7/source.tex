@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
 \documentclass{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,10 +23,15 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
+
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -51,7 +56,8 @@
 \begin{frame}[fragile]
 \frametitle{Почему важно освещение}
 \begin{itemize}
-\item ~90\% информации человек воспринимает через зрение
+\item \begin{math}\approx\end{math}90\% информации человек воспринимает через зрение
+\pause
 \item Зрение воспринимает то, как \textit{освещены} окружающие объекты
 \pause
 \item Человек с рождения учится воспринимать мир освещённым
@@ -71,7 +77,7 @@
 \pause
 \item Помогает сделать объекты более привычными человеку
 \pause
-\item \begin{math}\Rightarrow\end{math} Какой бы графикой вы ни занималось, полезно добавить освещение
+\item \begin{math}\Longrightarrow\end{math} Какой бы графикой вы ни занимались, полезно добавить освещение
 \end{itemize}
 \end{frame}
 
@@ -129,6 +135,7 @@
 \frametitle{Что такое свет}
 \begin{itemize}
 \item Свет -- электромагнитная волна
+\pause
 \item Пара векторных полей (электрическое \begin{math}\mathbf{E}\end{math} и магнитное \begin{math}\mathbf{B}\end{math}), описываемых уравнениями Максвелла
 \begin{center}
 \begin{math}
@@ -141,7 +148,8 @@
 \end{math}
 \end{center}
 \pause
-\item Раскладывается в сумму волн фиксированной длины волны \begin{math}\lambda\end{math} (монохроматические волны)
+\item Линейное волновое уравнение \begin{math}\Longrightarrow\end{math} раскладывается в сумму волн фиксированной длины волны \begin{math}\lambda\end{math} (монохроматические волны)
+\pause
 \item Много нетривиальных эффектов: интерференция, дифракция, поляризация, сложное взаимодействие с веществом
 \end{itemize}
 \end{frame}
@@ -152,19 +160,23 @@
 \item В графике обычно достаточно геометрической оптики -- предела при \begin{math}\lambda\rightarrow 0\end{math}
 \pause
 \item Свет распространяется прямыми лучами (исключение -- граница раздела сред или неоднородные среды)
+\pause
 \item Свет распространяется бесконечно быстро (\begin{math}c \rightarrow \infty\end{math})
+\pause
 \item Луч света разбивается в сумму монохроматических лучей, каждая имеет свою амплитуду (количество света)
+\pause
+\item Интересуют только волны \textit{видимого спектра}
 \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Фиолетовый цвет}
-\slideimage{blue-red-spectrum.png}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Видимый спектр}
 \slideimage{visible-spectrum.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Фиолетовый цвет}
+\slideimage{blue-red-spectrum.png}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -189,8 +201,15 @@
 \pause
 \item Воск: частично отражает, частично преломляет, но свет заходит неглубоко (subsurface scattering)
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Столкновение света с поверхностью}
+\begin{itemize}
+\item Что происходит, когда луч света сталкивается с некой поверхностью?
 \pause
-\item \begin{math}\Rightarrow\end{math} Свет, выходящий в каком-то направлении, складывается из света, пришедшего из \textit{всех} направлений
+\item \begin{math}\Longrightarrow\end{math} Свет, выходящий в каком-то направлении, складывается из света, пришедшего из \textit{всех направлений}
 \end{itemize}
 \end{frame}
 
@@ -286,10 +305,9 @@
 \hspace*{-0.5cm}
 {\color{magenta}I_{out}}(p, {\color{magenta}\vec\omega_{out}}, \lambda) = I_{e}(p, {\color{magenta}\vec\omega_{out}}, \lambda)+\int\limits_{\mathbb S^2} {\color{blue}I_{in}}(p, {\color{blue}\vec\omega_{in}}, \lambda) \cdot {\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) \cdot ({\color{blue}\vec\omega_{in}} \cdot \vec{n}) d{\color{blue}\vec\omega_{in}}
 \end{equation*}
+\hspace*{-0.5cm}
 \pause
 \begin{itemize}
-\item Уравнение для конкретной точки \begin{math}p\end{math} и длины волны \begin{math}\lambda\end{math}
-\pause
 \item \begin{math}{\color{magenta}I_{out}}\end{math} -- количество света, выходящего из точки \begin{math}p\end{math} в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math} с длиной волны \begin{math}\lambda\end{math}
 \pause
 \item \begin{math}I_{e}\end{math} -- количество света, излучаемого поверхностью из точки \begin{math}p\end{math} в направлении \begin{math}{\color{magenta}\vec\omega_{out}}\end{math} с длиной волны \begin{math}\lambda\end{math}
@@ -362,6 +380,7 @@
 \item Зависимость \begin{math}{\color{green}f}\end{math} от \begin{math}\lambda\end{math} обеспечивает цвет объектов
 \pause
 \item Мы видим свет, отражённый объектом
+\pause
 \item Объект синего цвета не отражает красный цвет (кажется чёрным при освещении красным светом)
 \end{itemize}
 \end{frame}
@@ -369,11 +388,11 @@
 \begin{frame}[fragile]
 \frametitle{BRDF, BTDF, BSDF}
 \begin{itemize}
-\item Если \begin{math}{\color{green}f}\end{math} только отражает свет, её называют BRDF: Bidirectional Reflectance Distribution Function
+\item Если \begin{math}{\color{green}f}\end{math} только отражает свет, её называют \textbf{BRDF}: Bidirectional Reflectance Distribution Function
 \pause 
-\item Если \begin{math}{\color{green}f}\end{math} только преломляет свет, её называют BTDF: Bidirectional Transmittance Distribution Function
+\item Если \begin{math}{\color{green}f}\end{math} только преломляет свет, её называют \textbf{BTDF}: Bidirectional Transmittance Distribution Function
 \pause 
-\item В общем случае её называют BSDF: Bidirectional Scattering Distribution Function
+\item В общем случае её называют \textbf{BSDF}: Bidirectional Scattering Distribution Function
 \end{itemize}
 \end{frame}
 
@@ -434,7 +453,7 @@
 \pause
 \item Обычно вместо всех возможных значений \begin{math}\lambda\end{math} берут дискретный набор ({\color{red}красный}, {\color{green}зелёный}, {\color{blue}синий})
 \pause
-\item Задача решения этого уравнения называется Global Illumination (GI)
+\item Задача решения этого уравнения называется \textit{Global Illumination} (GI)
 \end{itemize}
 \end{frame}
 
@@ -462,7 +481,7 @@
 \pause
 \item Неявная поверхность \begin{math}f(p) = 0\end{math}, по \begin{math}\nabla f\end{math} можно получить нормаль к поверхности
 \pause
-\item Подвид неявных поверхностей -- signed distance function/field (SDF) -- функция \begin{math}f(p)\end{math} возвращающая расстояние до поверхности, удобна для некоторых алгоритмов (raymarching)
+\item Подвид неявных поверхностей -- \textit{signed distance function/field} (SDF) -- функция \begin{math}f(p)\end{math}, возвращающая расстояние до поверхности, удобна для некоторых алгоритмов (напр. raymarching)
 \end{itemize}
 \end{frame}
 
@@ -472,13 +491,14 @@
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Как решать уравнение рендеринга: radiosity}
+\frametitle{Как решать уравнение рендеринга: алгоритм radiosity}
 \begin{itemize}
 \item Взять в качестве переменных среднюю освещённость в каждой вершине сцены, интерполировать освещённость в треугольниках, свести к системе линейных уравнений
 \pause
 \item Требует вычислить влияние каждого треугольника на каждый с учётом видимости
 \pause
 \item Обычно решается итеративными методами (Якоби, Гаусса-Зейделя)
+\pause
 \item Каждая итерация учитывает ещё одно возможное отражение света (bounce) перед попаданием в камеру
 \pause
 \item Плохо подходит для динамических и real-time сцен
@@ -487,27 +507,34 @@
 
 \begin{frame}[fragile]
 \frametitle{Как решать уравнение рендеринга: raytracing + monte-carlo integration}
-\fontsize{8pt}{8pt}
 \begin{itemize}
-\item Посылать лучи из камеры, симулируя обратное распространение света (raytracing)
-\item В точке пересечения луча с объектом сцены аппроксимировать интеграл, пуская отражённые лучи в случайном направлении (monte-carlo integration)
+\item Посылать лучи из камеры, симулируя обратное распространение света (\textit{raytracing})
+\item В точке пересечения луча с объектом сцены аппроксимировать интеграл, пуская отражённые лучи в случайном направлении (\textit{monte-carlo integration})
 \pause
 \item Основной алгоритм, использующийся при offline рендеринге
 \pause
 \item Требует как-то ограничить количество отражений (bounces)
 \pause
-\item Требует построить некую структуру данных (bounding volume hierarchy -- BVH) для ускорения поиска пересечений лучей со сценой (RTX делают именно это)
+\item Требует построить некую структуру данных (BVH -- \textit{bounding volume hierarchy}) для ускорения поиска пересечений лучей со сценой (RTX делают именно это)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как решать уравнение рендеринга: raytracing + monte-carlo integration}
+\begin{itemize}
+\item Картинка получается очень шумной (зернистой) из-за случайности, очень много исследований направлено на борьбу с шумом (\textit{importance sampling, resampling, reservoir sampling})
 \pause
-\item Картинка получается очень шумной (зернистой) из-за случайности, очень много исследований направлено на борьбу с шумом (importance sampling, resampling, reservoir sampling)
+\item Хочется переиспользовать результаты вычислений между кадрами \begin{math}\Longrightarrow\end{math} нужно эти результаты сохранять в
 \pause
-\item Хочется переиспользовать результаты вычислений между кадрами \begin{math}\Rightarrow\end{math} нужно эти результаты сохранять в
 \begin{itemize}
 \item Пикселях
-\item Точках поверхностей (surflets)
-\item Точках пространства (voxels)
+\pause
+\item Точках поверхностей (\textit{surflets})
+\pause
+\item Точках пространства (\textit{voxels})
 \end{itemize}
 \pause
-\item Использование для real-time -- предмет активного исследования (напр. ReSTIR GI)
+\item Использование для real-time -- предмет активного исследования (см. \textit{ReSTIR GI})
 \end{itemize}
 \end{frame}
 
@@ -527,9 +554,11 @@
 \pause
 \item Отражения (точные / размытые)
 \pause
-\item Непрямое освещение (многократно отражённый свет) почти всегда игнорируется или эмулируется:
+\item Непрямое освещение (многократно отражённый свет) почти всегда игнорируется или эмулируется
+\pause
 \begin{itemize}
 \item Ambient освещение -- свет, приходящий `отовсюду' (с неба, отражённый от стен, и т.п.)
+\pause
 \item Ambient occlusion (AO) -- затенение частей объекта, куда доходит меньше ambient света
 \end{itemize}
 \end{itemize}
@@ -565,7 +594,7 @@
 \begin{itemize}
 \item Эвристические формулы (Phong)
 \pause
-\item Вывод из предположений о структуре поверхности (microfacets)
+\item Вывод из предположений о структуре поверхности (\textit{microfacets})
 \pause
 \item Прямое измерение (MERL 100)
 \pause
@@ -583,16 +612,19 @@
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Расчёт освещения}
+\frametitle{Расчёт прямого освещения}
 \begin{itemize}
 \item Почти всегда происходит во фрагментном шейдере
 \pause
 \item Вычисления используют \verb|vec3| для работы с цветом в {\color{red}R}{\color{green}G}{\color{blue}B}
 \pause
 \item Входные данные:
+\pause
 \begin{itemize}
 \item Нормаль к поверхности
+\pause
 \item Параметры материала (цвет, гладкость, и т.п.)
+\pause
 \item Источники света
 \end{itemize}
 \pause
@@ -604,13 +636,16 @@
 \frametitle{Ambient освещение}
 \begin{itemize}
 \item Свет, приходящий `отовсюду'
+\pause
 \begin{itemize}
 \item На улице: небо
+\pause
 \item В помещении: диффузное отражение от стен, пола, потолка, других объектов
 \end{itemize}
 \pause
 \item Задаётся своим цветом
-\item Обычно добавляется чтобы точки, куда не попал свет, не выглядели совсем чёрными
+\pause
+\item Обычно добавляется чтобы точки, куда не попал другой свет, не выглядели совсем чёрными
 \end{itemize}
 \end{frame}
 
@@ -620,14 +655,18 @@
 \item Два самых часто используемых типа: направленные и точечные
 \pause
 \item Направленные:
+\pause
 \begin{itemize}
 \item Задаются направлением и яркостью
+\pause
 \item Моделируют удалённые источники -- солнце, луна
 \end{itemize}
 \pause
 \item Точечные:
+\pause
 \begin{itemize}
 \item Задаются расположением и функцией зависимости яркости от расстояния
+\pause
 \item Моделируют (относительно) близкие источники -- костёр, свеча, лампа
 \end{itemize}
 \end{itemize}
@@ -637,7 +676,8 @@
 \frametitle{Точечный источник света}
 \begin{itemize}
 \item Яркость убывает с расстоянием
-\item Часто берут такую функцию затухания (attenuation):
+\pause
+\item Часто берут такую функцию затухания (\textit{attenuation}):
 \end{itemize}
 \begin{equation*}
 \frac{1}{C_0 + C_1 r + C_2 r^2}
@@ -652,7 +692,7 @@
 \begin{itemize}
 \item Отражает свет во всех направлениях одинаково
 \item \begin{math}C(\lambda) \in [0, 1]\end{math} -- `альбедо', определяет цвет
-\item \begin{math}\pi\end{math} -- нормировочный множитель, часто входит в \begin{math}C(\lambda)\end{math}
+\item \begin{math}\pi\end{math} -- нормировочный множитель, часто входит в \begin{math}C(\lambda)\end{math} (напр. в текстуру)
 \end{itemize}
 \end{frame}
 
@@ -663,7 +703,7 @@
 \end{equation*}
 \begin{itemize}
 \item Отражает больше света в направлении отражённого луча: \begin{math}R_{\vec n}(\vec \omega) = 2\vec n \cdot (\vec n \cdot \vec \omega) - \vec \omega\end{math}
-\item Параметр \begin{math}power\end{math} определяет `размытость' отражения: чем больше, тем более точное отражение
+\item Параметр \begin{math}power\end{math} определяет `размытость' отражения: чем он больше, тем оно менее размытое
 \begin{itemize}
 \item Часто вычисляется на основе более удобного параметра \verb|roughness|, например \begin{math}power = \frac{1}{roughness^2}-1\end{math}
 \end{itemize}
@@ -675,6 +715,7 @@
 \frametitle{Модель Фонга (Phong)}
 \begin{itemize}
 \item Вклад источника света = diffuse + specular
+\pause
 \item Полная освещённость = ambient + diffuse + specular
 \end{itemize}
 \end{frame}
@@ -686,8 +727,8 @@
 
 \begin{frame}[fragile]
 \frametitle{Модель Фонга + направленный источник света}
-\fontsize{8pt}{8pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\tiny]{glsl}
 uniform vec3 ambient_light_color;
 uniform vec3 light_direction;
 uniform vec3 light_color;
@@ -714,7 +755,7 @@ void main() {
   vec3 result_color = ambient + diffuse + specular;
   out_color = vec4(result_color, 1.0);
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -747,8 +788,9 @@ void main() {
 \begin{frame}[fragile]
 \frametitle{Microfacets}
 \begin{itemize}
-\item Чтобы честно вывести формулу для BRDF \textit{(physically-based BRDF)}, нужно предположение о микроструктуре поверхности (microsurface) \pause \begin{math}\Rightarrow\end{math} микрофасеты (microfacets)
-\item Предполагается, что поверхность состоит из маленьких площадок (микрофасетов)
+\item Чтобы честно вывести формулу для BRDF \textit{(physically-based BRDF)}, нужно предположение о микроструктуре поверхности (\textit{microsurface}) \pause \begin{math}\Rightarrow\end{math} микрофасеты (\textit{microfacets})
+\pause
+\item Предполагается, что поверхность состоит из маленьких площадок -- микрофасетов
 \pause
 \item Задаётся распределение ориентаций (нормалей) этих площадок
 \pause
@@ -756,6 +798,10 @@ void main() {
 \pause
 \item Выводится формула для BRDF (обычно -- приближённая)
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Microfacets}
 \slideimage{microfacet.png}
 \end{frame}
 
@@ -804,23 +850,24 @@ R = \frac{D \cdot G \cdot F}{4 \cdot ({\color{blue}\vec\omega_{in}} \cdot n) \cd
 
 \begin{frame}[fragile]
 \frametitle{Ссылки}
-Туториалы по освещению:
+\fontsize{8pt}{8pt}
+Туториалы про освещение:
 \begin{itemize}
-\item \href{https://learnopengl.com/Lighting/Basic-Lighting}{\nolinkurl{learnopengl.com/Lighting/Basic-Lighting}}
-\item \href{http://www.opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}{\nolinkurl{opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}}
-\item \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial/point-lights}{\nolinkurl{lighthouse3d.com/tutorials/glsl-tutorial/point-lights}}
+\item \href{https://learnopengl.com/Lighting/Basic-Lighting}{\texttt{learnopengl.com/Lighting/Basic-Lighting}}
+\item \href{http://www.opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}{\texttt{opengl-tutorial.org/beginners-tutorials/tutorial-8-basic-shading}}
+\item \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial/point-lights}{\texttt{lighthouse3d.com/tutorials/glsl-tutorial/point-lights}}
 \end{itemize}
 Сложные BRDF:
 \begin{itemize}
-\item \href{http://www.cemyuksel.com/research/papers/CGI2020_ConstantTimeEnergyNormalizationForThePhongSpecularBRDFs.pdf}{Нормировка Phong BRDF}
-\item \href{https://github.com/TwoTailsGames/Unity-Built-in-Shaders/blob/master/CGIncludes/UnityStandardBRDF.cginc}{Стандартная BRDF в Unity}
-\item \href{https://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf}{Описание Disney BRDF}
-\item \href{https://graphicscompendium.com/references/cook-torrance}{Описание Cook-Torrance BRDF и примеры функций D, G, F}
+\item \href{http://www.cemyuksel.com/research/papers/CGI2020_ConstantTimeEnergyNormalizationForThePhongSpecularBRDFs.pdf}{\texttt{Нормировка Phong BRDF}}
+\item \href{https://graphicscompendium.com/references/cook-torrance}{\texttt{Описание Cook-Torrance BRDF и примеры функций D, G, F}}
+\item \href{https://github.com/TwoTailsGames/Unity-Built-in-Shaders/blob/master/CGIncludes/UnityStandardBRDF.cginc}{\texttt{Стандартная BRDF в Unity}}
+\item \href{https://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf}{\texttt{Описание Disney BRDF}}
 \end{itemize}
 Raytracing:
 \begin{itemize}
-\item \href{https://raytracing.github.io/books/RayTracingInOneWeekend.html}{Книжка Raytracing in one weekend}
-\item \href{https://www.youtube.com/watch?v=gsZiJeaMO48}{Видео про ReSTIR GI}
+\item \href{https://raytracing.github.io/books/RayTracingInOneWeekend.html}{\texttt{Книжка Raytracing in one weekend}}
+\item \href{https://www.youtube.com/watch?v=gsZiJeaMO48}{\texttt{Видео про ReSTIR GI}}
 \end{itemize}
 \end{frame}
 
