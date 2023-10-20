@@ -1,13 +1,15 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
 \documentclass{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
+
+\usetheme{metropolis}
 
 \usepackage{adjustbox}
 
@@ -18,6 +20,7 @@
 
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -31,7 +34,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 7: Рендеринг в текстуру, пост-обработка}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -43,17 +46,34 @@
 \slideimage{0.png}
 \end{frame}
 
+\usemintedstyle{solarized-light}
+
 \begin{frame}[fragile]
 \frametitle{Задание 1}
-\fontsize{10pt}{10pt}
+Создаём и настраиваем framebuffer
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Создаём текстуру для цветового буфера: min/mag фильтры -- \mintinline{cpp}|GL_NEAREST|, размеры -- \mintinline{cpp}|width/2| на \mintinline{cpp}|height/2|, формат -- \mintinline{cpp}|GL_RGBA8|, в качестве данных можно передать \mintinline{cpp}|nullptr|
+\item Создаём renderbuffer для буфера глубины: \mintinline{cpp}|glGenRenderbuffers|, \mintinline{cpp}|glBindRenderbuffer|, \mintinline{cpp}|glRenderbufferStorage|, формат -- \mintinline{cpp}|GL_DEPTH_COMPONENT24|, размеры -- как у текстуры
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
 Создаём и настраиваем framebuffer
 \begin{itemize}
-\item Создаём текстуру для цветового буфера: min/mag фильтры -- \verb|GL_NEAREST|, размеры -- \verb|width/2| на \verb|height/2|, формат -- \verb|GL_RGBA8|, в качестве данных можно передать \verb|nullptr|
-\item Создаём renderbuffer для буфера глубины: \verb|glGenRenderbuffers|, \verb|glBindRenderbuffer|, \verb|glRenderbufferStorage|, формат -- \verb|GL_DEPTH_COMPONENT24|, размеры -- как у текстуры
-\item Создаём framebuffer: \verb|glGenFramebuffers|
-\item Присоединяем к нему цвет и глубину: \verb|glBindFramebuffer| (target = \verb|GL_DRAW_FRAMEBUFFER|), \verb|glFramebufferTexture| с параметром attachment = \verb|GL_COLOR_ATTACHMENT0|, \verb|glFramebufferRenderbuffer| с параметром attachment = \verb|GL_DEPTH_ATTACHMENT|
-\item Проверяем, что фреймбуффер настроен правильно: \verb|glCheckFramebufferStatus| должна вернуть \verb|GL_FRAMEBUFFER_COMPLETE|
-\item Текстуре и renderbuffer'у нужно обновлять размер при изменении размера экрана: там, где обрабатывается \verb|SDL_WINDOWEVENT_RESIZED|, нужно добавить \verb|glBindTexture|, \verb|glTexImage2D|, \verb|glBindRenderbuffer|, \verb|glRenderbufferStorage|
+\item Создаём framebuffer: \mintinline{cpp}|glGenFramebuffers|
+\item Присоединяем к нему цвет и глубину: \mintinline{cpp}|glBindFramebuffer| (target = \mintinline{cpp}|GL_DRAW_FRAMEBUFFER|), \mintinline{cpp}|glFramebufferTexture| с параметром attachment = \mintinline{cpp}|GL_COLOR_ATTACHMENT0|, \mintinline{cpp}|glFramebufferRenderbuffer| с параметром attachment = \mintinline{cpp}|GL_DEPTH_ATTACHMENT|
+\item Проверяем, что фреймбуффер настроен правильно: \mintinline{cpp}|glCheckFramebufferStatus| должна вернуть \mintinline{cpp}|GL_FRAMEBUFFER_COMPLETE|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 1}
+Создаём и настраиваем framebuffer
+\usemintedstyle{solarized-light}
+\begin{itemize}
+\item Текстуре и renderbuffer'у нужно обновлять размер при изменении размера экрана: там, где обрабатывается \mintinline{cpp}|SDL_WINDOWEVENT_RESIZED|, нужно добавить \mintinline{cpp}|glBindTexture|, \mintinline{cpp}|glTexImage2D|, \mintinline{cpp}|glBindRenderbuffer|, \mintinline{cpp}|glRenderbufferStorage|
 \item Картинка будет чёрной, так как теперь мы ничего не рисуем в default framebuffer
 \end{itemize}
 \end{frame}
@@ -66,8 +86,8 @@
 \frametitle{Задание 2}
 Рисуем в текстуру
 \begin{itemize}
-\item Перед \verb|glClear| устанавливаем наш framebuffer текущим для рисования (\verb|glBindFramebuffer|) и настраиваем \verb|glViewport|
-\item После рисования основной модели, перед рисованием прямоугольника делаем текущим для рисования основной framebuffer (id = 0), настраиваем \verb|glViewport| и очищаем цветовой буфер и буфер глубины (\verb|glClear|)
+\item Перед \mintinline{cpp}|glClear| устанавливаем наш framebuffer текущим для рисования (\mintinline{cpp}|glBindFramebuffer|) и настраиваем \mintinline{cpp}|glViewport|
+\item После рисования основной модели, перед рисованием прямоугольника делаем текущим для рисования основной framebuffer (id = 0), настраиваем \mintinline{cpp}|glViewport| и очищаем цветовой буфер и буфер глубины (\mintinline{cpp}|glClear|)
 \item Раскомментируем рисование прямоугольника: пока он всё ещё выведется просто с цветовым градиентом, так как шейдер мы не меняли
 \item Дракон виден не будет, так как он нарисовался в другой фреймбуфер
 \end{itemize}
@@ -81,10 +101,10 @@
 \frametitle{Задание 3}
 Выводим нарисованную текстуру
 \begin{itemize}
-\item Добавляем в шейдер для прямоугольника текстуру, которую мы нарисовали с помощью framebuffer'а: \verb|uniform sampler2D render_result;|
-\item В \verb|out_color| пишем значение пикселя из текстуры
-\item Устанавливаем значение соответствующей uniform-переменной в 0 (\verb|glGetUniformLocation|, \verb|glUniform1i|)
-\item Перед рисованием прямоугольника устанавливаем текстуру текущей для texture unit 0 (\verb|glActiveTexture|, \verb|glBindTexture|)
+\item Добавляем в шейдер для прямоугольника текстуру, которую мы нарисовали с помощью framebuffer'а: \mintinline{glsl}|uniform sampler2D render_result;|
+\item В \mintinline{glsl}|out_color| пишем значение пикселя из текстуры
+\item Устанавливаем значение соответствующей uniform-переменной в 0 (\mintinline{glsl}|glGetUniformLocation|, \mintinline{glsl}|glUniform1i|)
+\item Перед рисованием прямоугольника устанавливаем текстуру текущей для texture unit 0 (\mintinline{glsl}|glActiveTexture|, \mintinline{glsl}|glBindTexture|)
 \end{itemize}
 \end{frame}
 
@@ -94,12 +114,18 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 4}
-\fontsize{10pt}{10pt}
 Выводим текстуру несколько раз
 \begin{itemize}
-\item Заносим весь рендеринг (\textbf{не} обработку событий SDL и \textbf{не} функцию \verb|SDL_GL_SwapWindow|) в цикл, повторяющий рендеринг 4 раза
-\item В зависимости от номера повторения меняем uniform-переменные \verb|center| и \verb|size|, чтобы картинка нарисовалась во всех четырёх углах экрана
-\item В зависимости от номера повторения меняем \verb|glClearColor| (цвета выберите сами)
+\item Заносим весь рендеринг (\textbf{не} обработку событий SDL и \textbf{не} функцию \mintinline{cpp}|SDL_GL_SwapWindow|) в цикл, повторяющий рендеринг 4 раза
+\item В зависимости от номера повторения меняем uniform-переменные \mintinline{cpp}|center| и \mintinline{cpp}|size|, чтобы картинка нарисовалась во всех четырёх углах экрана
+\item В зависимости от номера повторения меняем \mintinline{cpp}|glClearColor| (цвета выберите сами)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 4}
+Выводим текстуру несколько раз
+\begin{itemize}
 \item В зависимости от номера повторения меняем проекцию:
 \begin{itemize}
 \item 0 -- перспективная проекция, ничего не меняем
@@ -108,7 +134,7 @@
 \item 3 -- ортографическая проекция на плоскость YZ
 \end{itemize}
 \item Конкретное соответствие номеров и проекций не так важно, главное -- увидеть три ортографических проекции на разные плоскости и одну перспективную
-\item Ортографическую проекцию можно сделать с помощью \verb|projection = glm::ortho(...)| (\textbf{учитывая aspect ratio экрана!}) и настроив \verb|view| какими-нибудь вращениями
+\item Ортографическую проекцию можно сделать с помощью \mintinline{cpp}|projection = glm::ortho(...)| (\textbf{учитывая aspect ratio экрана!}) и настроив \mintinline{cpp}|view| какими-нибудь вращениями
 \end{itemize}
 \end{frame}
 
@@ -120,9 +146,9 @@
 \frametitle{Задание 5}
 Делаем color grading
 \begin{itemize}
-\item Добавляем во фрагментный шейдер пост-обработки (с которым рисуется прямоугольник) uniform-переменную \verb|uniform int mode;| и устанавливаем её в цикле рендеринга в номер картинки (0..3)
-\item При \verb|mode == 1| преобразуем цвет как \verb|color = floor(color * 4.0) / 3.0|
-\item При остальных значениях \verb|mode| пока выводим просто текстуру без искажений
+\item Добавляем во фрагментный шейдер пост-обработки (с которым рисуется прямоугольник) uniform-переменную \mintinline{glsl}|uniform int mode;| и устанавливаем её в цикле рендеринга в номер картинки (0..3)
+\item При \mintinline{glsl}|mode == 1| преобразуем цвет как \mintinline{glsl}|color = floor(color * 4.0) / 3.0|
+\item При остальных значениях \mintinline{glsl}|mode| пока выводим просто текстуру без искажений
 \end{itemize}
 \end{frame}
 
@@ -134,11 +160,12 @@
 \frametitle{Задание 6}
 Искажаем изображение
 \begin{itemize}
-\item При \verb|mode == 2| искажаем изображение: прибавляем к текстурной координате что-нибудь зависящее от времени и координаты, например 
-\begin{verbatim}
-texcoord + vec2(sin(texcoord.y * 50.0 + time)
-    * 0.01, 0.0)
-\end{verbatim}
+\item При \mintinline{glsl}|mode == 2| искажаем изображение: прибавляем к текстурной координате что-нибудь зависящее от времени и координаты, например 
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
+texcoord + vec2(sin(texcoord.y * 50.0
+    + time) * 0.01, 0.0)
+\end{minted}
 \end{itemize}
 \end{frame}
 
@@ -150,7 +177,7 @@ texcoord + vec2(sin(texcoord.y * 50.0 + time)
 \frametitle{Задание 7*}
 Делаем гауссово размытие
 \begin{itemize}
-\item При \verb|mode == 3| делаем гауссово размытие, например, с \verb|N = 7| и \verb|radius = 5.0| (код и описание есть в слайдах лекции)
+\item При \mintinline{glsl}|mode == 3| делаем гауссово размытие, например, с \mintinline{glsl}|N = 7| и \mintinline{glsl}|radius = 5.0| (код и описание есть в слайдах лекции)
 \item N.B.: у вас получится \begin{math}(2N+1)^2\end{math} обращений к текстуре
 \end{itemize}
 \end{frame}
