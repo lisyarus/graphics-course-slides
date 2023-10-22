@@ -45,7 +45,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 7: Распространение света, уравнение рендеринга, модели освещения}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -401,12 +401,12 @@
 \pause 
 \item Абсолютно чёрное тело: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = 0\end{math}
 \pause
-\item Идеальное зеркало: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \delta({\color{blue}\vec\omega_{in}} - {\color{magenta}\vec\omega_{out}})\end{math}
-\pause
-\item Старое зеркало: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \left(R_{\vec n}({\color{blue}\vec\omega_{in}})\cdot{\color{magenta}\vec\omega_{out}}\right)^7\end{math}
+\item Идеальное зеркало: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \delta({R_{\vec n}(\color{blue}\vec\omega_{in}}) - {\color{magenta}\vec\omega_{out}})\end{math}
 \begin{itemize}
 \item \begin{math}R\end{math} -- отраженный вектор: \begin{math}R_{\vec n}(\vec \omega) = 2\vec n \cdot (\vec n \cdot \vec \omega) - \vec \omega\end{math}
 \end{itemize}
+\pause
+\item Старое зеркало: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = \left(R_{\vec n}({\color{blue}\vec\omega_{in}})\cdot{\color{magenta}\vec\omega_{out}}\right)^7\end{math}
 \pause
 \item Диффузная поверхность: \begin{math}{\color{green}f}(p, {\color{blue}\vec\omega_{in}}, {\color{magenta}\vec\omega_{out}}, \lambda) = 1\end{math}
 \end{itemize}
