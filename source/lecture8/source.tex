@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
 \documentclass{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,10 +23,14 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -40,11 +44,13 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 8: Геометрические шейдеры, shadow volumes, shadow mapping и его разновидности}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
 \begin{document}
+
+\usemintedstyle{solarized-light}
 
 \frame{\titlepage}
 
@@ -53,17 +59,17 @@
 \begin{itemize}
 \item Тип шейдера, наравне в вершинным и фрагментным
 \pause
-\item Создаётся как \verb|glCreateShader(GL_GEOMETRY_SHADER)|
+\item Создаётся как \mintinline{cpp}|glCreateShader(GL_GEOMETRY_SHADER)|
 \pause
 \item Встраивается после вершинного шейдера, до perspective divide
 \pause
 \item Оперирует целыми примитивами (точками/линиями/треугольниками), т.е. наборами вершин
 \pause
-\item Может менять тип примитива и количество вершин
+\item Может на лету менять тип примитива и количество вершин
 \pause
 \item Может варьировать количество вершин на выходе
 \pause
-\item \begin{math}\Rightarrow\end{math} может работать довольно медленно
+\item \begin{math}\Longrightarrow\end{math} Может работать довольно медленно
 \end{itemize}
 \end{frame}
 
@@ -97,16 +103,9 @@
 \pause
 \item Облака
 \pause
-\item Деревья
+\item Далёкие деревья
 \pause
 \item Трава
-\end{itemize}
-\pause
-\item Изолинии
-\pause
-\begin{itemize}
-\item Вход: треугольник
-\item Выход: изолиния, проходящая через этот треугольник (0 или 2 вершины)
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -161,8 +160,8 @@
 \begin{frame}[fragile]
 \frametitle{Геометрические шейдеры: пример}
 \fontsize{10pt}{10pt}
-\begin{verbatim}
-#version 330 core
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\tiny]{glsl}
 uniform mat4 transform;
 // Входные примитивы - точки
 layout (points) in;
@@ -175,20 +174,18 @@ void main() {
     gl_Position = transform * gl_in[0].gl_Position;
     EmitVertex();
 
-    gl_Position = transform * (gl_in[0].gl_Position
-        + vec4(normal[0], 0));
+    gl_Position = transform * (gl_in[0].gl_Position + vec4(normal[0], 0));
     EmitVertex();
 
     EndPrimitive();
 } 
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Геометрические шейдеры: пример}
-\fontsize{8pt}{8pt}
-\begin{verbatim}
-#version 330 core
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\tiny]{glsl}
 // Входные примитивы - линии
 layout (lines) in;
 // Выходные примитивы - треугольники, в сумме не больше 4х вершин
@@ -215,7 +212,7 @@ void main() {
 
     EndPrimitive();
 } 
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -225,7 +222,7 @@ void main() {
 \item \href{https://learnopengl.com/Advanced-OpenGL/Geometry-Shader}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Geometry-Shader}}
 \item \href{https://open.gl/geometry}{\nolinkurl{open.gl/geometry}}
 \item \href{https://www.lighthouse3d.com/tutorials/glsl-tutorial/geometry-shader}{\nolinkurl{lighthouse3d.com/tutorials/glsl-tutorial/geometry-shader}}
-\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch07.html}{GPU Gems, Chapter 7. Rendering Countless Blades of Waving Grass}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch07.html}{\texttt{GPU Gems, Chapter 7. Rendering Countless Blades of Waving Grass}}
 \end{itemize}
 \end{frame}
 
@@ -245,13 +242,13 @@ void main() {
 \begin{frame}[fragile]
 \frametitle{Тени: теория}
 \begin{itemize}
-\item Если источник света точечный (или бесконечно удалённый), тень -- бинарное свойство: луч из точки сцены в источник света или пересекает что-то (точка в тени), или нет (точка не в тени) \begin{math}\Rightarrow\end{math} жёсткие тени (hard shadows)
+\item Если источник света точечный (или бесконечно удалённый), тень -- бинарное свойство: луч из точки сцены в источник света или пересекает что-то (точка в тени), или нет (точка не в тени) \begin{math}\Longrightarrow\end{math} жёсткие тени (\textit{hard shadows})
 \pause
-\item Если источник света объёмный, точка сцены может находиться в тени относительно части источника света, и не находиться в тени относительно другой его части \begin{math}\Rightarrow\end{math} мягкие тени (soft shadows)
+\item Если источник света объёмный, точка сцены может находиться в тени относительно части источника света, и не находиться в тени относительно другой его части \begin{math}\Longrightarrow\end{math} мягкие тени (\textit{soft shadows})
 \pause
 \begin{itemize}
 \item Точки, полностью находящиеся в тени -- \textit{umbra}
-\item Точки, частично находящиеся в тени -- \textit{penumbra}
+\item Точки, частично находящиеся в тени -- \textit{penumbra} (\textit{полутень})
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -289,7 +286,7 @@ void main() {
 \begin{frame}[fragile]
 \frametitle{Тени: raytracing}
 \begin{itemize}
-\item При простом raytracing'е (без решения rendering equation) для получения жёсткой тени можно послать дополнительный луч в направлении света (shadow ray): если он что-то пересёк, точка находится в тени
+\item При простом raytracing'е (\textit{Whitted-style}, без полного решения rendering equation) для получения жёсткой тени можно послать дополнительный луч в направлении света (shadow ray): если он что-то пересёк, точка находится в тени
 \pause
 \item При raytracing'е с монте-карло интегрированием для global illumination тени (как жёсткие, так и мягкие) получаются автоматически
 \end{itemize}
@@ -347,19 +344,19 @@ void main() {
 \begin{frame}[fragile]
 \frametitle{Shadow volumes: алгоритм}
 \begin{itemize}
-\item Выключаем рисование в цветовой буфер и буфер глубины (\verb|glColorMask|, \verb|glDepthMask|) (но не выключаем тест глубины!)
+\item Выключаем рисование в цветовой буфер и буфер глубины (\mintinline{cpp}|glColorMask|, \mintinline{cpp}|glDepthMask|) (но не выключаем тест глубины!)
 \pause
-\item Настраиваем stencil буфер: \verb|+1| для front-facing треугольников, \verb|-1| для back-facing
+\item Настраиваем stencil буфер: \mintinline{cpp}|+1| для front-facing треугольников, \mintinline{cpp}|-1| для back-facing
 \pause
-\item Вычисляем и рисуем shadow volume (для каждого объекта)
+\item Вычисляем и рисуем shadow volume для каждого объекта
 \pause
 \item Обратно включаем рисование цвета и глубины
 \pause
-\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \verb|stencil=0|, и рисуем сцену шейдером, вычисляющим освещение
+\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \mintinline{cpp}|stencil == 0|, и рисуем сцену шейдером, вычисляющим освещение
 \pause
-\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \verb|stencil!=0|, и рисуем сцену шейдером, игнорирующим освещение
+\item Настраиваем stencil-тест так, чтобы рисовать только пиксели, в которых \mintinline{cpp}|stencil != 0|, и рисуем сцену шейдером, игнорирующим освещение
 \pause
-\item Процедуру нужно повторить для каждого источника света
+\item Повторяем для каждого источника света
 \end{itemize}
 \end{frame}
 
@@ -407,7 +404,7 @@ void main() {
 \begin{itemize}
 \item Нужен входной тип примитива \textit{lines adjacency}, позволяющий передать 4 вершины как один примитив (две вершины ребра + две вершины соседних треугольников)
 \pause
-\item \begin{math}\Rightarrow\end{math} модель должна быть специально адаптирована для генерации shadow volume
+\item \begin{math}\Longrightarrow\end{math} Модель должна быть специально адаптирована для генерации shadow volume
 \pause
 \item Шейдер проверяет, является ли ребро shadow edge, и генерирует грань shadow volume
 \end{itemize}
@@ -421,9 +418,9 @@ void main() {
 \item {\color{red}---} Алиасинг
 \item {\color{red}---} Сложно получить мягкие тени
 \item {\color{red}---} Нужно на лету генерировать геометрию
-\item {\color{red}---} Требует правильной геометрии (без дырок и дублирования)
+\item {\color{red}---} Требует правильной входной геометрии (без дырок и дублирования)
 \item {\color{red}---} Не работает, если камера находится внутри тени (исправляется с помощью т.н. Carmack's Reverse)
-\item {\color{red}---} Ресурсозатратен: даже для маленького объекта его shadow volume может занимать значительную часть сцены \begin{math}\Rightarrow\end{math} слишком много растеризации, чтения/записи памяти (stencil buffer)
+\item {\color{red}---} Ресурсозатратен: даже для маленького объекта его shadow volume может занимать значительную часть сцены \begin{math}\Longrightarrow\end{math} слишком много растеризации, чтения/записи памяти (stencil buffer)
 \end{itemize}
 \end{frame}
 
@@ -452,7 +449,7 @@ void main() {
 \begin{itemize}
 \item \href{https://en.wikipedia.org/wiki/Shadow_volume}{\nolinkurl{en.wikipedia.org/wiki/Shadow\_volume}}
 \item \href{https://ogldev.org/www/tutorial40/tutorial40.html}{\nolinkurl{ogldev.org/www/tutorial40/tutorial40.html}}
-\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch09.html}{GPU Gems, Chapter 9. Efficient Shadow Volume Rendering}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch09.html}{\texttt{GPU Gems, Chapter 9. Efficient Shadow Volume Rendering}}
 \end{itemize}
 \end{frame}
 
@@ -462,7 +459,7 @@ void main() {
 \item Самое популярное семейство алгоритмов рисования теней
 \pause
 \item Идея: представим, что источник света -- это камера (наблюдатель)
-\item Тень -- это то, что \textbf{не видит} источник света
+\item Тень -- это то, что \textit{не видит} источник света
 \pause
 \item Как понять, что видит источник света? \pause Нарисовать!
 \end{itemize}
@@ -471,12 +468,12 @@ void main() {
 \begin{frame}[fragile]
 \frametitle{Shadow mapping: алгоритм}
 \begin{itemize}
-\item Рисуем сцену в текстуру (shadow map, карта теней) с точки зрения источника света (цветовой буфер не нужен, достаточно буфера глубины)
+\item Рисуем сцену в текстуру (\textit{shadow map}, карта теней) с точки зрения источника света (цветовой буфер не нужен, достаточно буфера глубины)
 \pause
 \item Рисуем сцену на экран, фрагментный шейдер читает \textit{буфер глубины} (shadow map), нарисованный с точки зрения источника света -- там содержатся расстояния от источника до ближайшей (к источнику) поверхности
 \item Если расстояние от источника до рисуемого пикселя больше, чем значение из буфера глубины, -- текущий пиксель находится в тени
 \pause
-\item N.B. Линейная фильтрация для буфера глубины не имеет смысла -- будут артефакты на границах объектов
+\item \textbf{\alert{N.B.}} Линейная фильтрация для буфера глубины \underline{не имеет смысла} -- будут артефакты на границах объектов
 \end{itemize}
 \end{frame}
 
@@ -487,10 +484,9 @@ void main() {
 
 \begin{frame}[fragile]
 \frametitle{Shadow mapping: фрагментный шейдер}
-\fontsize{10pt}{10pt}
-\begin{verbatim}
-#version 330 core
-// Матрица с которой рисовался shadow map
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\tiny]{glsl}
+// Матрица проекции, с которой рисовался shadow map
 uniform mat4 shadow_projection;
 // Буфер глубины (shadow map)
 uniform sampler2D shadow_depth;
@@ -500,16 +496,20 @@ in vec3 position;
 void main(){
   vec4 shadow_coord = shadow_projection * vec4(position, 1.0);
   shadow_coord /= shadow_coord.w; // perspective divide
+
   if (abs(shadow_coord.x) < 1.0 && abs(shadow_coord.y) < 1.0){
     shadow_coord = shadow_coord * 0.5 + vec2(0.5);
 
-    bool in_shadow = texture(shadow_depth,
-      shadow_coord.xy).r < shadow_coord.z;
+    bool in_shadow = texture(shadow_depth, shadow_coord.xy).r
+        < shadow_coord.z;
 
-    ...
+    if (!in_shadow) {
+        // рассчёт освещения
+        ...
+    }
   }
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -527,7 +527,7 @@ void main(){
 \begin{itemize}
 \item Как выбрать проекцию камеры (\verb|shadow_transform|) для shadow map?
 \pause
-\item Удалённый источник освещает всю сцену с одного направления \begin{math}\Rightarrow\end{math} удобно использовать ортографическую проекцию
+\item Удалённый источник освещает всю сцену с одного направления \begin{math}\Longrightarrow\end{math} удобно использовать ортографическую проекцию
 \pause
 \item Проекцию надо подобрать так, чтобы в видимую область попала вся сцена
 \pause
@@ -538,7 +538,7 @@ void main(){
 \begin{frame}[fragile]
 \frametitle{Shadow mapping: проекция}
 \begin{itemize}
-\item Точечный источник светит во все стороны \begin{math}\Rightarrow\end{math} удобно использовать перспективную проекцию и cubemap-текстуру
+\item Точечный источник светит во все стороны \begin{math}\Longrightarrow\end{math} удобно использовать перспективную проекцию и cubemap-текстуру
 \pause
 \item 6 shadow map (по одной на каждую грань) с соответствующей перспективной проекцией
 \pause
@@ -551,12 +551,7 @@ void main(){
 \slideimage{shadow-acne.png}
 \end{frame}
 
-\begin{frame}[fragile]
-\frametitle{Shadow acne}
-\slideimage{shadow-acne-scheme.png}
-\end{frame}
-
-\begin{frame}[fragile]
+\begin{frame}<1>[fragile,label=acne]
 \frametitle{Shadow acne}
 \begin{itemize}
 \item Артефакт, возникающий из-за дискретности shadow map: если луч света не перпендикулярен плоскости объекта, рядом с центром пикселя shadow map будут точки с меньшей или большей глубиной
@@ -573,6 +568,13 @@ void main(){
 \end{itemize}
 \end{itemize}
 \end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow acne}
+\slideimage{shadow-acne-scheme.png}
+\end{frame}
+
+\againframe<1->{acne}
 
 \begin{frame}[fragile]
 \frametitle{Back-facing shadows}
@@ -632,32 +634,36 @@ void main(){
 \begin{itemize}
 \item Позволяет использовать фильтрацию текстур, mipmaps, размытие shadow map
 \pause
-\item Exponential shadow maps, variance shadow maps (следующая лекция)
+\item Exponential shadow maps, variance shadow maps
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Shadow sampler}
-\fontsize{10pt}{10pt}
 \begin{itemize}
-\item В OpenGL есть ограниченная поддержка PCF в виде shadow sampler'ов
+\item В OpenGL есть ограниченная поддержка PCF в виде \textit{shadow samplers}
 \pause
 \item Для текстуры нужно настроить параметры:
 \begin{itemize}
-\item \verb|GL_TEXTURE_COMPARE_MODE| в значение \verb|GL_COMPARE_REF_TO_TEXTURE| (по умолчанию -- \verb|GL_NONE|)
-\item \verb|GL_TEXTURE_COMPARE_FUNC| в значение \verb|GL_LEQUAL| (теоретически могут быть \verb|GL_ALWAYS| и т.п.)
+\item \mintinline{cpp}|GL_TEXTURE_COMPARE_MODE| в значение \mintinline{cpp}|GL_COMPARE_REF_TO_TEXTURE|
+\item \mintinline{cpp}|GL_TEXTURE_COMPARE_FUNC| в значение \mintinline{cpp}|GL_LEQUAL| (теоретически могут быть \mintinline{cpp}|GL_ALWAYS| и т.п.)
 \end{itemize}
 \pause
-\item Текстуру с \verb|GL_COMPARE_REF_TO_TEXTURE| \textbf{нельзя} использовать как \verb|sampler2D|, для неё есть отдельный тип sampler'а: \verb|sampler2DShadow|
-\pause
-\item Функция \verb|texture(shadow_map, texcoord)| принимает трёхмерный вектор текстурных координат:
+\item Текстуру с \mintinline{cpp}|GL_COMPARE_REF_TO_TEXTURE| \textbf{нельзя} использовать как \mintinline{glsl}|sampler2D|, для неё есть отдельный тип sampler'а: \mintinline{glsl}|sampler2DShadow|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Shadow sampler}
+\begin{itemize}
+\item Функция \mintinline{glsl}|texture(shadow_map, texcoord)| принимает трёхмерный вектор текстурных координат:
 \begin{itemize}
 \item Первые две -- обычные X,Y текстурные координаты
 \item Третья -- используется для сравнения со значением в shadow map
 \end{itemize}
 \pause
-\item Если сравнение успешно, возвращается 1, иначе 0 (функция сравнения настраивается \verb|GL_TEXTURE_COMPARE_FUNC|)
+\item Если сравнение успешно, возвращается 1, иначе 0 (функция сравнения настраивается \mintinline{cpp}|GL_TEXTURE_COMPARE_FUNC|)
 \pause
 \item Для такой текстуры можно включить линейную фильтрацию -- интерполироваться будут не значения глубины, а \textit{результаты сравнения}
 \end{itemize}
@@ -679,7 +685,7 @@ void main(){
 \item \href{https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}{\nolinkurl{learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}}
 \item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping}{\nolinkurl{opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping}}
 \item \href{https://ogldev.org/www/tutorial23/tutorial23.html}{\nolinkurl{ogldev.org/www/tutorial23/tutorial23.html}}
-\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-17-efficient-soft-edged-shadows-using}{GPU Gems 2, Chapter 17. Efficient Soft-Edged Shadows Using Pixel Shader Branching}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-17-efficient-soft-edged-shadows-using}{\texttt{GPU Gems 2, Chapter 17. Efficient Soft-Edged Shadows Using Pixel Shader Branching}}
 \end{itemize}
 \end{frame}
 
