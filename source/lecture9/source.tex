@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
 \documentclass{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,10 +23,14 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -40,11 +44,13 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 9: Вычисление проекции для shadow mapping, ESM, VSM, PSM, CSM, Ambient Occlusion}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
 \begin{document}
+
+\usemintedstyle{solarized-light}
 
 \frame{\titlepage}
 
@@ -55,7 +61,7 @@
 \pause
 \item Каждая проекция смотрит в направлении некоторой оси: \begin{math}\pm X, \pm Y, \pm Z\end{math}
 \pause
-\item Соответствующие грани cubemap-текстуры в OpenGL называются \verb|GL_TEXTURE_CUBE_MAP_POSITIVE_X|, \verb|GL_TEXTURE_CUBE_MAP_NEGATIVE_X| и т.д. (параметр \verb|glTexImage2D|, \verb|glFramebufferTexture2D|, etc)
+\item Соответствующие грани cubemap-текстуры в OpenGL называются \mintinline{cpp}|GL_TEXTURE_CUBE_MAP_POSITIVE_X|, \mintinline{cpp}|GL_TEXTURE_CUBE_MAP_NEGATIVE_X| и т.д. (параметр \mintinline{cpp}|glTexImage2D|, \mintinline{cpp}|glFramebufferTexture2D|, etc)
 \pause
 \item Каждую проекцию нужно будет покрутить вокруг оси взгляда, чтобы она совпала с тем, как эта грань cubemap текстуры определена в OpenGL (проще всего -- подбором одного из четырёх вращений на \begin{math}90^\circ\end{math})
 \pause
@@ -66,14 +72,14 @@
 \begin{frame}[fragile]
 \frametitle{Проекция для shadow map: точечный источник}
 \begin{itemize}
-\item \verb|near| и \verb|far| -- максимальное (соответственно, минимальное), при котором не обрезается ничего лишнего
+\item \mintinline{cpp}|near| и \mintinline{cpp}|far| -- максимальное (соответственно, минимальное), при котором не обрезается ничего лишнего
 \pause
 \begin{itemize}
-\item \verb|near| -- минимальное расстояние до вершин объектов сцены
-\item \verb|far| -- максимальное расстояние до вершин объектов сцены
+\item \mintinline{cpp}|near| -- минимальное расстояние до вершин объектов сцены (часто просто хардкодится)
+\item \mintinline{cpp}|far| -- максимальное расстояние до вершин объектов сцены
 \end{itemize}
 \pause
-\item Например, \verb|far| можно посчитать как \begin{math}\max\limits_V |(V - C) \cdot D|\end{math}, где
+\item Например, \mintinline{cpp}|far| можно посчитать как \begin{math}\max\limits_V |(V - C) \cdot D|\end{math}, где
 \begin{itemize}
 \item \begin{math}C\end{math} -- координаты центра проекции (источника света)
 \item \begin{math}D\end{math} -- единичный вектор направления взгляда проекции
@@ -81,8 +87,6 @@
 \end{itemize}
 \pause
 \item Можно заранее вычислить bounding box сцены и вычислять максимум только по его вершинам
-\pause
-\item Аналогично минимум для \verb|near|
 \end{itemize}
 \end{frame}
 
@@ -123,12 +127,24 @@
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Проекция для shadow map: направленный источник}
+\begin{itemize}
+\item Описанный алгоритм слишком консервативен: в shadow map попадает вообще вся сцена
+\pause
+\item Можно взять bounding box области, видимой из основной камеры, и вычислить, что может бросать тень на эту область, и взять проекцию для shadow map, в которую попадают только эти объекты
+\pause
+\item Можно подобрать оси X, Y для проекции shadow map так, чтобы максимально плотно уместить видимую область
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Проблемы shadow mapping}
 \begin{itemize}
 \item В базовом shadow mapping хорошо видны пиксели shadow map (квадратная лесенка на границе тени)
 \pause
 \begin{itemize}
-\item Тем хуже, чем больше сцена (пиксели становятся больше)
+\item Чем больше сцена, тем хуже (пиксели становятся больше)
+\pause
 \item Особенно плохо, если тень движется
 \end{itemize}
 \pause
@@ -136,7 +152,7 @@
 \pause
 \item Саму shadow map сглаживать (размывать / использовать линейную фильтрацию / mipmaps) нет смысла: получатся интерполированные значения глубин, сравнение с ними даёт видимые артефакты и ничего не улучшает
 \pause
-\item Встроенный PCF усредняет только по соседним 4 пикселям, иначе приходится делать размытие несепарабельным фильтром
+\item Встроенный PCF (shadow samplers) усредняет только по соседним 4 пикселям, иначе приходится делать размытие несепарабельным фильтром
 \end{itemize}
 \end{frame}
 
@@ -163,7 +179,7 @@
 \begin{frame}[fragile]
 \frametitle{Filtered shadow maps}
 \begin{itemize}
-\item Хочется, чтобы shadow map содержал значения, которые имеет смысл интерполировать
+\item Хочется, чтобы shadow map содержал значения, которые имеет смысл интерполировать (\textit{фильтровать})
 \pause
 \item Тогда можно применить весь арсенал работы с текстурами: линейную фильтрацию, mipmaps, размытие, etc.
 \end{itemize}
@@ -172,9 +188,9 @@
 \begin{frame}[fragile]
 \frametitle{Filtered shadow maps}
 \begin{itemize}
-\item Идея: рассматривать значение в одном пикселе shadow map как описывающем некое распределение вероятности
+\item Идея: рассматривать значение в одном пикселе shadow map как описание некого распределения вероятности
 \pause
-\item График уровня освещённости в зависимости от расстояния до источника света:
+\item График уровня освещённости в зависимости от расстояния до источника света (\begin{math}\color{blue}Z_0\end{math} -- глубина объекта, бросающего тень)
 \end{itemize}
 \begin{center}
 \begin{tikzpicture}
@@ -197,7 +213,7 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]
+\begin{frame}<1>[fragile,label=esm]
 \frametitle{Exponential shadow maps (ESM)}
 \begin{itemize}
 \item Идея: функцию распределения можно аппроксимировать экспонентой \begin{math}F(z) = \min(1, \exp(C \cdot (z_0 - z))) = \min(1, \exp(-Cz)\exp(Cz_0))\end{math} (\begin{math}z\end{math} -- расстояние до освещаемого пикселя, \begin{math}z_0\end{math} -- расстояние до источника тени)
@@ -209,10 +225,15 @@
 \item В шейдере будем умножать это значение на \begin{math}\exp(-Cz)\end{math}
 \pause
 \item Если результат больше единицы (\begin{math}z < z_0\end{math}), принимаем освещённость за единицу
-\pause
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Exponential shadow maps (ESM)}
 \slideimage{exp_plot.png}
 \end{frame}
+
+\againframe<1->{esm}
 
 \begin{frame}[fragile]
 \frametitle{ESM с линейной фильтрацией}
@@ -237,7 +258,7 @@
 \begin{frame}[fragile]
 \frametitle{Variance shadow maps (VSM)}
 \begin{itemize}
-\item Идея: запишем в shadow map мат.ожидание глубины и её квадрата
+\item Идея: запишем в shadow map мат. ожидание глубины и её квадрата
 \pause
 \item Их можно усреднять:
 \begin{equation}
@@ -327,7 +348,7 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \begin{itemize}
 \item Обычно возникает, когда \begin{math}\sigma^2\end{math} оказывается слишком большим (в близкие пиксели попали очень далёкие объекты)
 \pause
-\item Можно исправить, трактуя маленькие значения коэффициента освещённости как нулевые, и преобразовав остальные значения в диапазон \begin{math}[0, 1]\end{math}
+\item Можно частично исправить, трактуя маленькие значения коэффициента освещённости как нулевые, и преобразовав остальные значения в диапазон \begin{math}[0, 1]\end{math}
 \pause
 \item Конкретные значения нужно подбирать в зависимости от сцены
 \end{itemize}
@@ -353,12 +374,12 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \begin{frame}[fragile]
 \frametitle{Ссылки}
 \begin{itemize}
-\item \href{https://ogldev.org/www/tutorial42/tutorial42.html}{ogldev.org/www/tutorial42/tutorial42.html}
-\item \href{https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}{learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}
-\item \href{https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}{docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}
-\item \href{https://jankautz.com/publications/esm_gi08.pdf}{Оригинальная статья про ESM}
-\item \href{https://www.intel.com/content/dam/develop/external/us/en/documents/vsm-paper-182631.pdf}{Оригинальная статья про VSM}
-\item \href{https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps}{Улучшения VSM, включая более реалистичные мягкие тени}
+\item \href{https://ogldev.org/www/tutorial42/tutorial42.html}{\texttt{ogldev.org/www/tutorial42/tutorial42.html}}
+\item \href{https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}{\texttt{learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping}}
+\item \href{https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}{\texttt{docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps}}
+\item \href{https://jankautz.com/publications/esm_gi08.pdf}{\texttt{Оригинальная статья про ESM}}
+\item \href{https://www.intel.com/content/dam/develop/external/us/en/documents/vsm-paper-182631.pdf}{\texttt{Оригинальная статья про VSM}}
+\item \href{https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps}{\texttt{Улучшения VSM, включая более реалистичные мягкие тени}}
 \end{itemize}
 \end{frame}
 
@@ -395,7 +416,7 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \begin{frame}[fragile]
 \frametitle{Cascaded shadow maps (CSM)}
 \begin{itemize}
-\item Будем использовать несколько shadow maps (cascades): одну -- для ближайших объектов, другую -- для объектов на среднем расстоянии, третью -- для далёких объектов, и т.п.
+\item Будем использовать несколько shadow maps (\textit{cascades}): одну -- для ближайших объектов, другую -- для объектов на среднем расстоянии, третью -- для далёких объектов, и т.п.
 \end{itemize}
 \slideimage{csm.jpg}
 \end{frame}
@@ -407,18 +428,18 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \item {\color{green}+} Легко комбинировать с VSM/ESM/etc
 \item {\color{red}—} Большой расход памяти
 \item {\color{red}—} Нужно аккуратно обработать переход между разными каскадами
-\item Самый часто использующийся сегодня алгоритм, поддерживается большинством движков
+\item Самый \textit{\underline{часто использующийся}} сегодня алгоритм, поддерживается большинством движков
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Shadow mapping: ссылки}
+\frametitle{Shadow mapping на больших сценах: ссылки}
 \begin{itemize}
-\item \href{https://www-sop.inria.fr/reves/Basilic/2002/SD02/PerspectiveShadowMaps.pdf}{Оригинальная статья про PSM}
-\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch14.html}{PSM + улучшения}
-\item \href{https://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf}{Статья про CSM}
-\item \href{https://ogldev.org/www/tutorial49/tutorial49.html}{ogldev.org/www/tutorial49/tutorial49.html}
-\item \href{https://learnopengl.com/Guest-Articles/2021/CSM}{learnopengl.com/Guest-Articles/2021/CSM}
+\item \href{https://www-sop.inria.fr/reves/Basilic/2002/SD02/PerspectiveShadowMaps.pdf}{\texttt{Оригинальная статья про PSM}}
+\item \href{https://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch14.html}{\texttt{PSM + улучшения}}
+\item \href{https://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf}{\texttt{Статья про CSM}}
+\item \href{https://ogldev.org/www/tutorial49/tutorial49.html}{\texttt{ogldev.org/www/tutorial49/tutorial49.html}}
+\item \href{https://learnopengl.com/Guest-Articles/2021/CSM}{\texttt{learnopengl.com/Guest-Articles/2021/CSM}}
 \end{itemize}
 \end{frame}
 
@@ -478,7 +499,7 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \begin{frame}[fragile]
 \frametitle{Baking}
 \begin{itemize}
-\item Записывание предподсчитанных свойств объектов в текстуры в общем случае называется baking (запеканием)
+\item Записывание предподсчитанных свойств объектов в текстуры в общем случае называется \textit{baking} (\textit{запеканием})
 \pause
 \item Все 3D-редакторы умеют запекать нормали, ambient occlusion, и многое другое
 \end{itemize}
@@ -503,7 +524,7 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \begin{itemize}
 \item Screen-space ambient occlusion (SSAO) -- один из первых real-time алгоритмов для генерации ambient occlusion
 \pause
-\item Термин `screen-space' означает, что алгоритм использует только те данные, которые попадают на экран в процессе рендеринга (т.е. не использует саму исходную геометрию, не использует рендеринг в текстуру с другого ракурса, и т.п.)
+\item Термин \textit{screen-space} означает, что алгоритм использует только те данные, которые попадают на экран в процессе рендеринга (т.е. не использует саму исходную геометрию, не использует рендеринг в текстуру с другого ракурса, и т.п.)
 \pause
 \item Идея: вычислим пересечение полусферы некоторого радиуса в освещаемой точке с окружающей геометрией, объём этого пересечения -- аппроксимация ambient occlusion (чем больше вокруг пикселя других объектов, тем слабее он освещён)
 \end{itemize}
@@ -532,11 +553,11 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \pause
 \item В SSAO источник banding'а -- монте-карло интегрирование: отношение \begin{math}\frac{K}{N}\end{math} (K -- количество видимых точек, N -- всех точек) может принимать небольшой набор (N+1) дискретных значений
 \pause
-\item Можно вращать набор случайных точек вокруг нормали освещаемой точки на угол, случайный для каждого освещаемого пикселя (угол тоже передаётся какой-нибудь текстурой)
+\item Можно вращать набор случайных точек вокруг нормали освещаемой точки на угол, случайный для каждого освещаемого пикселя (угол тоже передаётся текстурой или вычисляется псевдо-случайным на основе координат пикселя)
 \pause
 \item Приводит к `шуму' в изображении, который менее заметен и который можно размыть
 \pause
-\item Разменять banding на шум -- классический приём real-time графики
+\item Разменять banding на шум -- \textit{классический приём} real-time графики
 \end{itemize}
 \end{frame}
 
@@ -548,8 +569,8 @@ z^2 + \frac{1}{4}\left[\left(\frac{\partial z}{\partial x}\right)^2 + \left(\fra
 \begin{frame}[fragile]
 \frametitle{SSAO: ссылки}
 \begin{itemize}
-\item \href{https://artis.inrialpes.fr/Membres/Olivier.Hoel/ssao/nVidiaHSAO/ScreenSpaceAO.pdf}{Оригинальная статья про SSAO}
-\item \href{https://learnopengl.com/Advanced-Lighting/SSAO}{learnopengl.com/Advanced-Lighting/SSAO}
+\item \href{https://artis.inrialpes.fr/Membres/Olivier.Hoel/ssao/nVidiaHSAO/ScreenSpaceAO.pdf}{\texttt{Оригинальная статья про SSAO}}
+\item \href{https://learnopengl.com/Advanced-Lighting/SSAO}{\texttt{learnopengl.com/Advanced-Lighting/SSAO}}
 \end{itemize}
 \end{frame}
 
