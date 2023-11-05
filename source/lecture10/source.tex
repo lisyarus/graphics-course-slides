@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,10 +23,14 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -38,17 +42,13 @@
 }
 \makeatother
 
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    urlcolor=blue,
-}
-
 \title{Компьютерная графика}
 \subtitle{Лекция 10: Normal mapping, material mapping, environment mapping, отражения, несколько источников света}
-\date{2022}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
+
+\usemintedstyle{solarized-light}
 
 \begin{document}
 
@@ -77,8 +77,8 @@
 \begin{itemize}
 \item Наблюдение: высокая детализация даёт 2 вещи
 \begin{itemize}
-\item Детализацию координат вершин -- слабо заметна
-\item Детализацию нормалей вершин -- сильно заметна, так как влияет на освещение
+\item Детализацию \textit{геометрии} -- слабо заметна
+\item Детализацию \textit{нормалей} -- сильно заметна, так как влияет на освещение
 \end{itemize}
 \pause
 \item Давайте откажемся от детализации координат!
@@ -93,7 +93,7 @@
 \begin{frame}[fragile]
 \frametitle{Normal mapping}
 \begin{itemize}
-\item Normal mapping: используем текстуру, в которой закодированы нормали в точках объекта
+\item \textit{Normal mapping}: используем текстуру, в которой закодированы нормали в точках объекта
 \pause
 \item Вместо нормалей, приходящих в вершинах, достаём нормали из текстуры во фрагментном шейдере (используя те же текстурные координаты, что и для цвета)
 \pause
@@ -129,14 +129,14 @@
 \item В системе координат объекта
 \begin{itemize}
 \item {\color{green}+} Нет лишних операций, просто читаем нормаль из текстуры (и, возможно, применяем model матрицу)
-\item {\color{red}—} Неудобно при подготовке данных: любое изменение модели (напр. слегка повернули часть объекта) нужно пересчитывать текстуру нормалей
+\item {\color{red}—} Неудобно при подготовке данных: любое изменение модели (напр. слегка повернули часть объекта) влечёт пересчёт текстуры нормалей
 \end{itemize}
 \pause
 \item В локальной системе координат пикселя, учитывая геометрию объекта
 \begin{itemize}
-\item {\color{red}—} Нужно восстанавливать локальную систему координат в шейдере (используя атрибуты вершины)
+\item {\color{red}—} Нужно восстанавливать локальную систему координат точки в шейдере
 \item {\color{green}+} Можно сэкономить и хранить только две координаты нормали
-\item {\color{green}+} Обычно такая текстура с нормалями легче воспринимается на глаз
+\item {\color{green}+} Такая текстура легче воспринимается на глаз
 \item Наиболее  распространённый способ
 \item Такие текстуры часто выглядят синими, потому что направление Z считается нормалью вершины
 \end{itemize}
@@ -151,13 +151,30 @@
 \item Она задаётся ортонормированным базисом из трёх векторов -- tangent, bitangent, normal (TBN):
 \pause
 \begin{itemize}
-\item Tangent -- смотрит в направлении роста первой текстурной координаты вдоль поверхности
-\item Bitangent -- смотрит в направлении роста второй текстурной координаты вдоль поверхности
-\item Normal -- перпендикуляр к поверхности
+\item \textit{Tangent} -- смотрит в направлении роста первой текстурной координаты вдоль поверхности
+\item \textit{Bitangent} -- смотрит в направлении роста второй текстурной координаты вдоль поверхности
+\item \textit{Normal} -- перпендикуляр к поверхности
 \end{itemize}
 \pause
 \item Обычно их хранят в атрибутах вершин
 \item Достаточно любых двух векторов (обычно -- normal + tangent), так как третий восстанавливается через векторное произведение
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Normal mapping: TBN и shader derivatives}
+\begin{itemize}
+\item Есть способ восстановить TBN используя \mintinline{glsl}|dFdx & dFdy|:
+\pause
+\item Нас интересует производная первой текстурной координаты по мировым координатам точки (т.е. в каком направлении растёт эта координата)
+\pause
+\item Через \mintinline{glsl}|dFdy & dFdy| мы можем получить производную текстурной координаты по пикселям экрана и производную мировых координат по пикселям экрана
+\pause
+\item Мы знаем \begin{math}\frac{\partial A}{\partial C}\end{math} и \begin{math}\frac{\partial B}{\partial C}\end{math}, можем вычислить \begin{math}\frac{\partial A}{\partial B} = \frac{\partial A}{\partial C} \cdot \left(\frac{\partial B}{\partial C}\right)^{-1}\end{math}
+\pause
+\item Сводится к операциям над матрицами \begin{math}2\times 2\end{math} в шейдере
+\pause
+\item Метод менее точен, но позволяет избежать дополнительных данных в вершинах
 \end{itemize}
 \end{frame}
 
@@ -169,26 +186,26 @@
 \pause
 \item Нормаль -- 3х-компонентный нормированный вектор
 \pause
-\item Floating-point текстуры (\verb|GL_RGB32F| или \verb|GL_RGB16F|)
+\item Floating-point текстуры (\mintinline{cpp}|GL_RGB32F| или \mintinline{cpp}|GL_RGB16F|)
 \begin{itemize}
 \item {\color{red}—} Занимают много места (3x16-bit = 6 байт на пиксель)
 \item {\color{red}—} Излишняя точность
 \item {\color{red}—} Значительная часть возможных значений (координаты больше 1 по модулю) вообще не используется
 \end{itemize}
 \pause
-\item Signed normalized текстуры (\verb|GL_RGB8_SNORM|)
+\item Signed normalized текстуры (\mintinline{cpp}|GL_RGB8_SNORM|)
 \begin{itemize}
 \item {\color{green}+} Компактные
 \item {\color{green}+} Достаточно точности
 \item {\color{red}—} Форматы изображений обычно не умеют работать с signed пикселями
 \end{itemize}
 \pause
-\item Обычные unsigned normalized текстуры (\verb|GL_RGB8|, \verb|GL_RGB10_A2|, \verb|GL_RGB565|, \verb|GL_RGB5_A1|, \verb|GL_R3_G3_B2|)
+\item Обычные unsigned normalized текстуры (\mintinline{cpp}|GL_RGB8|, \mintinline{cpp}|GL_RGB10_A2|, \mintinline{cpp}|GL_RGB565|, \mintinline{cpp}|GL_RGB5_A1|, \mintinline{cpp}|GL_R3_G3_B2|)
 \begin{itemize}
 \item {\color{green}+} Компактные
 \item {\color{green}+} Достаточно точности
 \item {\color{green}+} Можно использовать обычные форматы изображений
-\item Координаты хранятся в виде, отмасштабированном в диапазон [0, 1], т.е. \verb|0.5 * (x + 1)|
+\item Координаты хранятся в виде, отмасштабированном в диапазон [0, 1], т.е. \mintinline{cpp}|0.5 * (x + 1)|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -199,19 +216,19 @@
 \begin{itemize}
 \item Если нормаль всегда ориентирована локально `вверх' (как в варианте с TBN), можно не хранить Z-компоненту нормали: её можно восстановить по XY как \begin{math}\sqrt{1-x^2-y^2}\end{math}
 \pause
-\item Для текстуры нормалей обычно имеет смысл включать линейную интерполяцию и мипмапы, но мипмапы могут работать неправильно
+\item Для текстуры нормалей обычно имеет смысл включать линейную интерполяцию и мипмапы, но мипмапы могут работать неправильно на сложных поверхностях (brdf с усреднённой нормалью -- не то же самое, что усреднённые значения brdf)
 \pause
-\item Нормаль, прочитанную из текстуры, лучше явно нормировать в шейдере (функцией \verb|normalize|), так как она может быть не нормированной из-за неточностей формата хранения и линейной интерполяции, что приведёт к артефактам при расчёте specular освещения
+\item Нормаль, прочитанную из текстуры, лучше явно нормировать в шейдере (функцией \mintinline{cpp}|normalize|), так как она может быть не нормированной из-за неточностей формата хранения и линейной интерполяции, что приведёт к артефактам при расчёте specular освещения
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Normal mapping: ссылки}
 \begin{itemize}
-\item \href{https://learnopengl.com/Advanced-Lighting/Normal-Mapping}{\nolinkurl{learnopengl.com/Advanced-Lighting/Normal-Mapping}}
-\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping}{\nolinkurl{opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping}}
-\item \href{https://sudonull.com/post/14500-Learn-OpenGL-Lesson-55-Normal-Mapping}{\nolinkurl{sudonull.com/post/14500-Learn-OpenGL-Lesson-55-Normal-Mapping}}
-\item \href{https://habr.com/ru/post/415579}{\nolinkurl{habr.com/ru/post/415579}}
+\item \href{https://learnopengl.com/Advanced-Lighting/Normal-Mapping}{\texttt{learnopengl.com/Advanced-Lighting/Normal-Mapping}}
+\item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping}{\texttt{opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping}}
+\item \href{https://sudonull.com/post/14500-Learn-OpenGL-Lesson-55-Normal-Mapping}{\texttt{sudonull.com/post/14500-Learn-OpenGL-Lesson-55-Normal-Mapping}}
+\item \href{https://habr.com/ru/post/415579}{\texttt{habr.com/ru/post/415579}}
 \end{itemize}
 \end{frame}
 
@@ -220,7 +237,7 @@
 \begin{itemize}
 \item В обработке освещения часто встречаются настраиваемые параметры, помимо цвета (альбедо) объекта (например, glossiness и roughness для specular освещения)
 \pause
-\item Можно их тоже варьировать, читая из текстуры!
+\item \textit{Material mapping}: варьировать их, читая из текстуры, так же как альбедо или нормали
 \end{itemize}
 \end{frame}
 
@@ -236,16 +253,18 @@
 \pause
 \item Тратить ресурсы на то, чтобы рисовать что-то очень далёкое, не хочется
 \pause
-\item Решение: статическая (обычно), заранее подготовленная картинка `environment map' (облака, горы, etc.)
+\item \textit{Environment mapping}: рисовать статическую (обычно), заранее подготовленную картинку `environment map' (облака, горы, etc.)
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Environment mapping: как хранить?}
 \begin{itemize}
-\item Environment map задаёт цвет `фона' в каждом возможном направлении
+\item Environment map задаёт цвет `фона' в каждом возможном направлении (формально -- количество света, приходящего в сцену из этого направления)
 \pause
-\item Варианты:
+\item \textbf{\alert{N.B.}}: лучше, если ambient освещение совпадает с усреднённым значением environment map, иначе картинка будет выглядеть неестественно
+\pause
+\item Варианты хранения:
 \begin{itemize}
 \item Cubemap-текстура
 \pause
@@ -296,7 +315,7 @@
 \pause
 \item Дешёвая аппроксимация: будем учитывать в отражениях только environment map
 \pause
-\item Такая техника известна под названиями reflection mapping или environment mapping
+\item Такая техника известна под названиями \textit{reflection mapping} или \textit{environment mapping}
 \pause
 \item {\color{green}+} Просто в реализации
 \item {\color{green}+} Быстро работает
@@ -311,9 +330,9 @@
 \begin{itemize}
 \item Во фрагментном шейдере вычисляем направление луча из камеры в точку
 \pause
-\item Вычисляем направление отражённого луча
+\item Вычисляем направление отражённого луча, используя нормаль к поверхности (возможно, с normal mapping'ом)
 \pause
-\item Используем для чтения из environment map
+\item Используем вычисленное направление для чтения из environment map
 \pause
 \item Можно явно использовать mipmap'ы environment map'а чтобы аппроксимировать размытое отражение (roughness)
 \end{itemize}
@@ -327,7 +346,7 @@
 \begin{frame}[fragile]
 \frametitle{Environment/reflection mapping: ссылки}
 \begin{itemize}
-\item \href{https://learnopengl.com/Advanced-OpenGL/Cubemaps}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Cubemaps}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Cubemaps}{\texttt{learnopengl.com/Advanced-OpenGL/Cubemaps}}
 \end{itemize}
 \end{frame}
 
@@ -383,6 +402,8 @@
 \item Как в reflection mapping, можно использовать mipmap'ы или размыть cubemap чтобы имитировать нечёткие отражения
 \pause
 \item Можно сэкономить, взяв cubemap низкого качества, и рисуя в него только крупные объекты
+\pause
+\item Можно сэкономить, расставляя зеркала только внутри зданий/комнат, где заранее известен набор отражаемых объектов
 \end{itemize}
 \end{frame}
 
@@ -404,9 +425,10 @@
 \item Можно использовать массивы uniform-переменных
 \pause
 \begin{itemize}
-\item Задаются как \verb|uniform vec3 light_position[N]| (\verb|N| -- константа)
-\item Каждый элемент массива -- отдельная uniform-переменная, для неё нужно отдельно вызвать \verb|glGetUniformLocation|
-\item Имя этой переменной -- имя массива + индекс, например \verb|light_position[0]|
+\item Задаются как \mintinline{glsl}|uniform vec3 light_position[N]| (\mintinline{glsl}|N| -- константа)
+\item Каждый элемент массива -- отдельная uniform-переменная, для неё нужно отдельно вызвать \mintinline{cpp}|glGetUniformLocation|
+\item Имя этой переменной -- имя массива + индекс, например \mintinline{glsl}|light_position[0]|
+\item Альтернативно, можно загрузить весь массив сразу функциями \mintinline{cpp}|glUniform*v|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -416,9 +438,9 @@
 \begin{itemize}
 \item Сколько источников света можно так обработать?
 \pause
-\item OpenGL гарантирует, что под uniform-переменные есть как минимум 1024 выделенных компоненты (\verb|vec3| занимает 3 компоненты, и т.п.)
+\item OpenGL гарантирует, что под uniform-переменные есть как минимум 1024 выделенных компоненты (\mintinline{glsl}|vec3| занимает 3 компоненты, и т.п.)
 \pause
-\item В варианте 3 \verb|vec3| на источник (position, color, attenuation) -- около 113 источников света
+\item В варианте 3 \mintinline{glsl}|vec3| на источник (position, color, attenuation) -- около 113 источников света
 \pause
 \item Чем больше источников, тем больше вычислений в шейдере, тем больше нагрузка на GPU
 \end{itemize}
@@ -459,16 +481,16 @@
 \item Вычисляется вклад в освещение для объекта, находящегося слишком далеко от источника света
 \end{itemize}
 \pause
-\item Можно частично решить, вычисляя для каждого объекта список источников, которыми он освещён \begin{math}\Rightarrow\end{math} больше изменений uniform-переменных при рендеринге, меньше возможность для batching'а (объединения объектов в группы или в общие буферы)
+\item Можно частично решить, вычисляя для каждого объекта список источников, которыми он освещён \begin{math}\Longrightarrow\end{math} больше изменений uniform-переменных при рендеринге, меньше возможность для batching'а (объединения объектов в группы или в общие буферы)
 \pause
-\item Более современные решения: deferred shading, tiled/clustered shading
+\item Более современные решения: \textit{deferred shading}, \textit{tiled/clustered shading}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Deferred shading}
 \begin{itemize}
-\item Идея: вместо рисования сцены на экран, сначала нарисуем её (с точки зрения камеры) в набор буферов, вместе называющийся G-buffer, содержащих
+\item Идея: вместо рисования сцены на экран, сначала нарисуем её (с точки зрения камеры) в набор буферов, вместе называющийся \textit{G-buffer}, содержащих
 \begin{itemize}
 \item Цвет пикселей (альбедо)
 \item Нормали пикселей
@@ -477,9 +499,18 @@
 \item И т.п.
 \end{itemize}
 \pause
-\item После этого вычисляем освещение любым способом: одним большим шейдером на все источники, или аддитивным blending'ом по одному
+\item Шейдер читает из G-buffer'а параметры материала в этом пикселе и вычисляет вклад освещения для всех источников света
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Deferred shading}
+\begin{itemize}
+\item Можно применять освещение одним шейдером на все источники, а можно аддитивным blending'ом по одному
 \pause
-\item В варианте с blending'ом можно вычислять освещение только для пикселей, расположенных рядом с источником света
+\item В любом случае нужно рисовать полноэкранный прямоугольник
+\pause
+\item В варианте с blending'ом можно вычислять освещение только для пикселей, расположенных рядом с источником света, вместо полноэкранного прямоугольника рисуя некую геометрию, ограничивающую область, освещаемую этим источником света (\textit{proxy geometry})
 \end{itemize}
 \end{frame}
 
@@ -489,14 +520,25 @@
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Deferred shading: G-buffer (GTA V)}
+\slideimage{gta.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Deferred shading: G-buffer (RDR 2)}
+\slideimage{rdr2.jpg}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Deferred shading}
 \begin{itemize}
 \item {\color{green}+} Позволяет учесть тысячи источников света
-\item {\color{green}+} После применения освещения остаётся много информации (G-buffer), которую можно использовать для других эффектов (SSAO, screen-space reflections, ...
+\item {\color{green}+} После применения освещения остаётся много информации (G-buffer), которую можно использовать для других эффектов (SSAO, screen-space reflections, ...)
 \item {\color{green}+} Не вычисляет освещение для объектов, скрытых другими объектами
 \item {\color{green}+} Есть много вариантов оптимизации хранения G-buffer'а (сжимать нормали, восстанавливать позицию по глубине)
 \item {\color{red}—} Не позволяет учесть освещённые полупрозрачные объекты (на каждый слой прозрачных объектов нужен свой G-buffer)
-\item {\color{red}—} Очень много операций записи памяти (в G-buffer) на каждый кадр
+\item {\color{red}—} Очень много операций записи и чтения памяти (G-buffer) на каждый кадр
+\item Всё ещё один из самых популярных алгоритмов
 \end{itemize}
 \end{frame}
 
@@ -505,8 +547,8 @@
 \begin{itemize}
 \item Идея: разобьём видимую область на кусочки
 \begin{itemize}
-\item Tiled: экран разбивается на маленькие `тайлы', например 8x8 пикселей
-\item Clustered: трёхмерная видимая область (view frustum) разбивается на `кластеры', например 16x8x24 (всего 3072 кластера) по X, Y и Z соответственно
+\item \textit{Tiled}: экран разбивается на маленькие `тайлы', например 8x8 пикселей
+\item \textit{Clustered}: трёхмерная видимая область (view frustum) разбивается на `кластеры', например 16x8x24 (всего 3072 кластера) по X, Y и Z соответственно
 \end{itemize}
 \pause
 \item Для каждого тайла/кластера вычисляем список источников света, влияющих на объекты в этом тайле/кластере
@@ -544,6 +586,7 @@
 \item {\color{green}+} Позволяет учесть тысячи источников света
 \item {\color{green}+} Позволяет рисовать прозрачные освещённые объекты
 \item {\color{red}—} Вычисляет освещение и для объектов, скрытых другими объектами
+\item Из-за меньшего количества операций с памятью обычно работает быстрее, чем deferred shading
 \end{itemize}
 \end{frame}
 
@@ -560,7 +603,7 @@
 \item {\color{red}—} Все shadow map будут одинакового размера \begin{math}\Rightarrow\end{math} нельзя сэкономить на тенях далёких источников
 \end{itemize}
 \pause
-\item Shadow atlas: использовать одну большую текстуру, в кусках которой хранятся shadow maps всех источников
+\item \textit{Shadow atlas}: использовать одну большую текстуру, в кусках которой хранятся shadow maps всех источников
 \begin{itemize}
 \item {\color{green}+} Можно варьировать размер shadow map для каждого источника
 \item {\color{red}—} Сложнее доступ к shadow map
@@ -579,10 +622,10 @@
 \begin{frame}[fragile]
 \frametitle{Несколько источников света}
 \begin{itemize}
-\item \href{https://learnopengl.com/Lighting/Multiple-lights}{\nolinkurl{learnopengl.com/Lighting/Multiple-lights}}
-\item \href{https://en.wikibooks.org/wiki/GLSL_Programming/GLUT/Multiple_Lights}{\nolinkurl{en.wikibooks.org/wiki/GLSL\_Programming/GLUT/Multiple\_Lights}}
-\item \href{https://learnopengl.com/Advanced-Lighting/Deferred-Shading}{\nolinkurl{learnopengl.com/Advanced-Lighting/Deferred-Shading}}
-\item \href{http://www.aortiz.me/2018/12/21/CG.html}{\nolinkurl{www.aortiz.me/2018/12/21/CG.html}}
+\item \href{https://learnopengl.com/Lighting/Multiple-lights}{\texttt{learnopengl.com/Lighting/Multiple-lights}}
+\item \href{https://en.wikibooks.org/wiki/GLSL_Programming/GLUT/Multiple_Lights}{\texttt{en.wikibooks.org/wiki/GLSL\_Programming/GLUT/Multiple\_Lights}}
+\item \href{https://learnopengl.com/Advanced-Lighting/Deferred-Shading}{\texttt{learnopengl.com/Advanced-Lighting/Deferred-Shading}}
+\item \href{http://www.aortiz.me/2018/12/21/CG.html}{\texttt{www.aortiz.me/2018/12/21/CG.html}}
 \end{itemize}
 \end{frame}
 
