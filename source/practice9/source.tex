@@ -1,13 +1,15 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
+
+\usetheme{metropolis}
 
 \usepackage{adjustbox}
 
@@ -18,6 +20,7 @@
 
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -31,11 +34,13 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 9: Shadow mapping 2}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
 \begin{document}
+
+\usemintedstyle{solarized-light}
 
 \frame{\titlepage}
 
@@ -72,8 +77,8 @@
 \item После чтения сцены из файла нужно посчитать её bounding box (min/max по всем кординатам вершин), её центр \begin{math}C\end{math} -- центр видимой области
 \item Пройдясь по всем 8 вершинам \begin{math}V\end{math} bounding box'а сцены, можно посчитать модуль скалярного произведения \begin{math}|(V - C) \cdot \hat X|\end{math}, максимум таких значений -- длина вектора \begin{math}X\end{math}
 \item Аналогично для \begin{math}Y\end{math} и \begin{math}Z\end{math}
-\item Используя \begin{math}X,Y,Z,C\end{math} можно построить матрицу \verb|transform| ортографической проекции (см. слайды 4ой лекции)
-\item N.B.: старый код вычисления матрицы (цикл \verb|for| + параметр \verb|shadow_scale|) нужно убрать
+\item Используя \begin{math}X,Y,Z,C\end{math} можно построить матрицу \mintinline{cpp}|transform| ортографической проекции (см. слайды 4ой лекции)
+\item N.B.: старый код вычисления матрицы (цикл \mintinline{cpp}|for| + параметр \mintinline{cpp}|shadow_scale|) нужно убрать
 \end{itemize}
 \end{frame}
 
@@ -84,16 +89,18 @@
 \begin{frame}[fragile]
 \frametitle{Задание 3}
 \fontsize{10pt}{10pt}
+\begin{footnotesize}
 Variance shadow maps
 \begin{itemize}
 \item Включаем для shadow map линейную фильтрацию
-\item Устанавливаем текстуре shadow map internal format в \verb|GL_RG32F| (format и type не принипиальны, можно \verb|GL_RGBA| и \verb|GL_FLOAT|)
-\item Добавляем shadow map к фреймбуферу как \verb|GL_COLOR_ATTACHMENT0| вместо \verb|GL_DEPTH_ATTACHMENT|
-\item Создаём renderbuffer (и выделяем ему память через \verb|glRenderbufferStorage|, тип пикселя -- \verb|GL_DEPTH_COMPONENT24|), который будет использоваться как буфер глубины при рисовании shadow map, и добавляем его как \verb|GL_DEPTH_ATTACHMENT| фреймбуфера
-\item Во фрагментном шейдере, рисующем shadow map, добавляем out-переменную и пишем в неё \verb|vec4(z, z * z, 0.0, 0.0)| (\verb|z| можно достать из \verb|gl_FragCoord|)
-\item Во фрагментном шейдере дебажного прямоугольника читаем все компоненты текстуры, например \verb|out_color = texture(shadow_map, ...)|
-\item Перед очисткой (\verb|glClear|) фреймбуфера для генерации shadow map нужно поставить правильный цвет очистки: \verb|glClearColor(1.f, 1.f, 0.f, 0.f)|
+\item Устанавливаем текстуре shadow map internal format в \mintinline{cpp}|GL_RG32F| (format и type не принипиальны, можно \mintinline{cpp}|GL_RGBA| и \mintinline{cpp}|GL_FLOAT|)
+\item Добавляем shadow map к фреймбуферу как \mintinline{cpp}|GL_COLOR_ATTACHMENT0| вместо \mintinline{cpp}|GL_DEPTH_ATTACHMENT|
+\item Создаём renderbuffer (и выделяем ему память через \mintinline{cpp}|glRenderbufferStorage|, тип пикселя -- \mintinline{cpp}|GL_DEPTH_COMPONENT24|), который будет использоваться как буфер глубины при рисовании shadow map, и добавляем его как \mintinline{cpp}|GL_DEPTH_ATTACHMENT| фреймбуфера
+\item Во фрагментном шейдере, рисующем shadow map, добавляем out-переменную и пишем в неё \mintinline{glsl}|vec4(z, z * z, 0.0, 0.0)| (\mintinline{glsl}|z| можно достать из \mintinline{glsl}|gl_FragCoord|)
+\item Во фрагментном шейдере дебажного прямоугольника читаем все компоненты текстуры, например \mintinline{glsl}|out_color = texture(shadow_map, ...)|
+\item Перед очисткой (\mintinline{cpp}|glClear|) фреймбуфера для генерации shadow map нужно поставить правильный цвет очистки: \mintinline{cpp}|glClearColor(1.f, 1.f, 0.f, 0.f)|
 \end{itemize}
+\end{footnotesize}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -106,14 +113,15 @@ Variance shadow maps
 Variance shadow maps
 \begin{itemize}
 \item В основном фрагментном шейдере читаем данные из shadow map и используем неравенство Чебышёва для вычисления освещённости:
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
 vec2 data = texture(shadow_map, shadow_pos.xy).rg;
 float mu = data.r;
 float sigma = data.g - mu * mu;
 float z = shadow_pos.z;
 float factor = (z < mu) ? 1.0
     : sigma / (sigma + (z - mu) * (z - mu));
-\end{verbatim}
+\end{minted}
 \end{itemize}
 \end{frame}
 
@@ -127,11 +135,11 @@ float factor = (z < mu) ? 1.0
 \begin{itemize}
 \item Добавляем наклон поверхности к среднему значению квадрата глубины при генерации shadow map:
 \begin{itemize}
-\item Через \verb|dFdx(z)| и \verb|dFdy(z)| можно получить градиент глубины по X и Y
+\item Через \mintinline{glsl}|dFdx(z)| и \mintinline{glsl}|dFdy(z)| можно получить градиент глубины по X и Y
 \item К квадрату глубины добавляем \begin{math}\frac{1}{4}\left[\left(\frac{\partial Z}{\partial X}\right)^2 + \left(\frac{\partial Z}{\partial Y}\right)^2\right]\end{math}
 \end{itemize}
-\item Добавляем shadow bias (вычитаем константу из значения \verb|z|, использующегося для вычисления освещённости)
-\item Значение, получающееся из формулы неравенства Чебышёва, преобразуем: диапазон \begin{math}[0, \delta]\end{math} переходит в \begin{math}0\end{math}, а диапазон \begin{math}[\delta, 1]\end{math} переходит в \begin{math}[0, 1]\end{math} (\begin{math}\delta\end{math} -- некое фиксированное значение, например, \verb|0.125|)
+\item Добавляем shadow bias (вычитаем константу из значения \mintinline{glsl}|z|, использующегося для вычисления освещённости)
+\item Значение, получающееся из формулы неравенства Чебышёва, преобразуем: диапазон \begin{math}[0, \delta]\end{math} переходит в \begin{math}0\end{math}, а диапазон \begin{math}[\delta, 1]\end{math} переходит в \begin{math}[0, 1]\end{math} (\begin{math}\delta\end{math} -- некое фиксированное значение, например, \mintinline{glsl}|0.125|)
 \end{itemize}
 \end{frame}
 
