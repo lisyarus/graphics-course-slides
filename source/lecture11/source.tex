@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,16 +23,14 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
-
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    urlcolor=blue,
-}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -46,60 +44,67 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 11: HDR, tone mapping, gamma correction, sRGB, color banding, dithering}
-\date{2021}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
+
+\usemintedstyle{solarized-light}
 
 \begin{document}
 
 \frame{\titlepage}
 
-\begin{frame}[fragile]
-\frametitle{Артефакт из 10ой практики}
-\slideimage{practice10_bug.png}
-\end{frame}
+% \begin{frame}[fragile]
+% \frametitle{Артефакт из 10ой практики}
+% \slideimage{practice10_bug.png}
+% \end{frame}
+
+% \begin{frame}[fragile]
+% \frametitle{Артефакт из 10ой практики}
+% \begin{itemize}
+% \item Возникает при зацикливании текстурных координат при расчёте mipmap-уровня
+% \pause
+% \item Mipmap-уровень, который будет взят для текстуры, вычисляется в группах \begin{math}2\times 2\end{math} пикселей на основе разности текстурных координат в соседних пикселях
+% \pause
+% \item В одном пикселе группы вычисляется текстурная координата, близкая к 0, а в соседнем -- близкая к 1
+% \pause
+% \item \begin{math}\Rightarrow\end{math} Выбирается слишком большой mipmap-уровень (в данном случае он выглядит просто серым)
+% \end{itemize}
+% \end{frame}
+
+% \begin{frame}[fragile]
+% \frametitle{Артефакт из 10ой практики}
+% \begin{itemize}
+% \item Может возникнуть в любой ситуации, когда текстура накладывается цилиндрически
+% \pause
+% \item Как решать:
+% \pause
+% \begin{itemize}
+% \item Первый способ: разрезать в этом месте геометрию (например, для цилиндра дублировать вершины `нулевого меридиана', у одной копии текстурная координата равна 0, у другой -- 1)
+% \item Второй способ: хитрее вычислять текстурные координаты и выбирать вариант с меньшим расхождением в соседних пикселях
+% \end{itemize}
+% \pause
+% \item \href{https://bgolus.medium.com/distinctive-derivative-differences-cce38d36797b}{Distinctive Derivative Differences} -- подробная статья про проблему и решения
+% \end{itemize}
+% \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Артефакт из 10ой практики}
+\frametitle{HDR}
 \begin{itemize}
-\item Возникает при зацикливании текстурных координат при расчёте mipmap-уровня
+\item Проблема: после вычисления освещённости мы можем получить значения компонент цвета большие, чем 1, и при записи на экран/фреймбуфер они будут обрезаны до 1
 \pause
-\item Mipmap-уровень, который будет взят для текстуры, вычисляется в группах \begin{math}2\times 2\end{math} пикселей на основе разности текстурных координат в соседних пикселях
+\item В реальном мире интенсивность света ничем не ограничена, и между солнечным днём и тёмной ночью может меняться на 15 порядков
 \pause
-\item В одном пикселе группы вычисляется текстурная координата, близкая к 0, а в соседнем -- близкая к 1
-\pause
-\item \begin{math}\Rightarrow\end{math} Выбирается слишком большой mipmap-уровень (в данном случае он выглядит просто серым)
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Артефакт из 10ой практики}
-\begin{itemize}
-\item Может возникнуть в любой ситуации, когда текстура накладывается цилиндрически
-\pause
-\item Как решать:
-\pause
-\begin{itemize}
-\item Первый способ: разрезать в этом месте геометрию (например, для цилиндра дублировать вершины `нулевого меридиана', у одной копии текстурная координата равна 0, у другой -- 1)
-\item Второй способ: хитрее вычислять текстурные координаты и выбирать вариант с меньшим расхождением в соседних пикселях
-\end{itemize}
-\pause
-\item \href{https://bgolus.medium.com/distinctive-derivative-differences-cce38d36797b}{Distinctive Derivative Differences} -- подробная статья про проблему и решения
+\item При рендеринге объект может освещаться тусклым ambient освещением, а может сразу десятком ярких источников света
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{HDR}
 \begin{itemize}
-\item Проблема: после вычисления освещённости мы можем получить значения компонент цвета большие 1, и они будут обрезаны до 1
+\item High Dynamic Range (HDR) -- термин, означающий большой (не ограниченный \begin{math}[0, 1]\end{math}) диапазон интенсивностей света
 \pause
-\item В реальном мире интенсивность света (например, между солнечным днём и тёмной ночью) может меняться на 15 порядков
-\pause
-\item При рендеринге объект может освещаться тусклым ambient освещением, а может сразу десятком ярких источников света
-\pause
-\item High Dynamic Range (HDR) -- термин, означающий большой (не ограниченный [0, 1]) диапазон интенсивностей
-\pause
-\item HDR текстура (например, environment map) -- содержит значения, выходящие за диапазон [0, 1] (обычно 32-bit floating-point)
+\item HDR текстура (например, environment map) -- содержит значения, выходящие за диапазон \begin{math}[0, 1]\end{math} (например, 32-bit floating-point, или normalized 16-bit + фиксированный множитель)
 \pause
 \item HDR рендеринг -- позволяет отобразить HDR-освещение
 \end{itemize}
@@ -108,18 +113,18 @@
 \begin{frame}[fragile]
 \frametitle{Tone mapping}
 \begin{itemize}
-\item Нужно превратить диапазон освещённостей \begin{math}[0, \infty)\end{math} в диапазон \begin{math}[0, 1]\end{math}
+\item Чтобы поддержать HDR рендеринг, Нужно превратить диапазон освещённостей \begin{math}[0, \infty)\end{math} в диапазон \begin{math}[0, 1]\end{math}
 \pause
-\item В принципе, подойдёт любая монотонно возрастающая функция \begin{math}[0, \infty)\rightarrow [0, 1]\end{math}
+\item В принципе, подойдёт любая монотонно возрастающая функция \begin{math}[0, \infty)\rightarrow [0, 1]\end{math} -- \textit{tone-mapping curve}:
 \begin{itemize}
-\item \begin{math}x \mapsto \frac{x}{1+x}\end{math} -- Reinhard operator
+\item \begin{math}x \mapsto \frac{x}{1+x}\end{math} -- \textit{Reinhard operator}
 \item \begin{math}x \mapsto \arctan(x)\end{math}
 \item \begin{math}x \mapsto \frac{2}{1+e^{-x}}-1\end{math}
 \end{itemize}
 \pause
 \item Иногда используют более сложные функции, взятые из кинематографа (filmic tone mapping)
 \pause
-\item Эти функции часто позволяют динамически настраивать среднюю освещённость сцены (exposure, выдержка)
+\item Иногда всё равно ограничивают диапазон входных интенсивностей каким-то максимальным значением \begin{math}W\end{math} (\textit{white}), и делают нелинейное преобразование \begin{math}[0, W] \rightarrow [0, 1]\end{math}
 \end{itemize}
 \end{frame}
 
@@ -134,11 +139,78 @@
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Uncharted 2 tone mapping}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
+vec3 TonemapRaw(vec3 x)
+{
+    float A = 0.15;
+    float B = 0.50;
+    float C = 0.10;
+    float D = 0.20;
+    float E = 0.02;
+    float F = 0.30;
+
+    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
+vec3 Uncharted2Tonemap(vec3 color)
+{
+    float W = 11.2;
+    return TonemapRaw(color) / TonemapRaw(vec3(W));
+}
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Сравнение разных tone-mapping кривых}
+\slideimage{tone_mapping.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Tone mapping}
+\begin{itemize}
+\item Tone-mapping функции часто позволяют настраивать среднюю/максимальную видимую освещённость сцены либо \textit{выдержку} (\textit{exposure})
+\pause
+\item Чем выше средняя/максимальная освещённость, тем \textit{темнее} сцена
+\pause
+\item Чем выше выдержка, тем \textit{светлее} сцена
+\pause
+\item Выдержку можно подгонять под конкретную сцену, а можно автоматически подстраивать под среднюю яркость видимых камерой объектов (\textit{dynamic exposure, auto-exposure})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Witcher 3: high exposure}
+\slideimage{witcher_hdr_inside.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Witcher 3: low exposure}
+\slideimage{witcher_hdr_outside.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Как применять tone mapping}
+\begin{itemize}
+\item При обычном forward рендеринге, когда все источники света учитываются циклом в шейдере, а также при forward tiled/clustered shading'е, tone-mapping можно применять в этом же шейдере, и писать значения цвета сразу на экран
+\pause
+\item При deferred shading'е, применяющем каждый источник света по одному с аддитивным блендингом, применять tone-mapping в этом же месте нельзя: сумма tone-mapped цветов не равна значению tone map от суммы (т.е. tone-mapping функция нелинейна)
+\pause
+\item В этом случае обычно результирующий цвет пикселя аккумулируется в HDR-текстуре (32-bit floating point, или normalized 16-bit с фиксированным множителем), и потом отдельным проходом рисуется на экран уже с tone-mapping'ом
+\pause
+\item Некоторые эффекты пост-обработки лучше работают именно в HDR диапазоне (т.е. до применения tone mapping) -- размытие, свечение (bloom), и т.п.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{HDR \& tone mapping: ссылки}
 \begin{itemize}
-\item \href{https://learnopengl.com/Advanced-Lighting/HDR}{\nolinkurl{learnopengl.com/Advanced-Lighting/HDR}}
-\item \href{https://skylum.com/blog/what-is-tone-mapping}{\nolinkurl{skylum.com/blog/what-is-tone-mapping}}
-\item \href{https://www.veneratech.com/what-is-hdr-tone-mapping}{\nolinkurl{veneratech.com/what-is-hdr-tone-mapping}}
+\item \href{https://learnopengl.com/Advanced-Lighting/HDR}{\texttt{learnopengl.com/Advanced-Lighting/HDR}}
+\item \href{https://skylum.com/blog/what-is-tone-mapping}{\texttt{What is tone mapping}}
+\item \href{https://www.veneratech.com/what-is-hdr-tone-mapping}{\texttt{What is HDR tone mapping}}
+\item \href{https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve}{\texttt{ACES filmic tone mapping curve}}
+\item \href{http://filmicworlds.com/blog/filmic-tonemapping-operators/}{\texttt{Filmic tone-mapping operators}}
 \end{itemize}
 \end{frame}
 
@@ -196,13 +268,14 @@
 
 \begin{frame}[fragile]
 \frametitle{Коррекция гаммы (gamma-correction)}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
 // Вычислили цвет пикселя
 // с учётом освещения
 vec3 color = ...;
 
 color = pow(color, vec3(1.0 / 2.2));
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -234,16 +307,18 @@ color = pow(color, vec3(1.0 / 2.2));
 \pause
 \item Переход от освещённой к неосвещённой области объекта выглядит более резким (как в реальности)
 \end{itemize}
+\pause
+\item Некоторые tone-mapping кривые \textbf{уже включают} в себя гамма-коррекцию!
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Коррекция гаммы: ссылки}
 \begin{itemize}
-\item \href{https://en.wikipedia.org/wiki/Gamma_correction}{\nolinkurl{en.wikipedia.org/wiki/Gamma\_correction}}
-\item \href{http://blog.johnnovak.net/2016/09/21/what-every-coder-should-know-about-gamma}{\nolinkurl{What every coder should know about gamma}}
-\item \href{http://filmicworlds.com/blog/linear-space-lighting-i-e-gamma}{\nolinkurl{Linear-space lighting (i.e. gamma)}}
-\item \href{https://learnopengl.com/Advanced-Lighting/Gamma-Correction}{\nolinkurl{Learnopengl.com tutorial}}
+\item \href{https://en.wikipedia.org/wiki/Gamma_correction}{\texttt{en.wikipedia.org/wiki/Gamma\_correction}}
+\item \href{http://blog.johnnovak.net/2016/09/21/what-every-coder-should-know-about-gamma}{\texttt{What every coder should know about gamma}}
+\item \href{http://filmicworlds.com/blog/linear-space-lighting-i-e-gamma}{\texttt{Linear-space lighting (i.e. gamma)}}
+\item \href{https://learnopengl.com/Advanced-Lighting/Gamma-Correction}{\texttt{Learnopengl.com tutorial}}
 \end{itemize}
 \end{frame}
 
@@ -259,7 +334,7 @@ color = pow(color, vec3(1.0 / 2.2));
 \pause
 \item Обычно изображения хранятся именно в таком формате
 \pause
-\item Проверить формат можно любым редактором изображений или программой \verb|identify| пакета \verb|imagemagick|
+\item Проверить формат можно любым редактором изображений или программой \mintinline{cpp}|identify| пакета \mintinline{cpp}|imagemagick|
 \end{itemize}
 \end{frame}
 
@@ -277,11 +352,11 @@ color = pow(color, vec3(1.0 / 2.2));
 \begin{frame}[fragile]
 \frametitle{sRGB-текстуры}
 \begin{itemize}
-\item Специальное значение internal format для текстуры (\verb|GL_SRGB8| или \verb|GL_SRGB8_ALPHA8|) означает, что текстура хранит sRGB-значения -- они будут \textit{автоматически} переведены в линейные значения (т.е. возведены в степень 2.2) при чтении из шейдера
+\item Специальное значение internal format для текстуры (\mintinline{cpp}|GL_SRGB8| или \mintinline{cpp}|GL_SRGB8_ALPHA8|) означает, что текстура хранит sRGB-значения -- они будут \textit{автоматически} переведены в линейные значения (т.е. возведены в степень 2.2) при чтении из шейдера
 \pause
-\item \verb|glEnable(GL_FRAMEBUFFER_SRGB)| включит автоматическое обратное преобразование (возведение в степень 1/2.2) при рисовании в sRGB-текстуру
+\item \mintinline{cpp}|glEnable(GL_FRAMEBUFFER_SRGB)| включит автоматическое обратное преобразование (возведение в степень 1/2.2) при рисовании в sRGB-текстуру
 \pause
-\item {\color{red}N.B.:} \verb|glGenerateMipmap| \textit{не обязан} правильно обрабатывать sRGB-текстуры!
+\item {\color{red}N.B.:} \mintinline{cpp}|glGenerateMipmap| \textit{не обязан} правильно обрабатывать sRGB-текстуры, и может делать просто линейное усреднение \begin{math}\Longrightarrow\end{math} лучше mipmap'ы для sRGB-текстур генерировать руками (на CPU, или на GPU с помощью рендеринга в mipmap-уровни текстуры)
 \end{itemize}
 \end{frame}
 
@@ -293,9 +368,9 @@ color = pow(color, vec3(1.0 / 2.2));
 \begin{frame}[fragile]
 \frametitle{sRGB: ссылки}
 \begin{itemize}
-\item \href{https://en.wikipedia.org/wiki/SRGB}{\nolinkurl{en.wikipedia.org/wiki/SRGB}}
-\item \href{https://stackoverflow.com/a/12894053/2315602}{\nolinkurl{Stackoverflow post on sRGB}}
-\item \href{https://www.khronos.org/opengl/wiki/Framebuffer#Colorspace}{\nolinkurl{sRGB framebuffers}}
+\item \href{https://en.wikipedia.org/wiki/SRGB}{\texttt{en.wikipedia.org/wiki/SRGB}}
+\item \href{https://stackoverflow.com/a/12894053/2315602}{\texttt{Stackoverflow post on sRGB}}
+\item \href{https://www.khronos.org/opengl/wiki/Framebuffer#Colorspace}{\texttt{sRGB framebuffers}}
 \end{itemize}
 \end{frame}
 
@@ -315,6 +390,8 @@ color = pow(color, vec3(1.0 / 2.2));
 \pause
 \item Сильнее заметен с тёмными цветами (из-за особенностей человеческого зрения)
 \pause
+\item Может проявляться из-за ограниченности вычислений (напр. маленькое число сэмплов при SSAO)
+\pause
 \item Может усиливаться при неаккуратной работе с форматами хранения и нелинейными преобразованиями
 \end{itemize}
 \end{frame}
@@ -322,24 +399,26 @@ color = pow(color, vec3(1.0 / 2.2));
 \begin{frame}[fragile]
 \frametitle{Color banding: пример возникновения}
 \begin{itemize}
-\item Рисуем сцену, записываем линейную интенсивность в текстуру в формате \verb|GL_RGB8|
+\item Рисуем сцену, записываем линейную интенсивность в текстуру в формате \mintinline{cpp}|GL_RGB8|
 \pause
 \item Выводим сцену на экран с гамма-коррекцией: значения из текстуры возводятся в степень 1/2.2
 \pause
 \item Значение текстуры 0 переходит в значение 0 на экране
 \pause
-\item Значение текстуры 1 переходит в значение \verb|255 * (1/255)^(1/2.2) = 21| на экране
+\item Значение текстуры 1 переходит в значение \begin{math}255 \cdot \left(\frac{1}{255}\right)^\frac{1}{2.2} = 21\end{math} на экране
 \pause
 \item Колоссальная потеря точности: значения от 1 до 20 не используются!
 \pause
-\item Для избавления можно увеличить битность промежуточной текстуры до \verb|GL_RGB16|
+\item Для избавления можно увеличить битность промежуточной текстуры до \mintinline{cpp}|GL_RGB16|
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Color banding}
 \begin{itemize}
-\item Banding, связанный с потерей точности, обычно решают увеличением точности
+\item Banding, связанный с потерей точности, обычно решают увеличением точности (8-bit \begin{math}\longrightarrow\end{math} 16-bit)
+\pause
+\item Banding, связанный ограниченными вычислениями, обычно решают рандомизацией, разменивая banding на шум
 \pause
 \item Banding, связанный с ограниченной точностью самого экрана, обычно решают с помощью \textit{дизеринга}
 \end{itemize}
@@ -353,11 +432,15 @@ color = pow(color, vec3(1.0 / 2.2));
 \begin{frame}[fragile]
 \frametitle{Dithering}
 \begin{itemize}
-\item Способ рисования градиентов (переходов между цветами) за счёт варьирования количества пикселей двух цветов
+\item Способ рисования полутонов за счёт варьирования количества пикселей двух цветов
 \pause
 \item Работает только для больших (по размеру) градиентов
 \pause
-\item Не зависит от точности
+\item Работает при любой точности формата хранения, визуально увеличивая её
+\pause
+\item Может использоваться для рисования полутонов между областями, окрашенными в соседние представимые цвета
+\pause
+\item Может использоваться как художественный приём (имитация пиксель-арт графики, имитация очень старых игр)
 \end{itemize}
 \end{frame}
 
@@ -371,11 +454,11 @@ color = pow(color, vec3(1.0 / 2.2));
 \begin{itemize}
 \item Допустим, мы рисуем в однобитное (чёрно-белое) изображение, и хотим добиться серого цвета с помощью дизеринга
 \pause
-\item Нам нужен способ определить, какой из пикселей будет чёрным, а какой -- белым
+\item Нам нужен способ определить, какой из пикселей закрасить чёрным, а какой -- белым
 \pause
 \item При одноразовой обработке изображения можно оптимизировать паттерн дизеринга под конкретное изображение
 \pause
-\item В real-time графике это обычно делается с помощью т.н. dither mask / dither matrix (ordered dithering)
+\item В real-time графике это обычно делается с помощью т.н. dither mask / dither matrix
 \end{itemize}
 \end{frame}
 
@@ -384,7 +467,7 @@ color = pow(color, vec3(1.0 / 2.2));
 \slideimage{dither3.png}
 \end{frame}
 
-\againframe<2->{dither}
+\againframe<1->{dither}
 
 \begin{frame}[fragile]
 \frametitle{Dithering: реализация}
@@ -417,16 +500,16 @@ color = pow(color, vec3(1.0 / 2.2));
 \item Если значение в dither mask меньше \begin{math}dv\end{math}, рисуем значение \begin{math}v_1 / 255\end{math}, иначе \begin{math}v_0 / 255\end{math}
 \end{itemize}
 \pause
-\item Дизеринг нужно делать для каждого канала (RGB) по отдельности
+\item Дизеринг нужно делать для каждого канала (RGB) по отдельности, \textbf{до} применения tone mapping и гамма-коррекции
 \pause
-\item Обычно dither mask имеет маленький размер (напр. 16x16) и циклически (\verb|GL_REPEAT|) повторяется на весь экран; её пиксели пробегают все возможные значения от 0 до 255
+\item Обычно dither mask имеет маленький размер (напр. 16x16) и циклически (\mintinline{cpp}|GL_REPEAT|) повторяется на весь экран; её пиксели пробегают все возможные значения от 0 до 255
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\fontsize{10pt}{10pt}
 \frametitle{Dithering: реализация}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
 vec3 color = ...;
 
 vec3 c = color * 255.0;
@@ -440,26 +523,23 @@ color = c0 / 255.0;
 if (dc.r > threshold) color.r = c1.r / 255.0;
 if (dc.g > threshold) color.g = c1.g / 255.0;
 if (dc.b > threshold) color.b = c1.b / 255.0;
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Генерация dither mask}
 \begin{itemize}
-\item Bayer dithering -- очень быстро генерируется, могут быть заметны артефакты из-за регулярности паттерна
+\item Bayer (ordered) dithering -- очень быстро генерируется (явная формула), могут быть заметны артефакты из-за регулярности паттерна
 \pause
-\item Void-and-cluster -- использует медленный blue noise для генерации маски, лучше распределение пикселей
+\item Blue noise dithering -- использует синий шум (напр. алгоритм void-and-cluster) для генерации маски, лучше распределение пикселей, нет артефактов из-за регулярности
+\pause
+\item Готовые текстуры с blue noise dither mask разных размеров можно легко найти онлайн
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Сравнение bayer и void-and-cluster}
+\frametitle{Сравнение ordered dither и blue noise dither}
 \slideimage{dither-mask-compare.png}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Screen-door transparency}
-\slideimage{dither-transparency.png}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -467,12 +547,17 @@ if (dc.b > threshold) color.b = c1.b / 255.0;
 \begin{itemize}
 \item Дизеринг часто применяют как дешёвый аналог прозрачности
 \pause
-\item Если значение в альфа-канале больше значения из dither mask, то рисуем пиксель, иначе -- не рисуем (\verb|discard|)
+\item Если значение в альфа-канале больше значения из dither mask, то рисуем пиксель, иначе -- не рисуем (\mintinline{glsl}|discard|)
 \pause
 \item Не требует сортировки объектов по расстоянию, работает с deferred shading'ом
 \pause
 \item Выглядит заметно хуже, часто применяется для временно прозрачных объектов (появляющихся/исчезающих), далёких объектов (деревья, кусты)
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Screen-door transparency}
+\slideimage{dither-transparency.png}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -486,7 +571,9 @@ if (dc.b > threshold) color.b = c1.b / 255.0;
 \item \href{https://en.wikipedia.org/wiki/Dither}{\nolinkurl{en.wikipedia.org/wiki/Dither}}
 \item \href{https://surma.dev/things/ditherpunk}{\nolinkurl{surma.dev/things/ditherpunk}}
 \item \href{http://alex-charlton.com/posts/Dithering_on_the_GPU}{\nolinkurl{alex-charlton.com/posts/Dithering_on_the_GPU}}
-\item \href{https://forums.tigsource.com/index.php?topic=40832.msg1363742}{Dithering in Return of the Obra Dinn}
+\item \href{https://forums.tigsource.com/index.php?topic=40832.msg1363742}{\texttt{Dithering in Return of the Obra Dinn}}
+\item \href{https://www.shadertoy.com/view/Dscczs}{\texttt{Shadertoy с примером дизеринга}}
+\item \href{https://momentsingraphics.de/BlueNoise.html}{\texttt{Free blue noise textures}}
 \end{itemize}
 \end{frame}
 
