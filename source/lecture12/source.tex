@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,16 +23,15 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
 
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    urlcolor=blue,
-}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -46,11 +45,13 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 12: Anti-aliasing, multisampling, volume rendering equation, scattering, volume slicing, raymarching}
-\date{2022}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
 \begin{document}
+
+\usemintedstyle{solarized-light}
 
 \frame{\titlepage}
 \begin{frame}[fragile]
@@ -84,30 +85,43 @@
 \begin{itemize}
 \item Алиасинг обычно возникает на границе треугольников (проблемы внутри решаются mipmap'ами текстур)
 \pause
-\item Идея:
-\begin{itemize}
 \item Выберем набор случайных точек (семплов) внутри пикселя (обычно от 2 до 16), будем хранить в каждом пикселе цвет каждой точки
-\item Запустим фрагментный шейдер один раз на пиксель
-\item Запишем результат в те точки, которые покрывает треугольник
+\pause
+\item Запустим фрагментный шейдер \textbf{один раз на пиксель}
+\pause
+\item Запишем результат вызова шейдера только в те точки, которые покрывает треугольник
+\pause
 \item При выводе на экран усредним значения в точках
 \end{itemize}
-\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Multisampling}
 \slideimage{multisampling.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Multisampling}
+\begin{itemize}
+\item {\color{red}—} Требует много памяти, большая нагрузка на шины данных
+\item {\color{green}+} Фрагментный шейдер вызывается только один раз на пиксель
+\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Multisampling в OpenGL}
 \begin{itemize}
-\item Тестура с \verb|target = GL_TEXTURE_2D_MULTISAMPLE| (данные инициализируются через \verb|glTexImage2DMultisample|, позволяет задать количество семплов)
+\item Тестура с \mintinline{cpp}|target = GL_TEXTURE_2D_MULTISAMPLE| (данные инициализируются через \mintinline{cpp}|glTexImage2DMultisample|, позволяет задать количество семплов)
+\pause
 \begin{itemize}
-\item Нет mipmap'ов и фильтрации, читать из шейдера можно только через \verb|glTexelFetch| (позволяет прочитать конкретный семпл)
+\item Нет mipmap'ов и фильтрации, читать из шейдера можно только через \mintinline{cpp}|glTexelFetch| (позволяет прочитать конкретный семпл)
 \end{itemize}
 \pause
-\item Renderbufer: \verb|glRenderbufferStorageMultisample|
+\item Renderbufer: \mintinline{cpp}|glRenderbufferStorageMultisample|
 \pause
 \item Рисование во фреймбуфер с такими текстурами/renderbuffer'ами будет автоматически делать multisampling
 \pause
-\item Вывести multisampled текстуру/renderbuffer на экран (multisample resolve) можно с помощью \verb|glBlitFramebuffer|
+\item Вывести multisampled текстуру/renderbuffer на экран (\textit{multisample resolve}) можно с помощью \mintinline{cpp}|glBlitFramebuffer|
 \end{itemize}
 \end{frame}
 
@@ -124,7 +138,7 @@
 \item Дороже чем FXAA, результат лучше
 \end{itemize}
 \pause
-\item TAA (Temporal Anti-Aliasing): усредняем значение пикселя со значением этого же пикселя на предыдущем кадре с учётом изменившегося положения камеры (temporal reprojection)
+\item TAA (Temporal Anti-Aliasing): усредняем значение пикселя со значением этого же пикселя на предыдущем кадре с учётом изменившегося положения камеры (\textit{temporal reprojection})
 \begin{itemize}
 \item Нужны эвристики чтобы отличить тот же пиксель с предыдущего кадра от случайно туда попавшего пикселя
 \item Нужно знать скорость движения пикселей для движущихся объектов, чтобы правильно работал temporal reprojection
@@ -137,9 +151,9 @@
 \begin{frame}[fragile]
 \frametitle{Anti-aliasing: ссылки}
 \begin{itemize}
-\item \href{https://www.khronos.org/opengl/wiki/Multisampling}{\nolinkurl{khronos.org/opengl/wiki/Multisampling}}
-\item \href{https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing}{\nolinkurl{learnopengl.com/Advanced-OpenGL/Anti-Aliasing}}
-\item \href{https://www.digitaltrends.com/computing/what-is-anti-aliasing}{Статья про разные методы антиалиасинга}
+\item \href{https://www.khronos.org/opengl/wiki/Multisampling}{\texttt{khronos.org/opengl/wiki/Multisampling}}
+\item \href{https://learnopengl.com/Advanced-OpenGL/Anti-Aliasing}{\texttt{learnopengl.com/Advanced-OpenGL/Anti-Aliasing}}
+\item \href{https://www.digitaltrends.com/computing/what-is-anti-aliasing}{\texttt{Статья про разные методы антиалиасинга}}
 \end{itemize}
 \end{frame}
 
@@ -186,16 +200,16 @@
 \item Свет, попавший в некую трёхмерную среду, может:
 \pause
 \begin{itemize}
-\item Поглотиться (absorption)
+\item Поглотиться (\textit{absorption})
 \pause
-\item Рассеяться (scattering), т.е. изменить направление
+\item Рассеяться (\textit{scattering}), т.е. изменить направление
 \pause
 \item Пройти насквозь
 \end{itemize}
 \pause
-\item Кроме того, среда может сама излучать свет (emission)
+\item Кроме того, среда может сама излучать свет (\textit{emission})
 \pause
-\item Absorption + scattering = extinsion
+\item \textit{absorption} + \textit{scattering} = \textit{extinsion}
 \pause
 \item Распространение света в такой среде описывается интегро-дифференциальным уравнением для точки (как меняется свет, идущий через точку в таком-то направлении) либо интегральным уравнением для отрезка (как меняется свет, идущий из одной точки в другую точку)
 \end{itemize}
@@ -213,7 +227,7 @@
 \pause
 \item Длины волны
 \pause
-\item Угла (рассеяние)
+\item Угла (в случае рассеяния)
 \end{itemize}
 \pause
 \item \begin{math}k_a\end{math} и \begin{math}k_s\end{math} обычно задаются в единицах м\textsuperscript{-1}: отношение количества поглощённого/рассеянного света к длине пройденного пути (для бесконечно малых отрезков)
@@ -348,7 +362,8 @@
 
 \begin{frame}[fragile]
 \frametitle{Туман: код шейдера}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
 vec3 color = ...;
 vec3 fog_color = ...;
 float fog_absorption = ...;
@@ -357,7 +372,7 @@ float camera_distance = length(camera_position - position);
 float optical_depth = camera_distance * fog_absorption;
 float fog_factor = 1 - exp(-optical_depth);
 color = mix(color, fog_color, fog_factor);
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -419,7 +434,7 @@ color = mix(color, fog_color, fog_factor);
 
 \begin{frame}[fragile]
 \frametitle{Henyey-Greenstein phase function (1941)}
-\begin{math}f(\theta) = \frac{1}{4\pi}\frac{1-g^2}{\left(1+g^2 - 2g\cos\theta\right)^(3/2)}\end{math}
+\begin{equation}f(\theta) = \frac{1}{4\pi}\frac{1-g^2}{\left(1+g^2 - 2g\cos\theta\right)^{3/2}}\end{equation}
 \begin{itemize}
 \item g -- настраиваемый параметр (средний косинус угла рассеяния)
 \item Часто используется как аппроксимация вместо более сложных функций
@@ -429,7 +444,7 @@ color = mix(color, fog_color, fog_factor);
 \begin{frame}[fragile]
 \frametitle{Volume rendering: рассеяние}
 \begin{itemize}
-\item Значительно усложняет уравнения: свет, пришедший из любого направления, может рассеяться в сторону камеры в любой точке
+\item Рассеяние значительно усложняет уравнения: свет, пришедший из любого направления, может рассеяться в сторону камеры в любой точке
 \pause
 \item При рассчёте рассеяния различают
 \begin{itemize}
@@ -446,9 +461,9 @@ color = mix(color, fog_color, fog_factor);
 \item Для визуализации трёхмерных данных (МРТ-сканы и т.п.) обычно игнорируют рассеяние, и считают среду полупрозрачной и излучающей свет
 \pause
 \begin{itemize}
-\item Вместо \begin{math}k_a\end{math} часто хранят некую "непрозрачность" (как значение альфа-канала), не имеющую физического смысла
+\item Вместо \begin{math}k_a\end{math} часто хранят некую `непрозрачность' (как значение альфа-канала), не имеющую физического смысла
 \pause
-\item Цвет излучаемого света может храниться в текстуре, а может зависеть от значения альфа-канала (transfer function)
+\item Цвет излучаемого света может храниться в текстуре, а может зависеть от значения альфа-канала (\textit{transfer function})
 \end{itemize}
 \pause
 \item Для визуализации неба, облаков и т.д. рассеяние -- обязательная составляющая, коэффициенты часто берут из реальных данных
@@ -478,7 +493,7 @@ color = mix(color, fog_color, fog_factor);
 \begin{frame}[fragile]
 \frametitle{Volume rendering: slicing}
 \begin{itemize}
-\item Объект "разрезается" набором равноудалённых плоскостей, перпендикулярных направлению на камеру (чем больше, тем дороже и точнее)
+\item Объект `разрезается' набором равноудалённых плоскостей, перпендикулярных направлению на камеру (чем больше, тем дороже и точнее)
 \pause
 \item Каждый слой (slice) рисуется как текстурированный многоугольник, читая данные из 3D текстуры или из явной фукнции, задающей объект
 \pause
@@ -498,9 +513,9 @@ color = mix(color, fog_color, fog_factor);
 \begin{frame}[fragile]
 \frametitle{Volume rendering: slicing}
 \begin{itemize}
-\item Нужно обновлять геометрию slice'ов при каждом изменении камеры\pause (это проще, чем звучит)
+\item Нужно обновлять геометрию slice'ов при каждом изменении камеры \pause (это проще, чем звучит)
 \pause
-\item Использует встроенный механизм (blending) \begin{math}\Rightarrow\end{math} работает достаточно быстро
+\item Использует встроенный механизм (blending) \begin{math}\Longrightarrow\end{math} работает достаточно быстро
 \pause
 \item Тяжело учесть освещение/рассеяние
 \pause
@@ -528,17 +543,17 @@ color = mix(color, fog_color, fog_factor);
 \slideimage{splatting-scheme.png}
 \end{frame}
 
-\begin{frame}[fragile]
+\begin{frame}<1-2>[fragile,label=raysmth]
 \fontsize{10pt}{10pt}
 \frametitle{Ray*}
 Есть несколько алгоритмов, название которых звучит как ray-<глагол>:
 \pause
 \begin{itemize}
-\item Raycasting -- алгоритм, использовавшийся в старых 3D играх: находится пересечение луча из камеры в конкретном направлении в плоскости XZ со стенами сцены; по расстоянию до пересечения можно вычислить, как рисовать целый столбец пикселей с одинаковой экранной X-координатой
+\item \textbf{Raycasting} -- алгоритм, использовавшийся в старых 3D играх: находится пересечение луча из камеры в конкретном направлении в плоскости XZ со стенами сцены; по расстоянию до пересечения можно вычислить, как рисовать целый столбец пикселей с одинаковой экранной X-координатой
 \pause
-\item Raytracing -- алгоритм, использующийся для фотореалистичного рендеринга: находится пересечение луча из камеры с ближайшим объектом сцены (обычно используюя вспомогательные структуры данных для ускорения), после чего из точки пересечения рекурсивно бросаются новые лучи
+\item \textbf{Raytracing} -- алгоритм, использующийся для фотореалистичного рендеринга: находится пересечение луча из камеры с ближайшим объектом сцены (обычно используюя вспомогательные структуры данных для ускорения), после чего из точки пересечения рекурсивно бросаются новые лучи
 \pause
-\item Raymarching -- алгоритм, использующийся для volume рендеринга, screen-space отражений, SDF, и подобного: вдоль луча из камеры выбирается дискретный набор точек (часто - с фиксированным шагом), в этих точках вычисляются значения некоторой функции и (в случае volume рендеринга) по этим точкам вычисляется искомый интеграл
+\item \textbf{Raymarching} -- алгоритм, использующийся для volume рендеринга, screen-space отражений, SDF, и подобного: вдоль луча из камеры выбирается дискретный набор точек (часто - с фиксированным шагом), в этих точках вычисляются значения некоторой функции и (в случае volume рендеринга) по этим точкам вычисляется искомый интеграл
 \end{itemize}
 \end{frame}
 
@@ -546,6 +561,8 @@ color = mix(color, fog_color, fog_factor);
 \frametitle{Raycasting}
 \slideimage{raycasting.png}
 \end{frame}
+
+\againframe<2->{raysmth}
 
 \begin{frame}[fragile]
 \frametitle{Volume rendering: raymarching}
@@ -598,7 +615,8 @@ color = mix(color, fog_color, fog_factor);
 
 \begin{frame}[fragile]
 \frametitle{Raymarching (только absorption): алгоритм}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
 dt = (t_max - t_min) / N
 opt_depth = 0
 for i in 0..N-1:
@@ -607,24 +625,26 @@ for i in 0..N-1:
     opt_depth += k_a(p) * dt
 abs_factor = exp(-opt_depth)
 color = back_color * abs_factor
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Raymarching (только absorption): альтернативный алгоритм}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
 dt = (t_max - t_min) / N
 color = back_color
 for i in 0..N-1:
     t = t_min + (i + 0.5) * dt
     p = start + t * direction
     color *= exp(- k_a(p) * dt)
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Raymarching (absorption+emission): front-to-back алгоритм}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
 dt = (t_max - t_min) / N
 opt_depth = 0
 color = back_color
@@ -633,12 +653,13 @@ for i in 0..N-1:
     p = start + t * direction
     opt_depth += k_a(p) * dt
     color += exp(-opt_depth) * k_e(p) * dt
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Raymarching (absorption+emission): альтернативный front-to-back алгоритм}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{python}
 dt = (t_max - t_min) / N
 color = back_color
 for i in 0..N-1:
@@ -646,13 +667,13 @@ for i in 0..N-1:
     p = start + t * direction
     color += k_e(p) * dt
     color *= exp(- k_a(p) * dt)
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Raymarching (+single scattering в направлении света): front-to-back алгоритм}
-\fontsize{8pt}{8pt}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{python}
 dt = (t_max - t_min) / N
 color = back_color
 for i in 0..N-1:
@@ -674,7 +695,7 @@ for i in 0..N-1:
 
     color += k_e(p) * dt
     color *= exp(- (k_a(p) + k_s(p)) * dt)
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -700,12 +721,12 @@ for i in 0..N-1:
 \begin{frame}[fragile]
 \frametitle{Volume rendering: ссылки}
 \begin{itemize}
-\item \href{https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-39-volume-rendering-techniques}{GPU Gems, Chapter 39. Volume Rendering Techniques}
-\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-16-accurate-atmospheric-scattering}{GPU Gems 2, Chapter 16. Accurate Atmospheric Scattering}
-\item \href{https://www.codeproject.com/Articles/352270/Getting-Started-with-Volume-Rendering-using-OpenGL}{Туториал по slicing (старый OpenGL!)}
-\item \href{https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/simulating-sky/simulating-colors-of-the-sky}{Подробнее про цвет неба}
-\item \href{https://sebh.github.io/publications/egsr2020.pdf}{A Scalable and Production Ready Sky and Atmosphere Rendering Technique (статья 2020 года)}
-\item \href{https://www.youtube.com/watch?v=DxfEbulyFcY}{Видео-туториал про рендеринг атмосферы}
+\item \href{https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-39-volume-rendering-techniques}{\texttt{GPU Gems, Chapter 39. Volume Rendering Techniques}}
+\item \href{https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-16-accurate-atmospheric-scattering}{\texttt{GPU Gems 2, Chapter 16. Accurate Atmospheric Scattering}}
+\item \href{https://www.codeproject.com/Articles/352270/Getting-Started-with-Volume-Rendering-using-OpenGL}{\texttt{Туториал по slicing (старый OpenGL!)}}
+\item \href{https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/simulating-sky/simulating-colors-of-the-sky}{\texttt{Подробнее про цвет неба}}
+\item \href{https://sebh.github.io/publications/egsr2020.pdf}{\texttt{A Scalable and Production Ready Sky and Atmosphere Rendering Technique (статья 2020 года)}}
+\item \href{https://www.youtube.com/watch?v=DxfEbulyFcY}{\texttt{Видео-туториал про рендеринг атмосферы}}
 \end{itemize}
 \end{frame}
 
