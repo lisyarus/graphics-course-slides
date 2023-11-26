@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -23,16 +23,15 @@
 \usetikzlibrary{decorations.pathreplacing}
 \usepackage{xifthen}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \definecolor{red}{rgb}{1,0,0}
 \definecolor{green}{rgb}{0,0.5,0}
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{magenta}{rgb}{0.75,0,0.75}
 
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    urlcolor=blue,
-}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -46,9 +45,11 @@
 
 \title{Компьютерная графика}
 \subtitle{Лекция 13: Анимации, easing functions, keyframes, bitmap-анимации, кватернионы, иерархии объектов, скелетная анимация, форматы 3D моделей}
-\date{2022}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
+
+\usemintedstyle{solarized-light}
 
 \begin{document}
 
@@ -61,9 +62,13 @@
 \pause
 \begin{itemize}
 \item Двигающийся объект
+\pause
 \item Анимированный элемент интерфейса
+\pause
 \item Анимированная модель
+\pause
 \item Движущаяся камера
+\pause
 \item etc.
 \end{itemize}
 \pause
@@ -77,9 +82,9 @@
 \item Зачем нужна анимация?
 \pause
 \begin{itemize}
-\item Часто в ней заключается суть (напр. 3D шутер от первого лица)
+\item Часто в ней заключается суть (напр. почти все игры)
 \pause
-\item Анимация выглядит приятнее и понятнее, чем дискретное изменение состояния
+\item Анимация выглядит приятнее и понятнее, чем дискретное изменение состояния (напр. в UI)
 \end{itemize}  
 \end{itemize}
 \end{frame}
@@ -87,9 +92,11 @@
 \begin{frame}[fragile]
 \frametitle{Анимация: общие идеи}
 \begin{itemize}
-\item Вычисление анимаций лучше привязывать к реальному времени, а не к номеру кадра (напр. \verb|state += speed * dt| а не \verb|state += speed|)
+\item Вычисление анимаций лучше привязывать к реальному времени, а не к номеру кадра (напр. \mintinline{cpp}|state += speed * dt| а не \mintinline{cpp}|state += speed|)
+\pause
 \begin{itemize}
 \item Будет лучше работать при выключенном VSync
+\pause
 \item Будет лучше работать, когда CPU/GPU не справляются с нагрузкой
 \end{itemize}
 \pause
@@ -99,32 +106,45 @@
 \pause
 \begin{itemize}
 \item Явной формулой
+\pause
 \item Склеить из кусочков (сплайн)
+\pause
 \item Вычислять неявно на основе текущего состояния
 \end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Анимация: неявное вычисление}
+\frametitle{Анимация одной величины}
 \begin{itemize}
-\item Пусть, у нас есть некая величина \verb|x|, и мы хотим анимированно поменять её значение на \verb|new_x|
+\item Пусть у нас есть некая величина \mintinline{cpp}|x|, и мы хотим плавно поменять её значение на \mintinline{cpp}|new_x|
 \pause
-\item Как это анимировать?
-\pause
-\item Вариант 1: запомнить старое и новое значения, интерполировать между ними учитывая прошедшее время \verb|x = lerp(old_x, new_x, time)|
+\item \textbf{Вариант 1}: запомнить старое и новое значения, интерполировать между ними учитывая прошедшее время \mintinline{cpp}|x = lerp(old_x, new_x, time)|
 \pause
 \begin{itemize}
-\item {\color{green}+} Легко настраивать форму интерполяции (easing functions)
+\item {\color{green}+} Легко настраивать форму интерполяции (\textit{easing functions})
+\pause
 \item {\color{red}---} Нужно обрабатывать ситуацию, когда новое значение изменилось в процессе анимации
 \end{itemize}
-\pause
-\item Вариант 2: обновлять \verb|x| \textit{только} на основе нового значения: \verb|x = lerp(x, new_x, speed * dt)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Анимация одной величины}
 \begin{itemize}
-\item Если \verb|dt > 1/speed|, возникнет нестабильность
-\item Более точная, стабильная формула: \verb|x = lerp(x, new_x, exp(- speed * dt))|
-\item Соответствует численному решению уравнения \begin{math}\dot x = speed \cdot (x_{new} - x)\end{math}
+\item Пусть у нас есть некая величина \mintinline{cpp}|x|, и мы хотим плавно поменять её значение на \mintinline{cpp}|new_x|
+\pause
+\item \textbf{Вариант 2}: обновлять \mintinline{cpp}|x| \textit{только} на основе нового значения: \mintinline{cpp}|x = lerp(x, new_x, speed * dt)|
+\begin{itemize}
+\item Если \mintinline{cpp}|dt > 1/speed|, возникнет нестабильность
+\pause
+\item Более точная, стабильная формула: \mintinline{cpp}|x = lerp(x, new_x, exp(- speed * dt))|
+\pause
+\item Соответствует численному решению уравнения \begin{math}\frac{dx}{dt} = speed \cdot (x_{new} - x)\end{math}
+\pause
 \item Удобно для анимации камеры, элементов интерфейса
+\pause
+\item \href{https://lisyarus.github.io/blog/programming/2023/02/21/exponential-smoothing.html}{\texttt{Подробная статья про этот метод}}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -132,9 +152,9 @@
 \begin{frame}[fragile]
 \frametitle{Анимации: easing functions}
 \begin{itemize}
-\item При временнóй интерполяции между двумя значениями вместо линейной интерполяции \verb|x = lerp(old_x, new_x, t)| можно использовать т.н. easing functions
+\item При временнóй интерполяции между двумя значениями вместо линейной интерполяции \mintinline{cpp}|x = lerp(old_x, new_x, t)| можно использовать т.н. easing functions
 \pause
-\item Применяются к параметру интерполяции \begin{math}t \in [0, 1]\end{math} и сглаживают анимацию: \verb|x = lerp(old_x, new_x, easing(t))|
+\item Применяются к параметру интерполяции \begin{math}t \in [0, 1]\end{math} и сглаживают анимацию: \mintinline{cpp}|x = lerp(old_x, new_x, easing(t))|
 \pause
 \item Примеры easing functions:
 \begin{itemize}
@@ -143,7 +163,7 @@
 \item \begin{math}f(t) = t^2\end{math}
 \item \begin{math}f(t) = 1 - (1-t)^2\end{math}
 \item \begin{math}f(t) = \sqrt{t}\end{math}
-\item Больше примеров: \href{https://easings.net}{easings.net}
+\item Больше примеров: \href{https://easings.net}{\texttt{easings.net}}
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -156,7 +176,7 @@
 \begin{frame}[fragile]
 \frametitle{Анимация: сплайны}
 \begin{itemize}
-\item Часто значения интерполируют, используя сплайны: кривые, позволяющие удобно настраивать зависимость некой величины от параметра \verb|t|
+\item Часто значения интерполируют, используя сплайны: кривые, позволяющие удобно настраивать зависимость некой величины от параметра \mintinline{cpp}|t|
 \pause
 \item Обычно сплайн строится по набору значений в точках (keyframes) и, возможно, значений производных в этих точках
 \pause
@@ -169,7 +189,7 @@
 \item etc.
 \end{itemize}
 \pause
-\item N.B.: спектр применения сплайнов не ограничивается анимациями!
+\item \alert{\textbf{NB}}: спектр применения сплайнов \underline{не ограничивается} анимациями!
 \begin{itemize}
 \item Curve fitting
 \item Представление сложных геометрических форм (напр. зданий, шрифтов)
@@ -191,19 +211,19 @@
 \item 3D текстура
 \begin{itemize}
 \item Номер кадра -- 3я текстурная координата (нормированная)
-\item Интерполирует между кадрами
+\item Сама интерполирует между кадрами
 \end{itemize}
 \pause
 \item 2D array текстура
 \begin{itemize}
 \item Номер кадра -- 3я текстурная координата (\textbf{не} нормированная)
-\item \textbf{Не} интерполирует между кадрами
+\item \textbf{Не} интерполирует сама между кадрами
 \end{itemize}
 \pause
 \item 2D текстурный атлас -- текстура, хранящая несколько изображений бок о бок
 \begin{itemize}
 \item По номеру кадра вычисляются настоящие текстурные координаты
-\item \textbf{Не} интерполирует между кадрами
+\item \textbf{Не} интерполирует сам между кадрами
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -223,7 +243,7 @@
 \begin{itemize}
 \item Обычно мы представляли вращения матрицами:
 \begin{itemize}
-\item Матрица \begin{math}3x3\end{math} -- 9 значений, это много
+\item Матрица \begin{math}3\times 3\end{math} -- 9 значений, это много
 \pause
 \item Применить матрицу к вектору -- минимум операций сложения и умножения
 \pause
@@ -232,7 +252,7 @@
 \item Интерполяция между двумя матрицами вращения -- почти всегда \textbf{не} матрица вращения
 \end{itemize}
 \pause
-\item Вращения образуют 3х-мерную группу, т.е. описываются 3мя параметрами, например углами Эйлера
+\item Вращения образуют 3х-мерную группу \begin{math}\mathbb{SO}(3)\end{math}, т.е. описываются 3-мя параметрами, например углами Эйлера
 \pause
 \begin{itemize}
 \item Применить вращение, выраженное через углы Эйлера -- много тригонометрических функций, медленно
@@ -240,7 +260,7 @@
 \item Композиция таких вращений -- очень сложная операция, много тригонометрических функций
 \end{itemize}
 \pause
-\item Хочется компромисс между сложностью, объёмом хранения, удобством использования
+\item Хочется компромисс между сложностью, объёмом хранения и удобством использования
 \end{itemize}
 \end{frame}
 
@@ -267,6 +287,7 @@
 \item Норма кватерниона: число \begin{math}q \cdot \overline q = a^2 + b^2 + c^2 + d^2 = |q|^2\end{math}
 \item Обратный кватернион: \begin{math}q^{-1} = \frac{1}{|q|^2} \overline q\end{math}
 \item Единичный кватернион: \begin{math}|q| = 1\end{math}
+\item Единичные кватернионы образуют трёхмерную сферу \begin{math}\mathbb{S}^3\end{math} (вложенную в четырёхмерное пространство \begin{math}\mathbb{R}^4 \cong \mathbb{H}\end{math})
 \end{itemize}
 \end{frame}
 
@@ -291,23 +312,23 @@
 \pause
 \item Вращение вокруг оси \begin{math}w\end{math} (единичный вектор) на угол \begin{math}\theta\end{math} можно реализовать как \begin{math}q \cdot (0, v) \cdot q^{-1}\end{math}, где \begin{math}q = (\cos \frac{\theta}{2}, w \cdot \sin \frac{\theta}{2})\end{math}
 \pause
-\item N.B.: \begin{math}|q| = 1\end{math}
-\item N.B.: \begin{math}q^{-1} = (\cos \frac{\theta}{2}, - w \cdot \sin \frac{\theta}{2})\end{math}
+\item \alert{\textbf{NB}}: \begin{math}|q| = 1\end{math}
+\item \alert{\textbf{NB}}: \begin{math}q^{-1} = (\cos \frac{\theta}{2}, - w \cdot \sin \frac{\theta}{2})\end{math}
 \pause
 \item Любое вращение представляется единичным кватернионом, и любой единичный кватернион описывает вращение
-\item N.B: единичные кватернионы образуют трёхмерную сферу (вложенную в четырёхмерное пространство)
-\item N.B.: \begin{math}q\end{math} и \begin{math}-q\end{math} описывают одно и то же вращение (и только они)
+\pause
+\item \begin{math}q\end{math} и \begin{math}-q\end{math} описывают одно и то же вращение (и только они)
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Кватернионы: вращения}
 \begin{itemize}
-\item Для вращения нужны только алгебраические операции \begin{math}\Rightarrow\end{math} быстро!
+\item Для вращения нужны только алгебраические операции \begin{math}\Longrightarrow\end{math} быстро!
 \pause
 \item Композиция вращений \textendash{} произведение кватернионов: \begin{math}{\color{blue}q_2} \cdot ({\color{red}q_1} \cdot (0, v) \cdot {\color{red}q_1^{-1}}) \cdot {\color{blue}q_2^{-1}} = ({\color{blue}q_2} \cdot {\color{red}q_1}) \cdot (0, v) \cdot ({\color{red}q_1^{-1}} \cdot {\color{blue}q_2^{-1}}) = ({\color{blue}q_2}{\color{red}q_1}) \cdot (0, v) \cdot ({\color{blue}q_2}{\color{red}q_1})^{-1}\end{math}
 \pause
-\item Стандартный способ представления вращений объектов в 3D движках
+\item \underline{Стандартный способ} представления вращений объектов в 3D движках
 \end{itemize}
 \end{frame}
 
@@ -320,7 +341,7 @@
 \pause
 \item Правильный способ: использовать геодезическую кривую на поверхности сферы
 \pause
-\item Эта операция называется \verb|slerp| (spherical linear interpolation), имеет явную формулу и реализована в большинстве математических библиотек (в т.ч. \verb|glm|)
+\item Эта операция называется \mintinline{cpp}|slerp| (\textit{spherical linear interpolation}), имеет явную формулу и реализована в большинстве математических библиотек (в т.ч. \mintinline{cpp}|glm|)
 \end{itemize}
 \end{frame}
 
@@ -330,23 +351,23 @@
 \item Есть два варианта представить кватернион \begin{math}q = w + xi + yj + zk\end{math}:
 \pause
 \begin{itemize}
-\item Как четырёхмерный вектор \verb|[w, x, y, z]| -- логичнее с математической точки зрения
-\item Как четырёхмерный вектор \verb|[x, y, z, w]| -- удобнее работать в GLSL
+\item Как четырёхмерный вектор \mintinline{cpp}|[w, x, y, z]| -- логичнее с математической точки зрения
+\item Как четырёхмерный вектор \mintinline{cpp}|[x, y, z, w]| -- удобнее работать в GLSL (и других шейдерных языках)
 \end{itemize}
 \pause
 \item Общепринятого варианта нет
-\item В библиотеке \verb|glm| -- \verb|[w, x, y, z]| (есть наполовину сломанная поддержка \verb|[x, y, z, w]|)
-\item Формат моделей \verb|glTF| описывает вращения как \verb|[x, y, z, w]|
+\item В библиотеке \mintinline{cpp}|glm| -- \mintinline{cpp}|[w, x, y, z]| (есть \alert{\textbf{наполовину сломанная}} поддержка \mintinline{cpp}|[x, y, z, w]|)
+\item Формат моделей \mintinline{cpp}|glTF| описывает вращения как \mintinline{cpp}|[x, y, z, w]|
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Кватернионы: ссылки}
 \begin{itemize}
-\item \href{https://en.wikipedia.org/wiki/Quaternion}{\nolinkurl{en.wikipedia.org/wiki/Quaternion}}
-\item \href{https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation}{\nolinkurl{en.wikipedia.org/wiki/Quaternions\_and\_spatial\_rotation}}
-\item \href{https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions}{\nolinkurl{en.wikipedia.org/wiki/Rotation\_formalisms\_in\_three\_dimensions}}
-\item \href{https://en.wikipedia.org/wiki/Slerp}{\nolinkurl{en.wikipedia.org/wiki/Slerp}}
+\item \href{https://en.wikipedia.org/wiki/Quaternion}{\texttt{en.wikipedia.org/wiki/Quaternion}}
+\item \href{https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation}{\texttt{en.wikipedia.org/wiki/Quaternions\_and\_spatial\_rotation}}
+\item \href{https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions}{\texttt{en.wikipedia.org/wiki/Rotation\_formalisms\_in\_three\_dimensions}}
+\item \href{https://en.wikipedia.org/wiki/Slerp}{\texttt{en.wikipedia.org/wiki/Slerp}}
 \end{itemize}
 \end{frame}
 
@@ -354,15 +375,18 @@
 \frametitle{Преобразования объектов}
 \begin{itemize}
 \item Часто для задания преобразования, применяемого к объекту, нам не нужна целиком матрица аффинного преобразования
+\pause
 \item Обычно это поворот + масштабирование + сдвиг
 \pause
 \item Поворот -- кватернион \begin{math}q\end{math}
-\item Масштабирование -- число \begin{math}s\end{math} (изотропное масштабирование) или три числа (разный масштаб по разным осям)
+\pause
+\item Масштабирование -- одно число \begin{math}s\end{math} (\textit{изотропное масштабирование}) или три числа (разный масштаб по разным осям)
+\pause
 \item Сдвиг -- вектор сдвига \begin{math}t\end{math}
 \pause
 \item Преобразование вершин: \begin{math}v \mapsto s \cdot qvq^{-1} + t\end{math}
 \pause
-\item Преобразование нормалей: \begin{math}n \mapsto qnq^{-1}\end{math}
+\item Преобразование нормалей: \begin{math}n \mapsto qnq^{-1}\end{math} либо \begin{math}n \mapsto \frac{s \cdot qnq^{-1}}{\|s \cdot qnq^{-1}\|}\end{math}
 \end{itemize}
 \end{frame}
 
@@ -372,33 +396,45 @@
 \item Часто объекты сцены/мира образуют иерархическую структуру (шапка на человеке, человек в машине, машина на корабле)
 \pause
 \item Удобно описывать полное преобразование объекта (позиция + поворот + масштабирование) не относительно центра сцены/мира, а относительно родительского объекта
-\begin{itemize}
-\item N.B.: обычно в такой ситуации есть один корневой объект -- сцена
-\end{itemize}
 \pause
-\item Нужно уметь вычислять итоговое преобразование объекта, т.е. композицию всех преобразований от корня до нашего объекта
+\item Обычно в такой ситуации есть один корневой объект -- сцена
+\pause
+\item \begin{math}\Longrightarrow\end{math} Нужно уметь вычислять итоговое преобразование объекта, т.е. композицию всех преобразований от корня до нашего объекта
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Композиция аффинных преобразований}
+\begin{equation}
+({\color{blue}t_2},{\color{blue}s_2},{\color{blue}q_2}) \cdot ({\color{red}t_1},{\color{red}s_1},{\color{red}q_1}) \cdot v = ({\color{green}t},{\color{green}s},{\color{green}q}) \cdot v 
+\end{equation}
 \begin{multline}
 ({\color{blue}t_2},{\color{blue}s_2},{\color{blue}q_2}) \cdot ({\color{red}t_1},{\color{red}s_1},{\color{red}q_1}) \cdot v = {\color{blue}s_2}{\color{blue}q_2}({\color{red}s_1}{\color{red}q_1}v{\color{red}q_1^{-1}} + {\color{red}t_1}){\color{blue}q_2^{-1}} + {\color{blue}t_2} = \\
 = {\color{blue}s_2}{\color{red}s_1} ({\color{blue}q_2}{\color{red}q_1}) v ({\color{blue}q_2}{\color{red}q_1})^{-1} + {\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2} = \\
-({\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2}, {\color{blue}s_2}{\color{red}s_1}, {\color{blue}q_2}{\color{red}q_1}) \cdot v
+({\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2}, {\color{blue}s_2}{\color{red}s_1}, {\color{blue}q_2}{\color{red}q_1}) \cdot v \\
 \end{multline}
+\begin{equation}
+{\color{green}q} = {\color{blue}q_2}{\color{red}q_1}
+\end{equation}
+\begin{equation}
+{\color{green}s} = {\color{blue}s_2}{\color{red}s_1}
+\end{equation}
+\begin{equation}
+{\color{green}t} = {\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2}
+\end{equation}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Анимация трёхмерных моделей}
 \begin{itemize}
 \item Анимация положения объекта в пространстве -- неплохо, но скучно
+\pause
 \item Хочется анимировать саму модель, т.е. двигать её вершины
 \pause
 \item 2 способа:
 \begin{itemize}
-\item Покадровая анимация (morph-target animation)
-\item Скелетная анимация (skeletal animation)
+\item Покадровая анимация (\textit{morph-target animation})
+\item Скелетная анимация (\textit{skeletal animation})
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -412,7 +448,7 @@
 \pause
 \item Вершинный шейдер принимает два набора атрибутов позиций вершин и интерполирует между ними
 \begin{itemize}
-\item N.B.: интерполяция может использовать easing
+\item Интерполяция может использовать easing functions
 \end{itemize}
 \pause
 \item Фактически, это сплайн, значение которого -- набор координат всех вершин
@@ -453,9 +489,9 @@
 \begin{frame}[fragile]
 \frametitle{Скелетная анимация моделей}
 \begin{itemize}
-\item Модель привязывается к виртуальному `скелету'
+\item Модель привязывается к виртуальному \textit{скелету}
 \pause
-\item Скелет -- иерархия виртуальных `костей'
+\item Скелет -- иерархия виртуальных \textit{костей}
 \pause
 \item Каждая вершина привязана к одной или (чаще) нескольким костям
 \pause
@@ -463,7 +499,7 @@
 \pause
 \item Кадры анимации задаются только для скелета (исходная модель существует в одном экземпляре)
 \pause
-\item Интерполируются только преобразования костей (костей гораздо меньше, чем вершин \begin{math}\Rightarrow\end{math} это не страшно делать даже на CPU)
+\item Интерполируются только преобразования костей (костей гораздо меньше, чем вершин \begin{math}\Longrightarrow\end{math} это не страшно делать даже на CPU)
 \pause
 \item В вершинном шейдере вычисляется итоговое преобразование для вершины как среднее между преобразованиями связанных с ней костей
 \end{itemize}
@@ -476,7 +512,8 @@
 
 \begin{frame}[fragile]
 \frametitle{Скелетная анимация моделей}
-\begin{verbatim}
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
 uniform mat4x4 bones[16];
 
 layout (location = 0) in vec4 in_position;
@@ -489,7 +526,7 @@ void main()
       in_weights.x * bones[in_joints.x] * in_position
     + in_weights.y * bones[in_joints.y] * in_position;
 }
-\end{verbatim}
+\end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -497,9 +534,9 @@ void main()
 \begin{itemize}
 \item К нормалям тоже нужно применять преобразования (но не сдвиги!)
 \pause
-\item Кости обычно тоже выстроены в иерархию \begin{math}\Rightarrow\end{math} перед применением нужно вычислить суммарное преобразование (композицию)
+\item Кости обычно тоже выстроены в иерархию \begin{math}\Longrightarrow\end{math} перед применением нужно вычислить суммарное преобразование (композицию)
 \pause
-\item Преобразования костей часто заданы в локальной для кости системе координат для удобства \begin{math}\Rightarrow\end{math} перед применением нужно умножить на преобразование, переводящее из системы координат модели в локальную систему координат кости (\textit{inverse bind matrix} в формате \verb|glTF|)
+\item Преобразования костей часто заданы в локальной для кости системе координат для удобства \begin{math}\Longrightarrow\end{math} перед применением нужно умножить на преобразование, переводящее из системы координат модели в локальную систему координат кости (\textit{inverse bind matrix} в формате \mintinline{cpp}|glTF|)
 \pause
 \item Нужно быть внимательным к особенностям задания преобразований и системам координат в разных редакторах и форматах!
 \end{itemize}
@@ -509,13 +546,15 @@ void main()
 \frametitle{Скелетная анимация моделей}
 \begin{itemize}
 \item Обычно вычисление преобразования для кости выглядит как
-\begin{verbatim}
-...
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{glsl}
+
+    ...
     * bone.parent.parent.local_transform
     * bone.parent.local_transform *
     * bone.local_transform
     * bone.inverse_bind_matrix
-\end{verbatim}
+\end{minted}
 \end{itemize}
 \end{frame}
 
@@ -528,7 +567,7 @@ void main()
 \pause
 \item {\color{green}+} Легко добавлять процедурную анимацию
 \pause
-\item Самый распространённый способ анимировать модели
+\item \underline{Самый распространённый} способ анимировать модели
 \end{itemize}
 \end{frame}
 
@@ -538,7 +577,7 @@ void main()
 \item Откуда брать скелетную анимацию?
 \pause
 \begin{itemize}
-\item Сплайны -- так обычно описываются анимации в 3D редакторах (отдельный сплайн для вращения, масштаба и сдвига каждой кости)
+\item Сплайны -- так обычно описываются анимации в 3D редакторах и форматах моделей (отдельный сплайн для вращения, масштаба и сдвига каждой кости)
 \pause
 \item Процедурная анимация -- код, генерирующий анимацию на лету
 \end{itemize}
@@ -560,7 +599,7 @@ void main()
 \item Повернуть руку так, чтобы кисть схватила нужный объект
 \end{itemize}
 \pause
-\item Удобно при формировании анимации в редакторе, необходимо для нетривиальных анимаций в динамическом мире
+\item Удобно при формировании анимации в редакторе; необходимо для нетривиальных процедурных анимаций
 \pause
 \item Эта (обратная) задача называется \textit{inverse kinematics (IK)}
 \end{itemize}
@@ -575,9 +614,9 @@ void main()
 \pause
 \item Тогда положение точки -- функция углов \begin{math}p = f(\theta_1, \theta_2, \dots \theta_n)\end{math}
 \pause
-\item \begin{math}p\end{math} известна, \begin{math}\{\theta_i\}\end{math} неизвестны \begin{math}\Rightarrow\end{math} IK сводится к задаче решения нелинейной системы уравнений
+\item \begin{math}p\end{math} известна, \begin{math}\{\theta_i\}\end{math} неизвестны \begin{math}\Longrightarrow\end{math} IK сводится к задаче решения нелинейной системы уравнений
 \pause
-\item В некоторых простых частных случаях можно решить явно (напр. поровот головы -- \verb|atan2| от вектора направления)
+\item В некоторых простых частных случаях можно решить явно (напр. поровот головы -- \mintinline{cpp}|atan2| от вектора направления)
 \pause
 \item В общем случае решается итеративными методами (напр. многомерным методом Ньютона)
 \end{itemize}
@@ -588,9 +627,9 @@ void main()
 \begin{itemize}
 \item Если для модели задано несколько анимаций (ходьба, бег, прыжок, поворот, и т.д.) нужно уметь между ними переключаться
 \pause
-\item Обычно достаточно интерполировать \verb|local_transform| каждой кости от первой ко второй анимации
+\item Обычно достаточно интерполировать \mintinline{cpp}|local_transform| каждой кости от первой ко второй анимации
 \pause
-\item Не все переходы имеют смысл (люди обычно не переходят в лежачее положение сразу из бега или прыжка) \begin{math}\Rightarrow\end{math} часто используют state-машины анимаций с настраиваемыми переходами между состояниями
+\item Не все переходы имеют смысл (напр. люди обычно не переходят в лежачее положение сразу из бега или прыжка) \begin{math}\Longrightarrow\end{math} часто используют state-машины анимаций с настраиваемыми переходами между состояниями
 \pause
 \item В современности почти всегда используется комбинированный подход: state-машина для переходов между заранее подготовленными анимациями + специфичная для ситуации процедурная анимация
 \end{itemize}
@@ -606,21 +645,22 @@ void main()
 \begin{itemize}
 \item Есть способы для некоторых ситуаций полностью процедурно генерировать анимацию
 \pause
-\item Анимация передвижения пауков: \href{https://www.youtube.com/watch?v=e6Gjhr1IP6w}{\nolinkurl{youtube.com/watch?v=e6Gjhr1IP6w}}
+\item Анимация передвижения пауков: \href{https://www.youtube.com/watch?v=e6Gjhr1IP6w}{\texttt{youtube.com/watch?v=e6Gjhr1IP6w}}
 \pause
-\item Оффлайн генерация анимации движения для двуногих: \href{https://www.youtube.com/watch?v=pgaEE27nsQw}{\nolinkurl{youtube.com/watch?v=pgaEE27nsQw}}
+\item Оффлайн генерация анимации движения для двуногих: \href{https://www.youtube.com/watch?v=pgaEE27nsQw}{\texttt{youtube.com/watch?v=pgaEE27nsQw}}
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Скелетная анимация: ссылки}
 \begin{itemize}
-\item \href{https://en.wikipedia.org/wiki/Skeletal_animation}{\nolinkurl{en.wikipedia.org/wiki/Skeletal\_animation}}
-\item \href{https://en.wikipedia.org/wiki/Inverse_kinematics}{\nolinkurl{en.wikipedia.org/wiki/Inverse_kinematics}}
-\item \href{https://learnopengl.com/Guest-Articles/2020/Skeletal-Animation}{\nolinkurl{learnopengl.com/Guest-Articles/2020/Skeletal-Animation}}
-\item \href{https://ogldev.org/www/tutorial38/tutorial38.html}{\nolinkurl{ogldev.org/www/tutorial38/tutorial38.html}}
-\item \href{https://www.youtube.com/watch?v=f3Cr8Yx3GGA}{Видео-туториал по скелетной анимации}
-\item \href{https://www.youtube.com/watch?v=R-T3Mk5oDHI}{Видео про графы анимаций в крупных движках}
+\item \href{https://en.wikipedia.org/wiki/Skeletal_animation}{\texttt{en.wikipedia.org/wiki/Skeletal\_animation}}
+\item \href{https://en.wikipedia.org/wiki/Inverse_kinematics}{\texttt{en.wikipedia.org/wiki/Inverse\_kinematics}}
+\item \href{https://learnopengl.com/Guest-Articles/2020/Skeletal-Animation}{\texttt{learnopengl.com/Guest-Articles/2020/Skeletal-Animation}}
+\item \href{https://ogldev.org/www/tutorial38/tutorial38.html}{\texttt{ogldev.org/www/tutorial38/tutorial38.html}}
+\item \href{https://lisyarus.github.io/blog/graphics/2023/07/03/gltf-animation.html}{\texttt{Skeletal animation in glTF}}
+\item \href{https://www.youtube.com/watch?v=f3Cr8Yx3GGA}{\texttt{Видео-туториал по скелетной анимации}}
+\item \href{https://www.youtube.com/watch?v=R-T3Mk5oDHI}{\texttt{Видео про графы анимаций в крупных движках}}
 \end{itemize}
 \end{frame}
 
@@ -645,16 +685,16 @@ void main()
 
 \begin{frame}[fragile]
 \frametitle{Форматы 3D моделей}
-\begin{itemize}
 \fontsize{8pt}{8pt}
 \selectfont
-\item \verb|.x| -- устаревший формат, часто использовавшийся вместе с DirectX
+\begin{itemize}
+\item \mintinline{cpp}|.x| -- устаревший формат, часто использовавшийся вместе с DirectX
 \pause
-\item \verb|.3ds| -- устаревший формат, использовавшийся в девяностых и нулевых, не поддерживал анимацию и нормали
+\item \mintinline{cpp}|.3ds| -- устаревший формат, использовавшийся в девяностых и нулевых, не поддерживал анимацию и нормали
 \pause
-\item \verb|.obj| -- текстовый формат, использующийся из-за своей простоты, не поддерживает нестандартных атрибутов и анимацию
+\item \mintinline{cpp}|.obj| -- текстовый формат, использующийся из-за своей простоты, не поддерживает нестандартных атрибутов и анимацию
 \pause
-\item \verb|.dae (COLLADA)| -- распространённый современный XML-формат, поддерживает почти всё
+\item \mintinline{cpp}|.dae (COLLADA)| -- распространённый современный XML-формат, поддерживает почти всё
 \pause
 \begin{itemize}
 \fontsize{8pt}{8pt}
@@ -662,16 +702,16 @@ void main()
 \item Из-за многословности XML формат занимает очень много памяти; обычно используется как промежуточный перед конвертацией в специфичный для движка бинарный формат
 \end{itemize}
 \pause
-\item \verb|.gltf| -- современный JSON-формат, разработанный Khronos Group; поддерживает нетривиальные атрибуты, материалы и анимацию; в JSON хранится логическое описание данных, а сами бинарные данные (вершины, индексы, анимации) могут храниться в отдельных файлых; очень удобен для загрузки и использования в OpenGL
+\item \mintinline{cpp}|.gltf| -- современный JSON-формат, разработанный Khronos Group; поддерживает нетривиальные атрибуты, материалы и анимацию; в JSON хранится логическое описание данных, а сами бинарные данные (вершины, индексы, анимации) могут храниться в отдельных файлых; очень удобен для загрузки и использования в OpenGL
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Форматы 3D моделей: ссылки}
 \begin{itemize}
-\item \href{https://www.khronos.org/collada}{Документация по COLLADA}
-\item \href{https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html}{Документация по glTF}
-\item \href{https://en.wikipedia.org/wiki/List_of_file_formats#3D_graphics}{Список 3D форматов}
+\item \href{https://www.khronos.org/collada}{\texttt{Документация по COLLADA}}
+\item \href{https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html}{\texttt{Документация по glTF}}
+\item \href{https://en.wikipedia.org/wiki/List_of_file_formats#3D_graphics}{\texttt{Список 3D форматов}}
 \end{itemize}
 \end{frame}
 
