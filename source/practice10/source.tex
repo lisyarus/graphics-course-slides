@@ -1,13 +1,16 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
+
+
+\usetheme{metropolis}
 
 \usepackage{adjustbox}
 
@@ -18,6 +21,7 @@
 
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -31,9 +35,11 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 10: Normal mapping, environment mapping}
-\date{2022}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
+
+\usemintedstyle{solarized-light}
 
 \begin{document}
 
@@ -47,7 +53,7 @@
 \frametitle{Задание 1}
 Готовимся к normal mapping
 \begin{itemize}
-\item Выводим нормаль к поверхности вместо цвета: \verb|albedo = normal * 0.5 + vec3(0.5)|
+\item Выводим нормаль к поверхности вместо цвета: \mintinline{glsl}|albedo = normal * 0.5 + vec3(0.5)|
 \end{itemize}
 \end{frame}
 
@@ -59,10 +65,10 @@
 \frametitle{Задание 2}
 Читаем normal map
 \begin{itemize}
-\item Загружаем текстуру \verb|textures/brick_normal.jpg| (в коде есть функция \verb|load_texture|)
-\item Заводим во фрагментном шейдере uniform-переменную \verb|sampler2D normal_texture|, перед рисованием устанавливаем её значение в 1 (аналогично \verb|albedo_texture|)
-\item Перед рисованием делаем эту текстуру текущей для первого texture unit'а (\verb|GL_TEXTURE1|)
-\item Во фрагментном шейдере читаем эту текстуру в качестве значения альбедо \verb|albedo = texture(normal_texture, texcoord).rgb|
+\item Загружаем текстуру \mintinline{glsl}|textures/brick_normal.jpg| (в коде есть функция \mintinline{glsl}|load_texture|)
+\item Заводим во фрагментном шейдере uniform-переменную \mintinline{glsl}|sampler2D normal_texture|, перед рисованием устанавливаем её значение в 1 (аналогично \mintinline{glsl}|albedo_texture|)
+\item Перед рисованием делаем эту текстуру текущей для первого texture unit'а (\mintinline{glsl}|GL_TEXTURE1|)
+\item Во фрагментном шейдере читаем эту текстуру в качестве значения альбедо \mintinline{glsl}|albedo = texture(normal_texture, texcoord).rgb|
 \end{itemize}
 \end{frame}
 
@@ -74,11 +80,10 @@
 \frametitle{Задание 3}
 Вычисляем настоящие нормали
 \begin{itemize}
-\item Во фрагментном шейдере вычисляем bitangent вектор: \verb|vec3 bitangent = cross(tangent, normal)|
-\item Вычисляем матрицу преобразования из normal map в мировые координаты: \verb|mat3 tbn = mat3(tangent, bitangent, normal)|
-\item Прочитанное из normal map значение переводим из [0, 1] в [-1, 1] и применяем матрицу: \begin{verbatim}vec3 real_normal = tbn * (texture(...).xyz * 2.0
-        - vec3(1.0))\end{verbatim}
-\item В качестве цвета используем новую нормаль: \verb|albedo = real_normal * 0.5 + vec3(0.5)|
+\item Во фрагментном шейдере вычисляем bitangent вектор: \mintinline{glsl}|vec3 bitangent = cross(tangent, normal)|
+\item Вычисляем матрицу преобразования из normal map в мировые координаты: \mintinline{glsl}|mat3 tbn = mat3(tangent, bitangent, normal)|
+\item Прочитанное из normal map значение переводим из [0, 1] в [-1, 1] и применяем матрицу: \mintinline{glsl}|vec3 real_normal = tbn * (texture(...).xyz * 2.0 -| \mintinline{glsl}|- vec3(1.0))|
+\item В качестве цвета используем новую нормаль: \mintinline{glsl}|albedo = real_normal * 0.5 + vec3(0.5)|
 \end{itemize}
 \end{frame}
 
@@ -90,8 +95,8 @@
 \frametitle{Задание 4}
 Используем настоящие нормали для освещения
 \begin{itemize}
-\item Во фрагментном шейдере возвращаем старое \verb|albedo| (бралось из \verb|albedo_texture|)
-\item В вычислении освещения используем \verb|real_normal| вместо \verb|normal|
+\item Во фрагментном шейдере возвращаем старое \mintinline{glsl}|albedo| (бралось из \mintinline{glsl}|albedo_texture|)
+\item В вычислении освещения используем \mintinline{glsl}|real_normal| вместо \mintinline{glsl}|normal|
 \end{itemize}
 \end{frame}
 
@@ -101,25 +106,26 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 5}
+\begin{footnotesize}
 Добавляем reflection mapping
 \begin{itemize}
-\item Читаем текстуру \verb|textures/environment_map.jpg|, добавляем для неё uniform-переменную, устанавливаем её в значение 2, текстуру делаем текущей для 2ого texture unit'а (\verb|GL_TEXTURE2|)
-\item Во фрагментном шейдере по положению камеры и положению пикселя (\verb|position|) вычисляем направление на камеру
-\item С помощью нормали (\verb|real_normal|) вычисляем направление отражённого луча
+\item Читаем текстуру \mintinline{glsl}|textures/environment_map.jpg|, добавляем для неё uniform-переменную, устанавливаем её в значение 2, текстуру делаем текущей для 2ого texture unit'а (\mintinline{glsl}|GL_TEXTURE2|)
+\item Во фрагментном шейдере по положению камеры и положению пикселя (\mintinline{glsl}|position|) вычисляем направление на камеру
+\item С помощью нормали (\mintinline{glsl}|real_normal|) вычисляем направление отражённого луча
 \item Вычисляем текстурную координату для environment map:
-\begin{verbatim}
-x = atan(dir.z, dir.x) / PI * 0.5 + 0.5;
-y = -atan(dir.y, length(dir.xz)) / PI + 0.5;
-\end{verbatim}
-\item В качестве значения итогого цвета берём среднее между старым цветом (\verb|albedo * lightness|) и значением из environment map
+\mintinline{glsl}|x = atan(dir.z, dir.x) / PI * 0.5 + 0.5;|
+\mintinline{glsl}|y = -atan(dir.y, length(dir.xz)) / PI + 0.5;|
+\usemintedstyle{solarized-light}
+\item В качестве значения итогого цвета берём среднее между старым цветом (\mintinline{glsl}|albedo * lightness|) и значением из environment map
 \end{itemize}
+\end{footnotesize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Задание 5}
 Добавляем reflection mapping
 \begin{itemize}
-\item N.B.: если отражения слишком сильно искажаются картой нормалей, можно слегка подвинуть нормаль: \verb|real_normal = normalize(mix(normal, real_normal, 0.5))|
+\item N.B.: если отражения слишком сильно искажаются картой нормалей, можно слегка подвинуть нормаль: \mintinline{glsl}|real_normal =| \mintinline{glsl}|= normalize(mix(normal, real_normal, 0.5))|
 \end{itemize}
 \end{frame}
 
@@ -129,20 +135,20 @@ y = -atan(dir.y, length(dir.xz)) / PI + 0.5;
 
 \begin{frame}[fragile]
 \frametitle{Задание 6*}
+\begin{footnotesize}
 Добавляем environment mapping
 \begin{itemize}
 \item Добавляем новую шейдерную программу, в которой захардкожен полноэкранный прямоугольник (как в первой практике), и фиктивный VAO
 \item В вершинном шейдере вычисляется соответствующая координата в пространстве и передаётся во фрагментный шейдер:
-\begin{verbatim}
-vec4 ndc = vec4(vertex, 0.0, 1.0);
-vec4 clip_space = view_projection_inverse * ndc;
-position = clip_space.xyz / clip_space.w;
-\end{verbatim}
-\item \verb|view_projection_inverse| -- матрица \verb|inverse(projection * view)|
+\mintinline{glsl}|vec4 ndc = vec4(vertex, 0.0, 1.0);|
+\mintinline{glsl}|vec4 clip_space = view_projection_inverse * ndc;|
+\mintinline{glsl}|position = clip_space.xyz / clip_space.w;|
+\item \mintinline{glsl}|view_projection_inverse| -- матрица \mintinline{glsl}|inverse(projection * view)|
 \item Во фрагментном шейдере вычисляется направление из камеры в этот пиксель
 \item Это направление используется для чтения из environment map (так же, как в предыдущем задании)
 \item N.B. нужно подумать, какие тут нужны uniform-переменные и текстуры, и правильно передать их
 \end{itemize}
+\end{footnotesize}
 \end{frame}
 
 \begin{frame}[fragile]
