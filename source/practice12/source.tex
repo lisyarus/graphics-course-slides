@@ -1,15 +1,17 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
 \usepackage{adjustbox}
+
+\usetheme{metropolis}
 
 \usepackage{color}
 \usepackage{soul}
@@ -31,7 +33,9 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 12: Volume rendering}
-\date{2022}
+\date{2023}
+
+\usemintedstyle{solarized-light}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -48,9 +52,9 @@
 Находим пересечение с AABB объекта (во фрагментном шейдере)
 \begin{itemize}
 \item Вычисляем \textbf{нормированный} вектор направления из камеры в текущую точку поверхности -- это вектор направления луча
-\item Вычисляем пересечение этого луча с AABB: интервал \begin{math}[t_{min}, t_{max}]\end{math} для которых \begin{math}p + t \cdot d\end{math} содержится в AABB (в коде уже есть функция \verb|intersect_bbox|, возвращает \verb|vec2(tmin, tmax)|)
-\item Делаем \verb|tmin = max(tmin, 0.0)|, чтобы не включать часть пересечения сзади камеры
-\item В качестве цвета пикселя выводим \verb|vec3(tmax - tmin)| (это значение часто будет больше единицы, так что можно разделить, например, на 4.0)
+\item Вычисляем пересечение этого луча с AABB: интервал \begin{math}[t_{min}, t_{max}]\end{math} для которых \begin{math}p + t \cdot d\end{math} содержится в AABB (в коде уже есть функция \mintinline{glsl}|intersect_bbox|, возвращает \mintinline{glsl}|vec2(tmin, tmax)|)
+\item Делаем \mintinline{glsl}|tmin = max(tmin, 0.0)|, чтобы не включать часть пересечения сзади камеры
+\item В качестве цвета пикселя выводим \mintinline{glsl}|vec3(tmax - tmin)| (это значение часто будет больше единицы, так что можно разделить, например, на 4.0)
 \end{itemize}
 \end{frame}
 
@@ -62,11 +66,11 @@
 \frametitle{Задание 2}
 Вычисляем optical depth куба (во фрагментном шейдере)
 \begin{itemize}
-\item Заводим константу для коэффициента поглощения: \verb|absorption = 1.0|
-\item Вычисляем optical depth: \verb|optical_depth = (tmax - tmin) * absorption|
-\item Вычисляем непрозрачность пикселя: \verb|opacity = 1.0 - exp(-optical_depth)|
+\item Заводим константу для коэффициента поглощения: \mintinline{glsl}|absorption = 1.0|
+\item Вычисляем optical depth: \mintinline{glsl}|optical_depth = (tmax - tmin) * absorption|
+\item Вычисляем непрозрачность пикселя: \mintinline{glsl}|opacity = 1.0 - exp(-optical_depth)|
 \item Записываем значение opacity в альфа-канал результирующего цвета (RGB-каналы заполните вашим любимым цветом)
-\item Можно поиграться со значением \verb|absorption| чтобы понять, как оно влияет на результат
+\item Можно поиграться со значением \mintinline{glsl}|absorption| чтобы понять, как оно влияет на результат
 \end{itemize}
 \end{frame}
 
@@ -76,23 +80,28 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 3}
-\fontsize{8pt}{8pt}\selectfont
 Загружаем 3D текстуру
 \begin{itemize}
-\item Создаём текстуру типа \verb|GL_TEXTURE_3D|, min/mag фильтры -- \verb|GL_LINEAR|
-\item Устанавливаем параметры \verb|WRAP_R|, \verb|WRAP_S|, \verb|WRAP_T| в \verb|GL_CLAMP_TO_EDGE|
-\item Считываем данные из файла \verb|cloud_data_path| (128x64x64, одноканальная, 1 байт на пиксель):
+\item Создаём текстуру типа \mintinline{glsl}|GL_TEXTURE_3D|, min/mag фильтры -- \mintinline{glsl}|GL_LINEAR|
+\item Устанавливаем параметры \mintinline{glsl}|WRAP_R|, \mintinline{glsl}|WRAP_S|, \mintinline{glsl}|WRAP_T| в \mintinline{glsl}|GL_CLAMP_TO_EDGE|
+\item Считываем данные из файла \mintinline{glsl}|cloud_data_path| (128x64x64, одноканальная, 1 байт на пиксель):
 \begin{itemize}
-\fontsize{8pt}{8pt}\selectfont
-\item Заводим \verb|std::vector<char> pixels(...)| нужного размера
-\item Открываем файл \verb|std::ifstream input(path, std::ios::binary)|
-\item Читаем данные \verb|input.read(pixels.data(), pixels.size())|
+\item Заводим \mintinline{cpp}|std::vector<char> pixels(...)| нужного размера
+\item Открываем файл \mintinline{cpp}|std::ifstream input(path, std::ios::binary)|
+\item Читаем данные \mintinline{cpp}|input.read(pixels.data(), pixels.size())|
 \end{itemize}
-\item Загружаем в текстуру с помощью \verb|glTexImage3D| (internal format -- \verb|GL_R8|, format -- \verb|GL_RED|, type -- \verb|GL_UNSIGNED_BYTE|)
-\item Добавляем текстуру в шейдер (\verb|uniform sampler3D|), выводим в качестве цвета значение из текстуры в точке \verb|p = camera_position + direction * (tmin + tmax) / 2.0|
+\item Загружаем в текстуру с помощью \mintinline{glsl}|glTexImage3D| (internal format -- \mintinline{glsl}|GL_R8|, format -- \mintinline{glsl}|GL_RED|, type -- \mintinline{glsl}|GL_UNSIGNED_BYTE|)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 3}
+Загружаем 3D текстуру
 \begin{itemize}
-\fontsize{8pt}{8pt}\selectfont
-\item Нужно перевести пространственные координаты в текстурные: \verb|(p - bbox_min) / (bbox_max - bbox_min)|
+\item Добавляем текстуру в шейдер (\mintinline{glsl}|uniform sampler3D|), выводим в качестве цвета значение из текстуры в точке \mintinline{glsl}|p = camera_position +|
+\mintinline{glsl}|+ direction * (tmin + tmax) / 2.0|
+\begin{itemize}
+\item Нужно перевести пространственные координаты в текстурные: \mintinline{glsl}|(p - bbox_min) / (bbox_max - bbox_min)|
 \item Удобно завести функцию, возвращающую значение из текстуры по точке в пространстве
 \end{itemize}
 \item В качестве альфа-канала возьмём 1, иначе ничего не увидим
@@ -101,11 +110,11 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 3}
-N.B. можно взять другую текстуру: \verb|bunny.data| (есть в репозитории с заданием)
+N.B. можно взять другую текстуру: \mintinline{glsl}|bunny.data| (есть в репозитории с заданием)
 \begin{itemize}
 \item Размер -- 64x64x64
-\item \verb|bbox_min = vec3(-1, -1, -1)|
-\item \verb|bbox_max = vec3( 1,  1,  1)|
+\item \mintinline{glsl}|bbox_min = vec3(-1, -1, -1)|
+\item \mintinline{glsl}|bbox_max = vec3( 1,  1,  1)|
 \end{itemize}
 \end{frame}
 
@@ -117,14 +126,14 @@ N.B. можно взять другую текстуру: \verb|bunny.data| (е�
 \frametitle{Задание 4}
 Вычисляем optical depth с помощью front-to-back алгоритма (во фрагментном шейдере)
 \begin{itemize}
-\item Инициализируем \verb|optical_depth = 0|
-\item Делаем цикл, например, в 64 шага; один шаг цикла соответствует 1/64 части отрезка \verb|dt = (tmax - tmin) / 64|
+\item Инициализируем \mintinline{glsl}|optical_depth = 0|
+\item Делаем цикл, например, в 64 шага; один шаг цикла соответствует 1/64 части отрезка \mintinline{glsl}|dt = (tmax - tmin) / 64|
 \begin{itemize}
 \item Вместо 64 можно взять любое другое число; чем больше, тем красивее и медленнее
-\item Каждой итерации \verb|i| цикла соответвует значение \verb|t = tmin + (i + 0.5) * dt|
-\item Каждому значению \verb|t| соответствует точка луча \verb|p = camera_position + t * direction|
-\item Берём плотность из текстуры в текущей точке \verb|p|
-\item Обновляем optical depth: \verb|optical_depth += absorption * density * dt|
+\item Каждой итерации \mintinline{glsl}|i| цикла соответвует значение \mintinline{glsl}|t = tmin + (i + 0.5) * dt|
+\item Каждому значению \mintinline{glsl}|t| соответствует точка луча \mintinline{glsl}|p = camera_position + t * direction|
+\item Берём плотность из текстуры в текущей точке \mintinline{glsl}|p|
+\item Обновляем optical depth: \mintinline{glsl}|optical_depth += absorption * density * dt|
 \end{itemize}
 \item Вычисляем opacity как в задании 2
 \end{itemize}
@@ -136,24 +145,30 @@ N.B. можно взять другую текстуру: \verb|bunny.data| (е�
 
 \begin{frame}[fragile]
 \frametitle{Задание 5}
-\fontsize{8pt}{8pt}\selectfont
 Вычисляем рассеяние (во фрагментном шейдере), считаем что фазовая функция не зависит от угла рассеяния (тогда \begin{math}f(p,\theta) = \frac{1}{4\pi}\end{math})
 \begin{itemize}
 \item Коэффициент поглощения можно сделать поменьше (или даже нулём)
-\item Заводим коэффициенты рассеяния \verb|scattering = 4.0| и вымирания \verb|extinction = absorption + scattering|
-\item Заводим интенсивность света \verb|light_color = vec3(16.0)|
-\item Инициализируем рассеянный свет \verb|color = vec3(0.0)|
+\item Заводим коэффициенты рассеяния \mintinline{glsl}|scattering = 4.0| и вымирания \mintinline{glsl}|extinction = absorption + scattering|
+\item Заводим интенсивность света \mintinline{glsl}|light_color = vec3(16.0)|
+\item Инициализируем рассеянный свет \mintinline{glsl}|color = vec3(0.0)|
 \item В цикле аккумулируем и optical depth, и рассеянный свет
-\item \verb|optical_depth += extinction * density * dt|
-\item Для рассеяния нужно посчитать \verb|light_optical_depth| аналогичным вложенным циклом (число итераций может быть другое, например 16) вдоль луча из текущей точки в направлении света \verb|light_direction|
+\item \mintinline{glsl}|optical_depth += extinction * density * dt|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+Вычисляем рассеяние
 \begin{itemize}
-\fontsize{8pt}{8pt}\selectfont
-\item Придётся вызвать \verb|intersect_bbox| на каждую итерацию внешнего цикла
+\item Для рассеяния нужно посчитать \mintinline{glsl}|light_optical_depth| аналогичным вложенным циклом (число итераций может быть другое, например 16) вдоль луча из текущей точки в направлении света \mintinline{glsl}|light_direction|
+\begin{itemize}
+\item Придётся вызвать \mintinline{glsl}|intersect_bbox| на каждую итерацию внешнего цикла
 \item Придётся читать из текстуры на каждую итерацию внутреннего цикла
 \end{itemize}
-\item Обновляем рассеянный свет как \begin{verbatim}color += light_color * exp(-light_optical_depth) * exp(-optical_depth)
-    * dt * density * scattering / 4.0 / PI\end{verbatim}
-\item В качестве результата шейдера выводим \verb|vec4(color, alpha)|
+\item Обновляем рассеянный свет как \mintinline{glsl}|color += light_color * exp(-light_optical_depth) *|
+\mintinline{glsl}|* exp(-optical_depth) * dt * density *|
+\mintinline{glsl}|* scattering / 4.0 / PI|
+\item В качестве результата шейдера выводим \mintinline{glsl}|vec4(color, alpha)|
 \end{itemize}
 \end{frame}
 
@@ -165,10 +180,10 @@ N.B. можно взять другую текстуру: \verb|bunny.data| (е�
 \frametitle{Задание 6*}
 Разные коэффициенты рассеяния для разных цветов
 \begin{itemize}
-\item Обычный блендинг не умеет делать альфа-канал для каждого цвета по отдельности, так что заменим цвет фона (\verb|glClearColor|) на чёрный
-\item Коэффициенты \verb|absorption|, \verb|scattering|, \verb|extinction|, а также величины \verb|optical_depth| и \verb|light_optical_depth| должны стать \verb|vec3|
-\item В координаты \verb|scattering| нужно записать три разных числа (подберите что-нибудь сами в районе 1..10)
-\item Поиграйтесь со значением \verb|scattering|, чтобы посмотреть, как оно влияет на результат
+\item Обычный блендинг не умеет делать альфа-канал для каждого цвета по отдельности, так что заменим цвет фона (\mintinline{glsl}|glClearColor|) на чёрный
+\item Коэффициенты \mintinline{glsl}|absorption|, \mintinline{glsl}|scattering|, \mintinline{glsl}|extinction|, а также величины \mintinline{glsl}|optical_depth| и \mintinline{glsl}|light_optical_depth| должны стать \mintinline{glsl}|vec3|
+\item В координаты \mintinline{glsl}|scattering| нужно записать три разных числа (подберите что-нибудь сами в районе 1..10)
+\item Поиграйтесь со значением \mintinline{glsl}|scattering|, чтобы посмотреть, как оно влияет на результат
 \end{itemize}
 \end{frame}
 
