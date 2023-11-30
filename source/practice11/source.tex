@@ -1,15 +1,17 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2021
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
-\documentclass{beamer}
+\documentclass[10pt]{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
 \usepackage{adjustbox}
+
+\usetheme{metropolis}
 
 \usepackage{color}
 \usepackage{soul}
@@ -18,6 +20,7 @@
 
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -31,7 +34,9 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 11: Система частиц}
-\date{2021}
+\date{2023}
+
+\usemintedstyle{solarized-light}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -51,10 +56,10 @@ N.B: Камеру можно крутить и двигать стрелочка
 \frametitle{Задание 1}
 Рисуем частицы как квадраты
 \begin{itemize}
-\item В структуру \verb|particle| добавляем параметр \verb|float size|, инициализируем его в случайное значение (например, от \verb|0.2| до \verb|0.4|)
+\item В структуру \mintinline{glsl}|particle| добавляем параметр \mintinline{glsl}|float size|, инициализируем его в случайное значение (например, от \mintinline{glsl}|0.2| до \mintinline{glsl}|0.4|)
 \item Добавляем соответствующий атрибут для VAO и в вершинном шейдере
-\item Вершинный шейдер просто передаёт значение (\verb|out float size|) в геометрический шейдер (где оно принимается как \verb|in float size[]| -- геометрический шейдер обрабатывает сразу целый примитив, т.е. несколько вершин, поэтому нужен массив)
-\item В геометрическом шейдере меняем тип выходной геометрии: \verb|triangle_strip|, \verb|max_vertices = 4|
+\item Вершинный шейдер просто передаёт значение (\mintinline{glsl}|out float size|) в геометрический шейдер (где оно принимается как \mintinline{glsl}|in float size[]| -- геометрический шейдер обрабатывает сразу целый примитив, т.е. несколько вершин, поэтому нужен массив)
+\item В геометрическом шейдере меняем тип выходной геометрии: \mintinline{glsl}|triangle_strip|, \mintinline{glsl}|max_vertices = 4|
 \item В геометрическом шейдере вместо генерации одной вершины генерируем 4 вершины с координатами \begin{math}center + (\pm size, \pm size, 0)\end{math}
 \end{itemize}
 \end{frame}
@@ -68,9 +73,9 @@ N.B: Камеру можно крутить и двигать стрелочка
 Добавляем текстурные координаты
 \begin{itemize}
 \item В геометрическом шейдере генерируем для вершин текстурные координаты (от 0 до 1 по каждой оси)
-\item В геометрическом шейдере \verb|out vec2 texcoord|
-\item Во фрагментном шейдере, как обычно, \verb|in vec2 texcoord|
-\item Во фрагментном шейдере используем текстурные координаты в качестве цвета: \verb|vec4(texcoord, 0.0, 1.0)|
+\item В геометрическом шейдере \mintinline{glsl}|out vec2 texcoord|
+\item Во фрагментном шейдере, как обычно, \mintinline{glsl}|in vec2 texcoord|
+\item Во фрагментном шейдере используем текстурные координаты в качестве цвета: \mintinline{glsl}|vec4(texcoord, 0.0, 1.0)|
 \end{itemize}
 \end{frame}
 
@@ -99,13 +104,13 @@ N.B: Камеру можно крутить и двигать стрелочка
 \frametitle{Задание 4}
 Cимулируем физику частиц
 \begin{itemize}
-\item Добавляем частице поле `скорость' типа \verb|vec3| (как атрибут в шейдере оно не нужно), инициализируем его чем-то случайным
-\item На каждый кадр, перед обновлением VBO, для каждой частицы, при условии \verb|if (!paused)|:
+\item Добавляем частице поле `скорость' типа \mintinline{glsl}|vec3| (как атрибут в шейдере оно не нужно), инициализируем его чем-то случайным
+\item На каждый кадр, перед обновлением VBO, для каждой частицы, при условии \mintinline{glsl}|if (!paused)|:
 \begin{itemize}
-\item Увеличиваем Y-составляющую скорости на некую величину \verb|velocity.y += dt * A|
-\item Интегрируем скорость \verb|position += velocity * dt|
-\item Можно добавить трение \verb|velocity *= exp(- C * dt)|
-\item Можно уменьшать размер частицы \verb|size *= exp(- D * dt)|
+\item Увеличиваем Y-составляющую скорости на некую величину \mintinline{glsl}|velocity.y += dt * A|
+\item Интегрируем скорость \mintinline{glsl}|position += velocity * dt|
+\item Можно добавить трение \mintinline{glsl}|velocity *= exp(- C * dt)|
+\item Можно уменьшать размер частицы \mintinline{glsl}|size *= exp(- D * dt)|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -118,12 +123,12 @@ Cимулируем физику частиц
 \frametitle{Задание 5}
 Вращаем частицы
 \begin{itemize}
-\item Добавляем частице атрибут `угол поворота' типа \verb|float| (поле в структуру, входной параметр вершинного шейдера, настройка атрибута для VAO)
+\item Добавляем частице атрибут `угол поворота' типа \mintinline{glsl}|float| (поле в структуру, входной параметр вершинного шейдера, настройка атрибута для VAO)
 \item В геометрическом шейдере поворачиваем оси X, Y на этот угол
-\item Добавляем частице поле `угловая скорость' типа \verb|float| (как атрибут в шейдере оно не нужно), инициализируем его чем-то случайным
-\item На каждый кадр, перед обновлением VBO, для каждой частицы, при условии \verb|if (!paused)|:
+\item Добавляем частице поле `угловая скорость' типа \mintinline{glsl}|float| (как атрибут в шейдере оно не нужно), инициализируем его чем-то случайным
+\item На каждый кадр, перед обновлением VBO, для каждой частицы, при условии \mintinline{glsl}|if (!paused)|:
 \begin{itemize}
-\item Интегрируем угловую скорость \verb|rotation += angular_velocity * dt|
+\item Интегрируем угловую скорость \mintinline{glsl}|rotation += angular_velocity * dt|
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -136,7 +141,7 @@ Cимулируем физику частиц
 \frametitle{Задание 6}
 Создаём emitter частиц
 \begin{itemize}
-\item На каждый кадр, перед обновлением VBO, при условии \verb|if (!paused)|:
+\item На каждый кадр, перед обновлением VBO, при условии \mintinline{glsl}|if (!paused)|:
 \begin{itemize}
 \item Создаём частицы не разом, а по одной в кадр, пока их не станет 256
 \item Пересоздаём частицы с новыми случайными параметрами, если выполняется какое-то условие (например, Y-координата больше некого порогового значения, или размер меньше некого порогового значения)
@@ -152,10 +157,10 @@ Cимулируем физику частиц
 \frametitle{Задание 7}
 Текстурируем частицы
 \begin{itemize}
-\item Загружаем изображение \verb|particle.png| из файла в директории с проектом (путь до него уже есть в коде)
-\item Создаём текстуру и загружаем в неё это изображение: internal format = \verb|GL_RGBA8|, format = \verb|GL_RGBA|, type = \verb|GL_UNSIGNED_BYTE|, настраиваем линейную фильтрацию с mipmaps, генерируем mipmaps
-\item Используем эту текстуру во фрагментном шейдере: текстура в оттенках серого, берём только первую координату цвета (\verb|texture(...).r|) и используем как альфа-канал результирующего цвета (сам цвет можно сделать, например, белым)
-\item Включаем аддитивный блендинг (blend func = \verb|GL_SRC_ALPHA, GL_ONE|) и выключаем тест глубины
+\item Загружаем изображение \mintinline{glsl}|particle.png| из файла в директории с проектом (путь до него уже есть в коде)
+\item Создаём текстуру и загружаем в неё это изображение: internal format = \mintinline{glsl}|GL_RGBA8|, format = \mintinline{glsl}|GL_RGBA|, type = \mintinline{glsl}|GL_UNSIGNED_BYTE|, настраиваем линейную фильтрацию с mipmaps, генерируем mipmaps
+\item Используем эту текстуру во фрагментном шейдере: текстура в оттенках серого, берём только первую координату цвета (\mintinline{glsl}|texture(...).r|) и используем как альфа-канал результирующего цвета (сам цвет можно сделать, например, белым)
+\item Включаем аддитивный блендинг (blend func = \mintinline{glsl}|GL_SRC_ALPHA, GL_ONE|) и выключаем тест глубины
 \end{itemize}
 \end{frame}
 
@@ -165,13 +170,15 @@ Cимулируем физику частиц
 
 \begin{frame}[fragile]
 \frametitle{Задание 8*}
+\begin{footnotesize}
 Раскрашиваем частицы
 \begin{itemize}
-\item Создаём одномерную текстуру с цветовой палитрой: \verb|GL_TEXTURE_1D|, линейная фильтрация (без mipmaps), несколько вручную описанных пикселей (например, чёрный, оранжевый, жёлтый, белый), данные загружаются через \verb|glTexImage1D|
-\item Передаём эту текстуру во врагментный шейдер используя texture unit 1 (\verb|GL_TEXTURE1|), в шейдере тип sampler'а -- \verb|sampler1D|
+\item Создаём одномерную текстуру с цветовой палитрой: \mintinline{glsl}|GL_TEXTURE_1D|, линейная фильтрация (без mipmaps), несколько вручную описанных пикселей (например, чёрный, оранжевый, жёлтый, белый), данные загружаются через \mintinline{glsl}|glTexImage1D|
+\item Передаём эту текстуру во врагментный шейдер используя texture unit 1 (\mintinline{glsl}|GL_TEXTURE1|), в шейдере тип sampler'а -- \mintinline{glsl}|sampler1D|
 \item Используем значение из первой текстуры (оно же -- альфа-канал результирующего цвета) для индексации в текстуру с палитрой, результирующий цвет = цвет из палитры + альфа-канал из первой текстуры
 \item Можно дополнительно умножить текстурную координату для палитры (оно же -- значение альфа) на некую функцию от размера частицы (чтобы маленькие частицы были темнее; размер придётся передать во фрагментный шейдер)
 \end{itemize}
+\end{footnotesize}
 \end{frame}
 
 \begin{frame}[fragile]
