@@ -1,15 +1,17 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
 \documentclass{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
 \usepackage{adjustbox}
+
+\usetheme{metropolis}
 
 \usepackage{color}
 \usepackage{soul}
@@ -31,7 +33,9 @@
 
 \title{Компьютерная графика}
 \subtitle{Практика 13: Скелетная анимация}
-\date{2022}
+\date{2023}
+
+\usemintedstyle{solarized-light}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -49,11 +53,11 @@
 \begin{itemize}
 \item В вершинном шейдере добавляем два новых атрибута вершин:
 \begin{itemize}
-\item Номера костей для вершины: \verb|ivec4 in_joints|, \verb|location = 3|
-\item Веса костей для вершины: \verb|vec4 in_weights|, \verb|location = 4|
+\item Номера костей для вершины: \mintinline{glsl}|ivec4 in_joints|, \mintinline{glsl}|location = 3|
+\item Веса костей для вершины: \mintinline{glsl}|vec4 in_weights|, \mintinline{glsl}|location = 4|
 \item (в VAO эти атрибуты уже настроены)
 \end{itemize}
-\item Передаём \verb|in_weights| во фрагментный шейдер и используем в качестве цвета
+\item Передаём \mintinline{glsl}|in_weights| во фрагментный шейдер и используем в качестве цвета
 \end{itemize}
 \end{frame}
 
@@ -69,18 +73,18 @@
 Применяем преобразования костей
 \begin{itemize}
 \item Возвращаем нормальное вычисление цвета во фрагментном шейдере
-\item В вершинном шейдере: заводим uniform-массив для матриц костей \verb|uniform mat4x3 bones[64]|
+\item В вершинном шейдере: заводим uniform-массив для матриц костей \mintinline{glsl}|uniform mat4x3 bones[100]|
 \begin{itemize}
 \fontsize{8pt}{8pt}
 \selectfont
-\item Location получаем как \verb|glGetUniformLocation(program, "bones")|
+\item Location получаем как \mintinline{cpp}|glGetUniformLocation(program, "bones")|
 \end{itemize}
-\item Вычисляем взвешенное среднее \verb|mat4x3 average| матриц для вершины (\verb|in_joints| -- индексы четырёх матриц, \verb|in_weights| -- их веса)
-\item Перед применением матрицы \verb|model| применяем к входной вершине матрицу \verb|mat4(average)|
-\item Перед применением матрицы \verb|mat3(model)| применяем к входной нормали матрицу \verb|mat3(average)|
-\item В цикле рендеринга заводим переменную \verb|scale| как-то меняющуюся со временем (например, \verb|0.75 + cos(time) * 0.25|)
-\item В цикле рендеринга заводим массив матриц \verb|std::vector<glm::mat4x3>| размера \verb|input_model.bones.size()| и заполняем значением \verb|glm::mat4x3(scale)|
-\item Передаём матрицы в uniform-массив одним вызовом \verb|glUniformMatrix4x3fv|
+\item Вычисляем взвешенное среднее \mintinline{glsl}|mat4x3 average| матриц для вершины (\mintinline{glsl}|in_joints| -- индексы четырёх матриц, \mintinline{glsl}|in_weights| -- их веса)
+\item Перед применением матрицы \mintinline{glsl}|model| применяем к входной вершине матрицу \mintinline{glsl}|mat4(average)|
+\item Перед применением матрицы \mintinline{glsl}|mat3(model)| применяем к входной нормали матрицу \mintinline{glsl}|mat3(average)|
+\item В цикле рендеринга заводим переменную \mintinline{cpp}|scale| как-то меняющуюся со временем (например, \mintinline{cpp}|0.75 + cos(time) * 0.25|)
+\item В цикле рендеринга заводим массив матриц \mintinline{cpp}|std::vector<glm::mat4x3>| размера \mintinline{cpp}|input_model.bones.size()| и заполняем значением \mintinline{cpp}|glm::mat4x3(scale)|
+\item Передаём матрицы в uniform-массив одним вызовом \mintinline{cpp}|glUniformMatrix4x3fv|
 \end{itemize}
 \end{frame}
 
@@ -95,18 +99,19 @@
 \selectfont
 Вычисляем преобразования костей
 \begin{itemize}
-\item Достаём из входной модели анимацию с названием \verb|"01_Run"|
-\item Для каждой кости \verb|i| вычисляем её преобразование: \verb|glm::mat4 transform = translation * rotation * scale|
+\item Достаём из входной модели анимацию с названием \mintinline{cpp}|"hip-hop"|
+\item Для каждой кости \mintinline{cpp}|i| вычисляем её преобразование: \mintinline{cpp}|glm::mat4 transform = translation * rotation * scale|
 \begin{itemize}
 \fontsize{8pt}{8pt}
 \selectfont
-\item \verb|translation| берётся из \verb|animation.bones[i].translation(0.f)| (0 -- время кадра, пока про него не думаем), остальные компоненты аналогично
-\item Получить по \verb|translation| матрицу можно через \verb|glm::translate(glm::mat4(1.f), translation)|, аналогично \verb|glm::scale| для \verb|scale|
-\item Получить по кватерниону \verb|rotation| матрицу можно через \verb|glm::toMat4|
-\item Если у кости есть родитель \verb|input_model.bones[i].parent|, домножаем матрицу \verb|transform| на матрицу родителя: \verb|parent_transform * transform|
-\item Записываем \verb|transform| в \verb|bones[i]| (в этот момент \verb|mat4| конвертируется в \verb|mat4x3|)
+\item \mintinline{cpp}|translation| берётся из \mintinline{cpp}|animation.bones[i].translation(0.f)| (0 -- время кадра, пока про него не думаем), остальные компоненты аналогично
+\item Получить по \mintinline{cpp}|translation| матрицу можно через \mintinline{cpp}|glm::translate(glm::mat4(1.f), translation)|, аналогично \mintinline{cpp}|glm::scale| для \mintinline{cpp}|scale|
+\item Получить по кватерниону \mintinline{cpp}|rotation| матрицу можно через \mintinline{cpp}|glm::toMat4|
+\item Если у кости есть родитель \mintinline{cpp}|input_model.bones[i].parent != -1|, домножаем матрицу \mintinline{cpp}|transform| на матрицу родителя: \mintinline{cpp}|parent_transform * transform|
+\item Записываем \mintinline{cpp}|transform| в \mintinline{cpp}|bones[i]| (в этот момент \mintinline{cpp}|mat4| конвертируется в \mintinline{cpp}|mat4x3|)
 \end{itemize}
-\item После этого отдельным циклом домножаем каждую кость на её inverse-bind матрицу: \verb|bones[i] = bones[i] * input_model.bones[i].inverse_bind_matrix|
+\item После этого отдельным циклом домножаем каждую кость на её inverse-bind матрицу: \mintinline{cpp}|bones[i] = bones[i] * input_model.bones[i].inverse_bind_matrix|
+\item Модель будет очень большая (так сделана исходная анимация), отмасштабируйте её с помощью матрицы \mintinline{cpp}|model|
 \end{itemize}
 \end{frame}
 
@@ -119,7 +124,7 @@
 \frametitle{Задание 4}
 Анимируем модель
 \begin{itemize}
-\item Вместо значения 0, передаваемого в \verb|animation.bones[i].translation(...)| и т.п., передаём значение \verb|std::fmod(time, animation.max_time)|
+\item Вместо значения 0, передаваемого в \mintinline{cpp}|animation.bones[i].translation(...)| и т.п., передаём значение \mintinline{cpp}|std::fmod(time, animation.max_time)|
 \end{itemize}
 \end{frame}
 
@@ -130,21 +135,21 @@
 
 \begin{frame}[fragile]
 \frametitle{Задание 5*}
-Интерполируем между двумя анимациями
+\begin{footnotesize}
+Переключаемся между тремя анимациями
 \begin{itemize}
-\item Заводим некий параметр интерполяции, который
+\item В модели есть три анимации: \mintinline{cpp}|"hip-hop"|, \mintinline{cpp}|"rumba"| и \mintinline{cpp}|"flair"|
+\item Модель должна \textbf{плавно} переключаться между ними при нажатии на клавиши \mintinline{cpp}|SDLK_1|, \mintinline{cpp}|SDLK_2| и \mintinline{cpp}|SDLK_3|, соответственно
+\item Для плавного переключения придётся запомнить имена старой и новой анимации, а так же время, прошедшее со старта переключения -- оно будет параметром интерполяции между двумя анимациями
 \begin{itemize}
-\item Линейно растёт (\verb|... += speed * dt|), если нажата какая-то клавиша (например, \verb|SDLK_LSHIFT| -- левый shift)
-\item Линейно убывает (\verb|... -= speed * dt|), если эта клавиша не нажата
-\item После обновления параметр ограничивается диапазоном [0, 1]
+\begin{footnotesize}
+\item Для \mintinline{cpp}|translation| каждой кости интерполируем (\mintinline{cpp}|glm::lerp|) между \mintinline{cpp}|translation| двух анимаций
+\item Аналогично для \mintinline{cpp}|rotation| и \mintinline{cpp}|scale| (для вращения лучше использовать \mintinline{cpp}|glm::slerp|)
+\end{footnotesize}
 \end{itemize}
-\item Используем этот параметр для интерполяции между анимациями \verb|"01_Run"| и \verb|"02_walk"|:
-\begin{itemize}
-\item Для \verb|translation| каждой кости интерполируем (\verb|glm::lerp|) между \verb|walk_animation.bones[i].translation| и \verb|run_animation.bones[i].translation|
-\item Аналогично для \verb|rotation| и \verb|scale| (для вращения лучше использовать \verb|glm::slerp|)
+\item Обратите внимание, что \mintinline{cpp}|max_time| у этих анимаций разный!
 \end{itemize}
-\item N.B. \verb|max_time| у этих двух анимаций разный!
-\end{itemize}
+\end{footnotesize}
 \end{frame}
 
 \begin{frame}[fragile]
