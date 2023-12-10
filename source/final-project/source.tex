@@ -1,10 +1,10 @@
-% (c) Nikita Lisitsa, lisyarus@gmail.com, 2022
+% (c) Nikita Lisitsa, lisyarus@gmail.com, 2023
 
 \documentclass{beamer}
 
 \usepackage[T2A]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
@@ -21,6 +21,9 @@
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
 
+\usetheme{metropolis}
+\setminted{fontsize=\footnotesize}
+
 \makeatletter
 \newcommand{\slideimage}[1]{
   \begin{figure}
@@ -33,7 +36,7 @@
 
 \title{Компьютерная графика}
 \subtitle{Финальный проект}
-\date{2022}
+\date{2023}
 
 \setbeamertemplate{footline}[frame number]
 
@@ -44,109 +47,69 @@
 \begin{frame}[fragile]
 \frametitle{Задание}
 \begin{itemize}
-\item Свободная форма: игра / визуализация / динамическая сцена / etc
+\item Свободная форма: игра / визуализация / динамическая сцена / что хотите
 \pause
+\item Нужно реализовать один или несколько сложных алгоритмов, которые мы изучали не очень подробно (или вообще не изучали) в течение курса
+\pause
+\item Алгоритмы оцениваются в разное количество баллов в зависимости от сложности
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Что можно использовать}
+\begin{itemize}
 \item Можно пользоваться вспомогательными библиотеками (например, для загрузки текстур, моделей и сцен)
-\begin{itemize}
+\pause
 \item Весь OpenGL-код должен быть написан вами, т.е. библиотека не должна загружать данные на GPU, создавать текстуры, и т.п.
-\item Можно брать код из практик, в т.ч. загрузчики моделей, анимаций и шрифтов (возможно, их придётся доработать)
-\item Можно самим сгенерировать всю геометрию и текстуры (текстура в один пиксель / одноцветная не считается)
-\end{itemize}
 \pause
-\item Нельзя брать сцены, модели, текстуры и шрифты из практик и домашних заданий
+\item Можно брать код из практик и домашних заданий, в т.ч. загрузчики моделей, анимаций и шрифтов (при необходимости их можно доработать)
 \pause
-\item Оценивается наличие конкретных алгоритмов и эффектов, в сумме \textbf{от 1 до 100} баллов
+\item Можно брать сцены и текстуры из практик и домашних заданий
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Баллы}
+\frametitle{Алгоритмы}
 \begin{itemize}
-\item 1 балл: что-нибудь рисуется с помощью OpenGL
-\item 1 балл: движущаяся камера (управляемая пользователем или кодом)
-\item 1 балл: управляемые пользователем объекты
-\item 1 балл: движущиеся сами по себе объекты
-\item 2 балла: иерархии объектов
-\item 3 балла: скелетная анимация
+\item \textbf{5 баллов}: toon shading
+\item \textbf{10 баллов}: bloom
+\item \textbf{15 баллов}: планета с volume-rendered атмосферой
+\item \textbf{15 баллов}: slicing volume rendering \textit{(не подойдёт для планеты)}
+\item \textbf{20 баллов}: cascaded shadow maps
+\item \textbf{25 баллов}: SSAO + dithering
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Баллы}
+\frametitle{Алгоритмы}
 \begin{itemize}
-\item 1 балл: освещение по Фонгу
-\item 2 балла: тени от направленного источника
-\item 3 баллов: тени от точечного источника
-\begin{itemize}
-\item +1 балл: PCF с размытием в финальном шейдере
-\item либо +2 балла: ESM/VSM с размытием в финальном шейдере
-\item ещё +2 балла если размытие с separable kernel (\textbf{не} в финальном шейдере)
-\end{itemize}
-\item 3 балла: полупрозрачные объекты (с сортировкой)
+\item \textbf{30 баллов}: SSDO / HDAO / HBAO \textit{(алгоритмы ambient occlusion)}
+\item \textbf{30 баллов}: screen-space reflections
+\item \textbf{30 баллов}: настоящие мягкие тени (радиус размытия зависит от расстояния до объекта, бросившего тень -- ищите \textit{summed-area soft shadows})
+\item \textbf{30 баллов}: deferred shading
+\item \textbf{30 баллов}: tiled/clustered shading
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Баллы}
+\frametitle{Алгоритмы}
 \begin{itemize}
-\item 1 балл: альбедо-текстуры
-\item 1 балл: material mapping
-\item 2 балла: normal mapping
-\item 3 балла: bitmap-анимации
+\item \textbf{30 баллов}: real-time hatching
+\item \textbf{30 баллов}: честный векторный текст (\underline{не} через предварительное рисование в текстуру и \underline{не} триангуляцией)
+\item \textbf{30 баллов}: водные каустики
+\item \textbf{30 баллов}: очень много травы (billboards + geometry shaders)
+\item \textbf{30 баллов}: очень большой ландшафт (geometry clipmaps или LOD)
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Баллы}
+\frametitle{Алгоритмы}
 \begin{itemize}
-\item 1 балл: skybox
-\item 2 балла: environment mapping
-\item 3 балла: cubemap-отражения
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Баллы}
-\begin{itemize}
-\item 1 балл: tone mapping + gamma correction
-\item 2 балла: blur
-\begin{itemize}
-\item +2 балла: separable kernel
-\item +3 балла: depth blur
-\end{itemize}
-\item 2 балла: dithering (для прозрачности или для избавления от banding)
-\item 3 балла: bloom
-\item 3 балла: toon shading (edge detection + cel shading)
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Баллы}
-\begin{itemize}
-\item 2 балла: bitmap-текст
-\item 3 балла: (M)SDF-текст
-\item 3 балла: raymarched volume rendering (для чего угодно)
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Баллы}
-\begin{itemize}
-\item 2 балла: instancing (от 100 объектов)
-\item 3 балла: LOD для моделей
-\item 3 балла: frustum culling
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Баллы}
-\begin{itemize}
-\item 4 балла: slicing volume rendering
-\item 5 баллов: cascaded shadow maps
-\item 7 баллов: screen-space ambient occlusion
-\item 7 баллов: screen-space reflections
-\item 10 баллов: deferred shading
-\item 10 баллов: tiled/clustered shading
+\item Если вы нашли статью / видео и не уверены, подходит ли оно под описанные алгоритмы -- напишите мне, обсудим
+\pause
+\item Если у вас есть другой алгоритм на примете -- напишите мне, обсудим
+\pause
+\item Сдача в день зачёта 25.12 или экзамена 15.01
 \end{itemize}
 \end{frame}
 
