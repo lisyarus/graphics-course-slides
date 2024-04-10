@@ -21,6 +21,7 @@ all: pdf/homework3.pdf
 all: pdf/lecture14.pdf pdf/practice14.pdf
 all: pdf/lecture15.pdf pdf/practice15.pdf
 all: pdf/final-project.pdf
+all: pdf/gamedev-math.pdf
 
 pdf/%.pdf: source/%/source.tex source/%/images/*.png
 	mkdir -p build/$(@F)
