@@ -376,7 +376,7 @@ glGetBufferSubData(GLenum target, GLintptr offset,
 \pause
 \item После \mintinline{cpp}|glUnmapBuffer| mapped указатель использовать нельзя
 \pause
-\item \mintinline{cpp}|glUnmapBuffer| может вернуть \mintinline{cpp}|GL_FALSE|, если что-то пошло не так, и память буфера при этом остаётся непроинициализированной
+\item \mintinline{cpp}|glUnmapBuffer| может вернуть \mintinline{cpp}|GL_FALSE| по зависящим от системы причинам, и память буфера при этом остаётся непроинициализированной
 \end{itemize}
 \end{frame}
 
@@ -411,7 +411,7 @@ glBufferData(GL_ARRAY_BUFFER,
 \begin{itemize}
 \item Вершины -- основные входные данные графического конвейера
 \pause
-\item С точки зрения OpenGL, вершины характеризуются набором \textit{атрибутов}
+\item С точки зрения OpenGL, вершины характеризуются набором \textit{атрибутов}: позиция, цвет, нормаль, текстурные координаты, и т.п.
 \pause
 \item Каждый атрибут имеет свой тип и размерность
 \pause
