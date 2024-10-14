@@ -676,7 +676,7 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \pause
 \item Можно \textit{скопировать} пиксели из одного фреймбуфера в другой
 \pause
-\item Можно \textit{рисовать} с помощью фреймбуфера в текстуру
+\item Можно \textit{рисовать} во фреймбуфер
 \pause
 \item Все операции рисования \mintinline{cpp}|glDraw*| рисуют в текущий \mintinline{cpp}|GL_DRAW_FRAMEBUFFER|
 \pause
@@ -824,6 +824,8 @@ glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 glFramebufferTexture(GL_DRAW_FRAMEBUFFER,
     GL_COLOR_ATTACHMENT0,
     fbo_color_texture, 0);
+GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
+glDrawBuffers(1, draw_buffers);
 
 // проверяем completeness
 if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)
@@ -839,8 +841,6 @@ if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)
 \begin{minted}[bgcolor=codebg]{cpp}
 // Рисование в FBO
 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-GLenum draw_buffers[] = {GL_COLOR_ATTACHMENT0};
-glDrawBuffers(1, draw_buffers);
 glClear(GL_COLOR_BUFFER_BIT);
 glViewport(0, 0, fbo_width, fbo_height);
 drawSomething();
@@ -850,8 +850,6 @@ drawSomething();
 // Рисование в дефолтный фреймбуфер
 // здесь можно использовать текстуру fbo_color_texture
 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-GLenum draw_buffers[] = {GL_FRONT_LEFT};
-glDrawBuffers(1, draw_buffers);
 glClear(GL_COLOR_BUFFER_BIT);
 glViewport(0, 0, screen_width, screen_height);
 drawSomethingElseUsing(fbo_color_texture);
@@ -866,7 +864,11 @@ drawSomethingElseUsing(fbo_color_texture);
 \pause
 \item Нельзя загрузить данные, нет режимов фильтрации, нет mipmaps \begin{math}\Longrightarrow\end{math} могут быть быстрее текстур, и работать с ними проще
 \pause
+\item Всегда двумерные (как \mintinline{cpp}|GL_TEXTURE_2D|)
+\pause
 \item Могут быть attachment'ами для фреймбуфера, вместо текстур
+\pause
+\item Удобно использовать напр. для буфера глубины
 \end{itemize}
 \end{frame}
 
@@ -975,7 +977,7 @@ drawSomethingElseUsing(fbo_color_texture);
 \begin{frame}[fragile]
 \frametitle{Box blur}
 \usemintedstyle{lightbulb}
-\begin{minted}[bgcolor=codebg]{glsl}
+\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{glsl}
 uniform sampler2D source;
 
 in vec2 texcoord;
@@ -989,8 +991,8 @@ void main()
 
     for (int x = -N; x <= N; ++x) {
         for (int y = -N; y <= N; ++y) {
-            sum += texture(source, texcoord +
-                vec2(x,y) / vec2(textureSize(source, 0)));
+            vec2 offset = vec2(x,y) / vec2(textureSize(source, 0));
+            sum += texture(source, texcoord + offset);
         }
     }
 
@@ -1001,9 +1003,8 @@ void main()
 
 \begin{frame}[fragile]
 \frametitle{Gaussian blur}
-\fontsize{10pt}{10pt}
 \usemintedstyle{lightbulb}
-\begin{minted}[bgcolor=codebg]{glsl}
+\begin{minted}[bgcolor=codebg,fontsize=\scriptsize]{glsl}
 uniform sampler2D source;
 
 in vec2 texcoord;
@@ -1019,9 +1020,9 @@ void main()
 
     for (int x = -N; x <= N; ++x) {
         for (int y = -N; y <= N; ++y) {
+            vec2 offset = vec2(x,y) / vec2(textureSize(source, 0));
             float c = exp(-float(x*x + y*y) / (radius*radius));
-            sum += c * texture(source, texcoord +
-                vec2(x,y) / vec2(textureSize(source, 0)));
+            sum += c * texture(source, texcoord + offset);
             sum_w += c;
         }
     }
