@@ -134,7 +134,7 @@
 \item Пишем новую шейдерную программу для вычисления shadow map:
 \item Вершинный шейдер преобразует вершины \mintinline{cpp}|gl_Position = shadow_projection * model * vec4(in_position, 1.0)| (матрица view здесь не нужна -- мы не настраиваем реальную камеру, а просто вычисляем тени)
 \item Фрагментный шейдер ничего не делает (пустая функция \mintinline{glsl}|main|; глубина пикселя, которая нам и нужна, пишется сама, автоматически)
-\item \textbf{Перед} рисованием основной сцены и прямоугольника: используем созданный ранее фреймбуфер для рисования, настраиваем viewport (размер -- \mintinline{cpp}|shadow_map_size x shadow_map_size/**|, очищаем буфер глубины, включаем front-face culling (чтобы избавиться от shadow acne), включаем depth test, рисуем нашу модель созданной шейдерной программой
+\item \textbf{Перед} рисованием основной сцены и прямоугольника: используем созданный ранее фреймбуфер для рисования, настраиваем viewport (размер -- \mintinline{cpp}|shadow_map_size x shadow_map_size|), очищаем буфер глубины, включаем front-face culling (чтобы избавиться от shadow acne), включаем depth test, рисуем нашу модель созданной шейдерной программой
 \item После этого не забываем вернуть back-face culling
 \item Модель должна появиться в нашем дебажном прямоугольнике
 \end{itemize}
@@ -161,13 +161,13 @@
 \begin{frame}[fragile]
 \frametitle{Задание 4}
 \begin{footnotesize}
+\setminted{fontsize=\footnotesize}
 Используем shadow map
 \begin{itemize}
 \item Передаём текстуру shadow map (\mintinline{glsl}|uniform sampler2D|) и проекцию для неё (\mintinline{glsl}|uniform mat4 projection|) в основную шейдерную программу
 \item Во фрагментном шейдере:
 \begin{itemize}
-\item Вычисляем ndc-координаты текущей точки после применения проекции: \mintinline{glsl}|vec4 ndc = shadow_projection
-* model * vec4(position, 1.0)|
+\item Вычисляем ndc-координаты текущей точки после применения проекции: \mintinline{glsl}|vec4 ndc = shadow_projection * model * vec4(position, 1.0)|
 \item Проверяем точку на попадание в видимую область shadow map (XY-координаты \mintinline{glsl}|ndc| должны быть в диапазоне [-1..1])
 \item Если точка попала в shadow map, вычисляем её текстурные координаты для shadow map \mintinline{glsl}|shadow_texcoord = ndc.xy * 0.5 + 0.5| и глубину \mintinline{glsl}|shadow_depth = ndc.z * 0.5 + 0.5|
 \item Если значение в shadow map \mintinline{glsl}|texture(shadow_map, shadow_texcoord)| меньше глубины нашей точки, она в тени (к ней не нужно применять прямое освещение, но ambient остаётся)
