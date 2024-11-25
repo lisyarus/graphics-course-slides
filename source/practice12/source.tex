@@ -48,6 +48,10 @@
 \end{frame}
 
 \begin{frame}[fragile]
+N.B.: В практике можно приближать камеру стрелочками и вращать её с помощью WASD
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Задание 1}
 Находим пересечение с AABB объекта (во фрагментном шейдере)
 \begin{itemize}
@@ -178,6 +182,14 @@
 \mintinline{glsl}|* exp(-optical_depth) * dt * density *|
 \mintinline{glsl}|* scattering / 4.0 / PI|
 \item В качестве результата шейдера выводим \mintinline{glsl}|vec4(color, alpha)|
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 5}
+\begin{itemize}
+\item N.B. если будет слишком медленно работать, можно взять значение N поменьше (напр. 16) и читать конкретный mipmap нашей текстуры (напр. 1 или 2) с помощью функции GLSL \mintinline{glsl}|textureLod|
+\item Не забудьте для этого выставить \mintinline{cpp}|MIN_FILTER| в \mintinline{cpp}|GL_LINEAR_MIPMAP_LINEAR| и сделать \mintinline{cpp}|glGenerateMipmap|
 \end{itemize}
 \end{frame}
 
