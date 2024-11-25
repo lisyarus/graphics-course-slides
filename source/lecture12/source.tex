@@ -243,7 +243,7 @@
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Volume rendering: absorption}
+\frametitle{Volume rendering: absorption (Beer–Lambert law)}
 \begin{itemize}
 \item Пусть есть среда с постоянным коэффициентом поглощения \begin{math}k_a\end{math}
 \pause
@@ -541,6 +541,26 @@ color = mix(color, fog_color, fog_factor);
 \begin{frame}[fragile]
 \frametitle{Volume rendering: splatting}
 \slideimage{splatting-scheme.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Gaussian splatting}
+\begin{itemize}
+\item Gaussian splatting -- популярный в последнее время метод рендеринга 3D сцен, полученных по набору изображений с разных ракурсов (напр. фотографий)
+\pause
+\item Сцена представляется набором частиц-гауссиан (\textit{gaussian splats})
+\pause
+\item В этом методе цвет точки на экране -- явная (хоть и довольно сложная) функция от параметров всех частиц
+\pause
+\item \begin{math}\Longrightarrow\end{math} можно оптимизировать параметры частиц, чтобы при рендеринге они давали исходные фотографии
+\pause
+\item Результат оптимизации -- вычисленный набор параметров частиц, описывающий нашу сцену
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Gaussian splatting}
+\slideimage{gaussian_splatting.png}
 \end{frame}
 
 \begin{frame}<1-2>[fragile,label=raysmth]
