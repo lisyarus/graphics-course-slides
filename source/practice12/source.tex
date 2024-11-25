@@ -84,7 +84,7 @@
 \begin{itemize}
 \item Создаём текстуру типа \mintinline{glsl}|GL_TEXTURE_3D|, min/mag фильтры -- \mintinline{glsl}|GL_LINEAR|
 \item Устанавливаем параметры \mintinline{glsl}|WRAP_R|, \mintinline{glsl}|WRAP_S|, \mintinline{glsl}|WRAP_T| в \mintinline{glsl}|GL_CLAMP_TO_EDGE|
-\item Считываем данные из файла \mintinline{glsl}|cloud_data_path| (128x64x64, одноканальная, 1 байт на пиксель):
+\item Считываем данные из файла \mintinline{glsl}|cloud_data_path| (126x86x154, одноканальная, 1 байт на пиксель):
 \begin{itemize}
 \item Заводим \mintinline{cpp}|std::vector<char> pixels(...)| нужного размера
 \item Открываем файл \mintinline{cpp}|std::ifstream input(path, std::ios::binary)|
@@ -104,17 +104,25 @@
 \item Нужно перевести пространственные координаты в текстурные: \mintinline{glsl}|(p - bbox_min) / (bbox_max - bbox_min)|
 \item Удобно завести функцию, возвращающую значение из текстуры по точке в пространстве
 \end{itemize}
-\item В качестве альфа-канала возьмём 1, иначе ничего не увидим
+\item В качестве альфа-канала возьмём 1
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Задание 3}
-N.B. можно взять другую текстуру: \mintinline{glsl}|bunny.data| (есть в репозитории с заданием)
+\begin{itemize}
+\item N.B. можно взять другую текстуру: \mintinline{glsl}|bunny.data| (есть в репозитории с заданием)
 \begin{itemize}
 \item Размер -- 64x64x64
 \item \mintinline{glsl}|bbox_min = vec3(-1, -1, -1)|
 \item \mintinline{glsl}|bbox_max = vec3( 1,  1,  1)|
+\end{itemize}
+\item или \mintinline{glsl}|cloud.data| (есть в репозитории с заданием)
+\begin{itemize}
+\item Размер -- 128x64x64
+\item \mintinline{glsl}|bbox_min = vec3(-2, -1, -1)|
+\item \mintinline{glsl}|bbox_max = vec3( 2,  1,  1)|
+\end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -136,6 +144,7 @@ N.B. можно взять другую текстуру: \mintinline{glsl}|bunn
 \item Обновляем optical depth: \mintinline{glsl}|optical_depth += absorption * density * dt|
 \end{itemize}
 \item Вычисляем opacity как в задании 2
+\item N.B. если будет плохо видно, можно поиграться со значением \mintinline{glsl}|absorption|
 \end{itemize}
 \end{frame}
 
@@ -177,10 +186,27 @@ N.B. можно взять другую текстуру: \mintinline{glsl}|bunn
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Задание 6*}
+\frametitle{Задание 6}
+Имитируем ambient освещение
+\begin{itemize}
+\item Настоящее ambient освещение светит отовсюду, для чего пришлось бы посылать лучи из текущей точки во все возможные направления
+\item В теории, коэффициент ambient освещения можно посчитать заранее и тоже записать в 3D текстуру
+\item Мы сделаем по-простому: добавим одинаковое значение ambient-освещения во всех точках (игнорируя extinction)
+\item Заводим цвет ambient освещения (лучше, чтобы он был пропорционален цвету фона), например \mintinline{glsl}|ambient_light = 4.0 * vec3(0.6, 0.8, 1.0)|
+\item Добавляем его к количеству полученного солнечного света: \mintinline{glsl}|light_color * exp(-light_optical_depth) + ambient_light|
+\item Далее используем в вычислении рассеянного освещения, как в предыдущем задании
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\slideimage{6.png}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Задание 7*}
 Разные коэффициенты рассеяния для разных цветов
 \begin{itemize}
-\item Обычный блендинг не умеет делать альфа-канал для каждого цвета по отдельности, так что заменим цвет фона (\mintinline{glsl}|glClearColor|) на чёрный
+\item Обычный блендинг не умеет делать альфа-канал для каждого цвета по отдельности, так что в качестве opacity будем выводить 1, и сделаем blending с фоном руками в конце фрагментного шейдера: \mintinline{glsl}|color += vec3(0.6, 0.8, 1.0) * (1.0 - opacity)|
 \item Коэффициенты \mintinline{glsl}|absorption|, \mintinline{glsl}|scattering|, \mintinline{glsl}|extinction|, а также величины \mintinline{glsl}|optical_depth| и \mintinline{glsl}|light_optical_depth| должны стать \mintinline{glsl}|vec3|
 \item В координаты \mintinline{glsl}|scattering| нужно записать три разных числа (подберите что-нибудь сами в районе 1..10)
 \item Поиграйтесь со значением \mintinline{glsl}|scattering|, чтобы посмотреть, как оно влияет на результат
@@ -188,7 +214,7 @@ N.B. можно взять другую текстуру: \mintinline{glsl}|bunn
 \end{frame}
 
 \begin{frame}[fragile]
-\slideimage{6.png}
+\slideimage{7.png}
 \end{frame}
 
 \end{document}
