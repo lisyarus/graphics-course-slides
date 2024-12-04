@@ -138,9 +138,11 @@
 \begin{itemize}
 \item Если \mintinline{cpp}|dt > 1/speed|, возникнет нестабильность
 \pause
-\item Более точная, стабильная формула: \mintinline{cpp}|x = lerp(x, new_x, exp(- speed * dt))|
+\item Более точная, стабильная формула: \mintinline{cpp}|x = lerp(x, new_x, 1 - exp(- speed * dt))|
 \pause
-\item Соответствует численному решению уравнения \begin{math}\frac{dx}{dt} = speed \cdot (x_{new} - x)\end{math}
+\item Для точного вычисления \mintinline{cpp}|exp(x)-1| для маленьких значений \mintinline{cpp}|x| есть функция \mintinline{cpp}|std::expm1|
+\pause
+\item Решение дифференциального уравнения \begin{math}\frac{dx}{dt} = speed \cdot (x_{new} - x)\end{math}
 \pause
 \item Удобно для анимации камеры, элементов интерфейса
 \pause
@@ -363,6 +365,8 @@
 
 \begin{frame}[fragile]
 \frametitle{Кватернионы: ссылки}
+\fontsize{8pt}{8pt}
+\selectfont
 \begin{itemize}
 \item \href{https://en.wikipedia.org/wiki/Quaternion}{\texttt{en.wikipedia.org/wiki/Quaternion}}
 \item \href{https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation}{\texttt{en.wikipedia.org/wiki/Quaternions\_and\_spatial\_rotation}}
@@ -376,17 +380,43 @@
 \begin{itemize}
 \item Часто для задания преобразования, применяемого к объекту, нам не нужна целиком матрица аффинного преобразования
 \pause
-\item Обычно это поворот + масштабирование + сдвиг
-\pause
-\item Поворот -- кватернион \begin{math}q\end{math}
+\item Обычно это масштабирование + поворот + сдвиг (в таком порядке!)
 \pause
 \item Масштабирование -- одно число \begin{math}s\end{math} (\textit{изотропное масштабирование}) или три числа (разный масштаб по разным осям)
 \pause
+\item Поворот -- кватернион \begin{math}q\end{math}
+\pause
 \item Сдвиг -- вектор сдвига \begin{math}t\end{math}
 \pause
-\item Преобразование вершин: \begin{math}v \mapsto s \cdot qvq^{-1} + t\end{math}
+\item Преобразование вершин: \begin{math}v \mapsto q(s\cdot v)q^{-1} + t\end{math}
 \pause
-\item Преобразование нормалей: \begin{math}n \mapsto qnq^{-1}\end{math} либо \begin{math}n \mapsto \frac{s \cdot qnq^{-1}}{\|s \cdot qnq^{-1}\|}\end{math}
+\item Преобразование нормалей: \begin{math}n \mapsto qnq^{-1}\end{math} либо \begin{math}n \mapsto \frac{q(s^{-1}\cdot n)q^{-1}}{\|q(s^{-1}\cdot n)q^{-1}\|}\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Преобразование нормалей}
+\begin{itemize}
+\item В общем случае, если вершины модели преобразуются какой-то матрицей \begin{math}M\end{math}, нормали могут \textbf{перестать} быть перпендикулярны к поверхности
+\pause
+\item Пусть \begin{math}n\end{math} -- нормаль к точке некой гладкой поверхности, и \begin{math}v\end{math} -- любой касательный вектор к поверхности в этой точке
+\pause
+\item Из ортогональности \begin{math}n\cdot v = 0\end{math} не следует, что \begin{math}(Mn)\cdot (Mv)=0\end{math}!
+\pause
+\item Но, по свойствам матриц и скалярного произведения \begin{math}0 = n\cdot v = n\cdot (M^{-1}M)v = n\cdot M^{-1}(Mv) = (M^{-1})^T n \cdot (Mv)\end{math}
+\pause
+\item Таким образом, вектор \begin{math}M^{-T} n\end{math} будет перпендикулярен преобразованной поверхности
+\pause
+\item \begin{math}\Longrightarrow\end{math} В общем случае нормали нужно преобразовывать матрицей \begin{math}M^{-T}\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Преобразование нормалей: частные случаи}
+\begin{itemize}
+\item Если \begin{math}M\end{math} -- матрица вращения, то \begin{math}M^T = M^{-1}\end{math} и \begin{math}M^{-T}=M\end{math}, т.е. нормали вращаются так же, как сами вершины
+\pause
+\item Если \begin{math}M\end{math} -- диагональная матрица неизотропного масштабирования, то \begin{math}M^T = M\end{math} и \begin{math}M^{-T}=M^{-1}\end{math}, т.е. к нормалям применяется масштаб, обратный масштабу вершин 
 \end{itemize}
 \end{frame}
 
@@ -406,12 +436,12 @@
 \begin{frame}[fragile]
 \frametitle{Композиция аффинных преобразований}
 \begin{equation}
-({\color{blue}t_2},{\color{blue}s_2},{\color{blue}q_2}) \cdot ({\color{red}t_1},{\color{red}s_1},{\color{red}q_1}) \cdot v = ({\color{green}t},{\color{green}s},{\color{green}q}) \cdot v 
+({\color{blue}t_2},{\color{blue}q_2},{\color{blue}s_2}) \cdot ({\color{red}t_1},{\color{red}q_1},{\color{red}s_1}) \cdot v = ({\color{green}t},{\color{green}q},{\color{green}s}) \cdot v 
 \end{equation}
 \begin{multline}
-({\color{blue}t_2},{\color{blue}s_2},{\color{blue}q_2}) \cdot ({\color{red}t_1},{\color{red}s_1},{\color{red}q_1}) \cdot v = {\color{blue}s_2}{\color{blue}q_2}({\color{red}s_1}{\color{red}q_1}v{\color{red}q_1^{-1}} + {\color{red}t_1}){\color{blue}q_2^{-1}} + {\color{blue}t_2} = \\
+({\color{blue}t_2},{\color{blue}q_2},{\color{blue}s_2}) \cdot ({\color{red}t_1},{\color{red}q_1},{\color{red}s_1}) \cdot v = {\color{blue}q_2}{\color{blue}s_2}({\color{red}q_1}{\color{red}s_1}v{\color{red}q_1^{-1}} + {\color{red}t_1}){\color{blue}q_2^{-1}} + {\color{blue}t_2} = \\
 = {\color{blue}s_2}{\color{red}s_1} ({\color{blue}q_2}{\color{red}q_1}) v ({\color{blue}q_2}{\color{red}q_1})^{-1} + {\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2} = \\
-({\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2}, {\color{blue}s_2}{\color{red}s_1}, {\color{blue}q_2}{\color{red}q_1}) \cdot v \\
+({\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2}, {\color{blue}q_2}{\color{red}q_1}, {\color{blue}s_2}{\color{red}s_1}) \cdot v \\
 \end{multline}
 \begin{equation}
 {\color{green}q} = {\color{blue}q_2}{\color{red}q_1}
@@ -422,6 +452,9 @@
 \begin{equation}
 {\color{green}t} = {\color{blue}s_2}{\color{blue}q_2}{\color{red}t_1}{\color{blue}q_2^{-1}} + {\color{blue}t_2}
 \end{equation}
+\begin{itemize}
+\item Работает только для \underline{изотропных} масштабирований!
+\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
