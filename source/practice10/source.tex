@@ -80,7 +80,7 @@
 \frametitle{Задание 3}
 Вычисляем настоящие нормали
 \begin{itemize}
-\item Во фрагментном шейдере вычисляем bitangent вектор: \mintinline{glsl}|vec3 bitangent = cross(tangent, normal)|
+\item Во фрагментном шейдере вычисляем bitangent вектор: \mintinline{glsl}|vec3 bitangent = cross(normal, tangent)|
 \item Вычисляем матрицу преобразования из normal map в мировые координаты: \mintinline{glsl}|mat3 tbn = mat3(tangent, bitangent, normal)|
 \item Прочитанное из normal map значение переводим из [0, 1] в [-1, 1] и применяем матрицу: \mintinline{glsl}|vec3 real_normal = tbn * (texture(...).xyz * 2.0 -| \mintinline{glsl}|- vec3(1.0))|
 \item В качестве цвета используем новую нормаль: \mintinline{glsl}|albedo = real_normal * 0.5 + vec3(0.5)|
