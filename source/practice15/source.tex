@@ -5,11 +5,14 @@
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+\usepackage{minted}
 
 \usepackage{graphicx}
 \graphicspath{ {./images/} }
 
 \usepackage{adjustbox}
+
+\usetheme{metropolis}
 
 \usepackage{color}
 \usepackage{soul}
@@ -33,6 +36,8 @@
 \subtitle{Практика 15: MSDF-текст}
 \date{2022}
 
+\usemintedstyle{solarized-light}
+
 \setbeamertemplate{footline}[frame number]
 
 \begin{document}
@@ -45,7 +50,7 @@
 
 \begin{frame}[fragile]
 \begin{itemize}
-\item В этой практике есть текст \verb|"Hello, world!"| по умолчанию, но можно его стирать и печатать свой прямо в программе :)
+\item В этой практике есть текст \mintinline{cpp}|"Hello, world!"| по умолчанию, но можно его стирать и печатать свой прямо в программе :)
 \end{itemize}
 \end{frame}
 
@@ -53,11 +58,11 @@
 \frametitle{Задание 1}
 Рисуем треугольник
 \begin{itemize}
-\item Заводим структуру вершины с полями \verb|vec2 position| и \verb|vec2 texcoord|
+\item Заводим структуру вершины с полями \mintinline{glsl}|vec2 position| и \mintinline{glsl}|vec2 texcoord|
 \item Заводим VAO + VBO для них, настраиваем атрибуты
-\item Используем атрибуты в шейдерной программе: \verb|gl_Position = vec4(position, 0.0, 1.0)|, в качестве цвета выводим \verb|vec4(texcoord, 0.0, 1.0)|
-\item Инициализируем VBO данными при создании: треугольник с координатами \verb|(0,0)|, \verb|(100,0)| и \verb|(0,100)| и текстурными координатами \verb|(0,0)|, \verb|(1,0)| и \verb|(0,1)|
-\item Рисуем этот треугольник (коодинаты сильно выходят за диапазон \verb|[-1..1]|, так что мы увидим только угол треугольника)
+\item Используем атрибуты в шейдерной программе: \mintinline{glsl}|gl_Position = vec4(position, 0.0, 1.0)|, в качестве цвета выводим \mintinline{glsl}|vec4(texcoord, 0.0, 1.0)|
+\item Инициализируем VBO данными при создании: треугольник с координатами \mintinline{glsl}|(0,0)|, \mintinline{glsl}|(100,0)| и \mintinline{glsl}|(0,100)| и текстурными координатами \mintinline{glsl}|(0,0)|, \mintinline{glsl}|(1,0)| и \mintinline{glsl}|(0,1)|
+\item Рисуем этот треугольник (коодинаты сильно выходят за диапазон \mintinline{glsl}|[-1..1]|, так что мы увидим только угол треугольника)
 \end{itemize}
 \end{frame}
 
@@ -70,9 +75,9 @@
 \frametitle{Задание 2}
 Настраиваем матрицу
 \begin{itemize}
-\item Заводим матрицу \verb|transform|, которая переводит из экранных координат в OpenGL-ные: \begin{math}[0, width] \times [height, 0] \mapsto [-1, 1]\times[-1,1]\end{math}
-\item Передаём эту матрицу в качестве значения uniform-переменной \verb|transform|
-\item В шейдере применяем к вершине матрицу \verb|transform| (сама матрица там уже есть)
+\item Заводим матрицу \mintinline{glsl}|transform|, которая переводит из экранных координат в OpenGL-ные: \begin{math}[0, width] \times [height, 0] \mapsto [-1, 1]\times[-1,1]\end{math}
+\item Передаём эту матрицу в качестве значения uniform-переменной \mintinline{glsl}|transform|
+\item В шейдере применяем к вершине матрицу \mintinline{glsl}|transform| (сама матрица там уже есть)
 \item N.B. экранная Y-координата идёт \textbf{сверху вниз}, а OpenGL-ная -- \textbf{снизу вверх}!
 \item N.B. треугольник должен появиться в верхнем левом углу и быть размером ровно 100 пикселей
 \end{itemize}
@@ -90,18 +95,18 @@
 Генерируем глифы
 \begin{itemize}
 \item Убираем заполнение VBO на старте
-\item Вместо этого в цикле рисования в случае, если флаг \verb|text_changed| имеет значение \verb|true|, генерируем новый массив вершин:
+\item Вместо этого в цикле рисования в случае, если флаг \mintinline{cpp}|text_changed| имеет значение \mintinline{cpp}|true|, генерируем новый массив вершин:
 \begin{itemize}
 \fontsize{8pt}{8pt}
 \selectfont
-\item Заводим координаты `пера' \verb|vec2 pen(0.0)|, это точка отсчёта для текущего символа
-\item Проходимся по всем буквам переменной \verb|text|, находим соответствующий глиф в \verb|font.glyphs|
+\item Заводим координаты `пера' \mintinline{cpp}|vec2 pen(0.0)|, это точка отсчёта для текущего символа
+\item Проходимся по всем буквам переменной \mintinline{cpp}|text|, находим соответствующий глиф в \mintinline{cpp}|font.glyphs|
 \item Для каждой буквы генерируем прямоугольник из 4 вершин (разбивая вручную на 2 треугольника, т.е. в итоге 6 вершин)
-\item Координаты вершины -- \verb|[glyph.xoffset .. glyph.xoffset + glyph.width] + pen.x|, аналогично для Y
-\item Текстурные координаты вершины -- \verb|[glyph.x .. glyph.x + glyph.width] / texture_width|, аналогично для Y
-\item После каждого символа нужно сдвинуть перо по X на \verb|glyph.advance|
+\item Координаты вершины -- \mintinline{cpp}|[glyph.xoffset .. glyph.xoffset + glyph.width] + pen.x|, аналогично для Y
+\item Текстурные координаты вершины -- \mintinline{cpp}|[glyph.x .. glyph.x + glyph.width] / texture_width|, аналогично для Y
+\item После каждого символа нужно сдвинуть перо по X на \mintinline{cpp}|glyph.advance|
 \end{itemize}
-\item Загружаем эти вершины в VBO, запоминаем количество вершин, и очищаем флаг \verb|text_changed|
+\item Загружаем эти вершины в VBO, запоминаем количество вершин, и очищаем флаг \mintinline{cpp}|text_changed|
 \end{itemize}
 \end{frame}
 
@@ -114,8 +119,8 @@
 \frametitle{Задание 4}
 Выводим MSDF-глифы
 \begin{itemize}
-\item Передаём значение \verb|font.sdf_scale| в новую uniform-переменную \verb|float sdf_scale|
-\item Заводим uniform-переменную для текстуры шрифта \verb|sampler2D sdf_texture| (она уже выставлена для нулевого texture unit'а, ничего дополнительно делать не нужно)
+\item Передаём значение \mintinline{cpp}|font.sdf_scale| в новую uniform-переменную \mintinline{glsl}|float sdf_scale|
+\item Заводим uniform-переменную для текстуры шрифта \mintinline{glsl}|sampler2D sdf_texture| (она уже выставлена для нулевого texture unit'а, ничего дополнительно делать не нужно)
 \item Выводим буквы чёрного цвета с прозрачностью, посчитанной через SDF (см. слайды лекции)
 \end{itemize}
 \end{frame}
@@ -130,7 +135,7 @@
 Центрируем текст
 \begin{itemize}
 \item При обновлении текста вычисляем bounding box всех вершин (т.е. максимальные и минимальные X и Y координаты)
-\item Дополняем матрицу \verb|transform| так, чтобы центр текста был в центре экрана
+\item Дополняем матрицу \mintinline{cpp}|transform| так, чтобы центр текста был в центре экрана
 \end{itemize}
 \end{frame}
 
@@ -143,9 +148,9 @@
 \frametitle{Задание 6}
 Увеличиваем текст
 \begin{itemize}
-\item Дополняем матрицу \verb|transform| так, чтобы буквы стали больше (примерно в 5-6 раз, не принципиально)
+\item Дополняем матрицу \mintinline{cpp}|transform| так, чтобы буквы стали больше (примерно в 5-6 раз, не принципиально)
 \item Сглаживание на границе букв не учитывает растяжение и будет размытым
-\item Чтобы сделать чёткое сглаживание, вместо значения \verb|0.5| в функции \verb|smoothstep| используем величину \verb|length(vec2(dFdx(sdfValue), dFdy(sdfValue)))/sqrt(2.0)|
+\item Чтобы сделать чёткое сглаживание, вместо значения \mintinline{glsl}|0.5| в функции \mintinline{glsl}|smoothstep| используем величину \mintinline{glsl}|length(vec2(dFdx(sdfValue), dFdy(sdfValue)))/sqrt(2.0)|
 \end{itemize}
 \end{frame}
 
