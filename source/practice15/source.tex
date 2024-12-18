@@ -21,6 +21,7 @@
 
 \definecolor{blue}{rgb}{0,0,1}
 \definecolor{red}{rgb}{1,0,0}
+\definecolor{codebg}{RGB}{29,35,49}
 
 \makeatletter
 \newcommand{\slideimage}[1]{
@@ -150,7 +151,12 @@
 \begin{itemize}
 \item Дополняем матрицу \mintinline{cpp}|transform| так, чтобы буквы стали больше (примерно в 5-6 раз, не принципиально)
 \item Сглаживание на границе букв не учитывает растяжение и будет размытым
-\item Чтобы сделать чёткое сглаживание, вместо значения \mintinline{glsl}|0.5| в функции \mintinline{glsl}|smoothstep| используем величину \mintinline{glsl}|length(vec2(dFdx(sdfValue), dFdy(sdfValue)))/sqrt(2.0)|
+\item Чтобы сделать чёткое сглаживание, вместо значения \mintinline{glsl}|0.5| в функции \mintinline{glsl}|smoothstep| используем величину
+\begin{minted}[bgcolor=codebg]{glsl}
+length(vec2(dFdx(sdfValue), dFdy(sdfValue)))
+    / sqrt(2.0)
+\end{minted}
+
 \end{itemize}
 \end{frame}
 
