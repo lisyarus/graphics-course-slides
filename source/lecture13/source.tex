@@ -412,6 +412,26 @@
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Преобразование нормалей}
+\begin{itemize}
+\item Формула \begin{math}M^{-T}\end{math} требует обращения матрицы (дорого) и нестабильна для преобразований с маленьким определителем (например, масштаб по одной из осей близок к нулю)
+\pause
+\item Обратную матрицу \begin{math}A^{-1}\end{math} можно посчитать по формуле \begin{math}\frac{1}{\operatorname{det}A}\operatorname{adj}{A}\end{math}, где \begin{math}\operatorname{adj}{A}\end{math} -- \textit{присоединённая матрица}
+\pause
+\item \begin{math}\operatorname{adj}{A}=(\operatorname{cof}{A})^T\end{math}, где \begin{math}\operatorname{cof}{A}\end{math} -- матрица \textit{алгебраических дополнений}
+\pause
+\item Подставляем \begin{math}A=M^T\end{math}:
+\begin{equation*}
+M^{-T} = \frac{1}{\operatorname{det} M^T}\operatorname{adj}(M^T) = \frac{1}{\operatorname{det}M}\operatorname{cof}M
+\end{equation*}
+\pause
+\item Определитель \begin{math}\operatorname{det}M\end{math} можно игнорировать: это просто число, оно исчезнет, когда мы отнормируем получившийся вектор нормали
+\pause
+\item Остаётся только \begin{math}\operatorname{cof}M\end{math}: она требует меньше вычислений, чем \begin{math}M^{-T}\end{math}, и не чувствительна к вырожденным преобразованиям
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Преобразование нормалей: частные случаи}
 \begin{itemize}
 \item Если \begin{math}M\end{math} -- матрица вращения, то \begin{math}M^T = M^{-1}\end{math} и \begin{math}M^{-T}=M\end{math}, т.е. нормали вращаются так же, как сами вершины
@@ -567,9 +587,20 @@ void main()
 \begin{itemize}
 \item К нормалям тоже нужно применять преобразования (но не сдвиги!)
 \pause
-\item Кости обычно тоже выстроены в иерархию \begin{math}\Longrightarrow\end{math} перед применением нужно вычислить суммарное преобразование (композицию)
-\pause
 \item Преобразования костей часто заданы в локальной для кости системе координат для удобства \begin{math}\Longrightarrow\end{math} перед применением нужно умножить на преобразование, переводящее из системы координат модели в локальную систему координат кости (\textit{inverse bind matrix} в формате \mintinline{cpp}|glTF|)
+\pause
+\item Кости обычно тоже выстроены в иерархию \begin{math}\Longrightarrow\end{math} перед применением нужно вычислить суммарное преобразование (композицию)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Скелетная анимация моделей}
+\begin{itemize}
+\item Преобразования для кости и для родительской кости заданы в разных локальных системах координат \begin{math}\Longrightarrow\end{math} в композицию преобразований нужно вставить смену системы координат
+\pause
+\item В формате glTF считается, что смена системы координат от дочерней к родительской кости \textit{встроена в саму анимацию}
+\pause
+\item \begin{math}\Longrightarrow\end{math} нужно откуда-то взять преобразования для костей, если они не описаны в анимации (в glTF это исходные преобразования соответствующих нод)
 \pause
 \item Нужно быть внимательным к особенностям задания преобразований и системам координат в разных редакторах и форматах!
 \end{itemize}
@@ -578,7 +609,7 @@ void main()
 \begin{frame}[fragile]
 \frametitle{Скелетная анимация моделей}
 \begin{itemize}
-\item Обычно вычисление преобразования для кости выглядит как
+\item В формате glTF вычисление преобразования для кости выглядит как
 \usemintedstyle{lightbulb}
 \begin{minted}[bgcolor=codebg]{glsl}
 
