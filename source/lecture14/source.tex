@@ -190,7 +190,7 @@ while (true) {
 \pause
 \item В этом случае ожидание происходит, когда мы запрашиваем у очереди буфер для следующего кадра
 \pause
-\item Избавиться от ожидания совсем не получится; единственный способ это решить -- вынести рендеринг в отдельный поток
+\item Избавиться от ожидания совсем не получится
 \end{itemize}
 \end{frame}
 
@@ -528,7 +528,7 @@ glEndQuery(GL_TIME_ELAPSED);
 \pause
 \item Все OpenGL-вызовы нужно делать из render-потока
 \pause
-\item Применяется только в крайних случаях
+\item Применяется только в сложных случаях
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -780,12 +780,38 @@ layout (std140) uniform Bones
 \begin{itemize}
 \item Выпуклая оболочка -- плотно прилегает, но дорого вычислять и много вершин
 \pause
-\item Ограничивающая сфера/эллипсоид -- может неплотно прилегать, легко вычислять, средний алгоритм пересечения (сложнее для эллипсоидов)
+\item Ограничивающая сфера/эллипсоид -- может неплотно прилегать, легко вычислять, простой алгоритм пересечения (сложнее для эллипсоидов)
 \pause
-\item AABB (axis-aligned bounding box) -- легко вычислять (но нужно пересчитывать каждый кадр), не всегда плотно прилегает, легко искать пересечения
+\item AABB (axis-aligned bounding box) -- легко вычислять (но нужно пересчитывать каждый кадр), не всегда плотно прилегает, средний алгоритм пересечения
 \pause
-\item OBB (oriented bounding box) -- легко вычислять (предподсчитали для модели, поворачиваем вместе с моделью), плотно прилегает, легко искать пересечения
+\item OBB (oriented bounding box) -- легко вычислять (предподсчитали для модели, поворачиваем вместе с моделью), \begin{math}\pm\end{math}плотно прилегает, средний алгоритм пересечения
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: ограничивающая сфера}
+\begin{itemize}
+\item Для пересечения сферы и видимой области представим последнюю как пересечение 6-ти полупространств, заданных уравнениями вида
+\begin{equation*}
+A_i \cdot X + B_i \cdot Y + C_i \cdot Z + D_i \leq 0
+\end{equation*}
+\pause
+\item Здесь, \begin{math}(A_i,B_i,C_i)\end{math} -- нормированные векторы
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: ограничивающая сфера}
+\begin{itemize}
+\item Пусть есть сфера с центром в \begin{math}(X,Y,Z)\end{math} и радиусом \begin{math}R\end{math}
+\pause
+\item Если для всех 6-ти уравнений выполняется неравенство ниже, то сфера заведомо находится снаружи видимой области
+\begin{equation*}
+A_i \cdot X + B_i \cdot Y + C_i \cdot Z + D_i > R
+\end{equation*}
+\pause
+\item Метод может давать false positive (говорить, что сфера видна, когда она не видна), если сфера находится близко к ребру или вершине view frustum'а (обычно это не страшно)
 \end{itemize}
 \end{frame}
 
@@ -994,6 +1020,15 @@ bool intersect(Body b1, Body b2) {
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\begin{itemize}
+\item Есть много способов написать этот алгоритм; есть вариации, соптимизированные для параллелограммов/кубов
+\item Часто в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false positive пересечения -- не страшно для frustum culling, но неэффективно
+\item Редко в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false negative пересечения -- страшно для frustum culling
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Frustum culling}
 \begin{itemize}
 \item В идеале, хочется отсечь как можно больше
@@ -1033,15 +1068,6 @@ bool intersect(Body b1, Body b2) {
 \item \begin{math}\Longrightarrow\end{math} Противоречащие друг другу требования
 \pause
 \item Как найти баланс между ними -- зависит от ситуации 
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Frustum culling: SAT}
-\begin{itemize}
-\item Есть много способов написать этот алгоритм; есть вариации, соптимизированные для параллелограммов/кубов
-\item Часто в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false positive пересечения -- не страшно для frustum culling, но неэффективно
-\item Редко в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false negative пересечения -- страшно для frustum culling
 \end{itemize}
 \end{frame}
 
