@@ -122,7 +122,6 @@ while (true) {
   SwapBuffers();
 }
 \end{minted}
-\vspace*{-1cm}
 \usemintedstyle{solarized-light}
 \pause
 \begin{itemize}
@@ -242,7 +241,6 @@ while (true) {
   SwapBuffers();
 }
 \end{minted}
-\vspace*{-1cm}
 \usemintedstyle{solarized-light}
 \pause
 \begin{itemize}
@@ -267,7 +265,6 @@ while (true) {
   SwapBuffers();
 }
 \end{minted}
-\vspace*{-1cm}
 \usemintedstyle{solarized-light}
 \pause
 \begin{itemize}
@@ -790,6 +787,11 @@ layout (std140) uniform Bones
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Frustum culling: bounding volume}
+\slideimage{bounding_volumes.png}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Frustum culling: ограничивающая сфера}
 \begin{itemize}
 \item Для пересечения сферы и видимой области представим последнюю как пересечение 6-ти полупространств, заданных уравнениями вида
@@ -806,13 +808,18 @@ A_i \cdot X + B_i \cdot Y + C_i \cdot Z + D_i \leq 0
 \begin{itemize}
 \item Пусть есть сфера с центром в \begin{math}(X,Y,Z)\end{math} и радиусом \begin{math}R\end{math}
 \pause
-\item Если для всех 6-ти уравнений выполняется неравенство ниже, то сфера заведомо находится снаружи видимой области
+\item Если для \textit{хотя бы одного} из 6-ти уравнений выполняется неравенство ниже, то сфера заведомо находится снаружи видимой области
 \begin{equation*}
 A_i \cdot X + B_i \cdot Y + C_i \cdot Z + D_i > R
 \end{equation*}
 \pause
 \item Метод может давать false positive (говорить, что сфера видна, когда она не видна), если сфера находится близко к ребру или вершине view frustum'а (обычно это не страшно)
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Frustum culling: false positive}
+\slideimage{false_positive.jpg}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -1007,6 +1014,15 @@ bool intersect(Body b1, Body b2) {
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Frustum culling: SAT}
+\begin{itemize}
+\item Есть много способов написать этот алгоритм; есть вариации, соптимизированные для параллелограммов/кубов
+\item Часто в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false positive пересечения -- не страшно для frustum culling, но неэффективно
+\item Редко в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false negative пересечения -- страшно для frustum culling
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Frustum culling: вычисление camera frustum}
 \begin{itemize}
 \item В независимости от проекции, комбинаторно видимая область -- куб, т.е. имеет 8 вершин, 12 рёбер, и 6 граней, соединённых как в кубе
@@ -1016,15 +1032,6 @@ bool intersect(Body b1, Body b2) {
 \item Можно вычислить напрямую из параметров и свойств камеры (напр. используя углы и тригонометрию) \begin{math}\Longrightarrow\end{math} сложный ad-hoc алгоритм
 \pause
 \item Можно вычислить, используя обратную view+projection матрицу (см. лекцию 4)
-\end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Frustum culling: SAT}
-\begin{itemize}
-\item Есть много способов написать этот алгоритм; есть вариации, соптимизированные для параллелограммов/кубов
-\item Часто в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false positive пересечения -- не страшно для frustum culling, но неэффективно
-\item Редко в туториалах описывают \textbf{неправильный/неполный алгоритм}, выдающий false negative пересечения -- страшно для frustum culling
 \end{itemize}
 \end{frame}
 
