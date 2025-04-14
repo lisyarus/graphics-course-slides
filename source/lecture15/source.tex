@@ -59,11 +59,11 @@
 \begin{itemize}
 \item Текст -- очень сложная штука
 \pause
-\item Слева направо (латиница, кириллица), справа налево (арабский, иврит), сверху вниз (хангыль, старомонгольское письмо)
+\item Слева направо (латиница, кириллица), справа налево (арабский, иврит), сверху вниз (хангыль, традиционное японское и китайское письмо, старомонгольское письмо)
 \pause
-\item Иероглифы (кандзи), слоговое письмо (катакана, хирагана), консонантное письмо (арабский), консонантно-вокалическое письмо (латиница, кириллица)
+\item Иероглифы (кандзи), слоговое письмо (катакана, хирагана), консонантно-слоговое письмо (индийская, эфиопская письменность), консонантное письмо (арабский), консонантно-вокалическое письмо (латиница, кириллица)
 \pause
-\item Одна \textit{графема} может представлять один или несколько звуков или слогов
+\item Одна \textit{графема} может представлять один или несколько звуков/слогов/объектов
 \pause
 \item Могут быть сложные правила по соединению символов между собой (арабский, лигатуры в латинице), дополнения к символам (диакритика)
 \end{itemize}
@@ -131,11 +131,11 @@
 \begin{frame}[fragile]
 \frametitle{Кодировки: unicode}
 \begin{itemize}
-\item \textbf{Unicode} -- стандарт, описывающий соответствие абстрактных символов целочисленным кодам (\textit{code points}) в диапазоне \verb|0..10FFFFh| исключая \verb|D800h..DFFFh| для суррогатных пар в UTF-16 (итого 1112064 code point'а), и рекомендации по их интерпретации и визуализации
+\item \textbf{Unicode} -- стандарт, описывающий соответствие абстрактных символов целочисленным кодам (\textit{code points}) в диапазоне \verb|0x0..0x10FFFFh| исключая \verb|0xD800h..0xDFFFh| для суррогатных пар в UTF-16 (итого 1112064 code point'а), и рекомендации по их интерпретации и визуализации
 \pause
-\item На сегодняшний день описывает 149186 символов (в прошлом году было 144697)
+\item На сегодняшний день описывает 154998 символов (в прошлом году было 149186)
 \pause
-\item Сам unicode -- \textbf{не кодировка}, но есть основанные на нём кодировки
+\item Сам unicode -- \textbf{не кодировка}, а таблица соответствия, но есть основанные на нём кодировки
 \end{itemize}
 \end{frame}
 
@@ -151,6 +151,17 @@
 \item \textbf{UTF-32}: 4 байта на символ
 \pause
 \item \textbf{GB 18030}: специальная кодировка для китайских иероглифов (но тоже поддерживает весь unicode)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Кодировки: unicode}
+\begin{itemize}
+\item В кодировках UTF-8 и UTF-16 символ занимает \textit{переменное} количество байт -- в этой кодировке сложнее двигаться по тексту на целое число code point'ов
+\pause
+\item UTF-16 часто используется в WinAPI как альтернатива более старым функциям, поддерживавшим только 8-битные кодировки
+\pause
+\item \textbf{Моё мнение}: лучше хранить текст в UTF-8, редактировать его в UTF-32, и конвертировать в UTF-16 только для передачи в WinAPI :)
 \end{itemize}
 \end{frame}
 
@@ -224,7 +235,7 @@
 \begin{frame}[fragile]
 \frametitle{Шейпинг (shaping)}
 \begin{itemize}
-\item Шейпинг \alert{\textbf{не занимается}} расстановкой строк и абзацев и текстом, а также двунаправленным (bidirectional) текстом (идущим как слева-направо, так и справа-налево)
+\item Шейпинг \alert{\textbf{не занимается}} расстановкой строк и абзацев, а также двунаправленным (bidirectional) текстом (идущим как слева-направо, так и справа-налево)
 \pause
 \item Для простых моноширинных шрифтов шейпинг может сводиться к расположению глифов на равных расстояниях друг от друга
 \pause
@@ -256,15 +267,15 @@
 \begin{itemize}
 \item Обычно представлены в виде texture atlas: одна текстура, содержащая все глифы шрифта
 \pause
-\item Содержит информацию о расположении глифов в текстуре (текстурные координаты левого верхнего и правого нижнего пикселя)
+\item Содержат информацию о расположении глифов в текстуре (текстурные координаты левого верхнего и правого нижнего пикселя)
 \pause
 \item Глифы рисуются как текстурированные прямоугольники
 \pause
-\item Плохо ведёт себя при масштабировнии (как увеличении, так и уменьшении), mipmap'ы не особо помогают
+\item Плохо ведут себя при масштабировнии (как увеличении, так и уменьшении), mipmap'ы не особо помогают
 \pause
-\item Очень прост в реализации
+\item Очень просты в реализации
 \pause
-\item Часто используется для дебажного текста, инди-игр, и т.п.
+\item Часто используются для дебажного текста, инди-игр, и т.п.
 \end{itemize}
 \end{frame}
 
@@ -353,9 +364,20 @@ void main()
 \pause
 \item Обычно положительна снаружи объекта и отрицательна внутри (поэтому \textit{signed}), \begin{math}f(p) = 0\end{math} -- граница объекта
 \pause
-\item SDF может быть представлена явной формулой (напр. \begin{math}f(p) = \|p - O\| - R\end{math} -- расстояние до сферы радиуса \begin{math}R\end{math} с центром в точке \begin{math}O\end{math}) или текстурой
+\item SDF может быть представлена явной формулой (напр. \begin{math}f(p) = \|p - O\| - R\end{math} -- расстояние до сферы радиуса \begin{math}R\end{math} с центром в точке \begin{math}O\end{math}), комбинацией более простых SDF, или текстурой
 \pause
 \item SDF-сцены часто используются для экспериментального рендеринга и удобны для raymarching'а
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Signed distance field (SDF)}
+\begin{itemize}
+\item SDF-сцены часто используются для экспериментального рендеринга и удобны для raymarching'а
+\pause
+\item Часто, использующиеся на практике функции не являются SDF, и удовлетворяют более слабым условиям (например, \begin{math}f(p)\end{math} не больше расстояния до объекта, или \begin{math}|\nabla f|\leq L\end{math})
+\pause
+\item Блог Inigo Quilez (\href{https://iquilezles.org/}{\texttt{iquilezles.org}}) -- один из лучших ресурсов про SDF и рендеринг с их помощью
 \end{itemize}
 \end{frame}
 
@@ -397,7 +419,7 @@ void main()
 \pause
 \item \begin{math}\Longrightarrow\end{math} При чтении из текстуры нужно применять обратное преобразование \begin{math}(sdf - 0.5) \cdot scale\end{math}
 \pause
-\item Лучше включить для этой текстуры анизотропную фильтрацию, чтобы текст хорошо выглядел `сбоку'
+\item Для трёхмерного текста лучше включить для этой текстуры анизотропную фильтрацию, чтобы текст хорошо выглядел `сбоку'
 \end{itemize}
 \end{frame}
 
@@ -465,6 +487,8 @@ void main()
 \item На практике оказывается, что хватает 3 каналов, т.е. трёх различных SDF
 \pause
 \item Вместо пересечения (т.е. минимума из трёх значений SDF) лучше брать \textit{медиану} (т.е. значение посередине между двумя другими)
+\pause
+\item Эффекты на этих трёх каналах уже не реализовать, но для этого можно записать обычную SDF в четвёртый (альфа) канал
 \pause
 \item Есть инструменты (программа, библиотека, сайт) для генерации таких текстур по шрифту
 \end{itemize}
@@ -558,7 +582,7 @@ void main()
 \item Deferred shading
 \item Tiled/Clustered shading
 \item Compute shaders (OpenGL 4.3 или расширение)
-\item \href{https://learnopengl.com/Guest-Articles/2022/Area-Lights}{\texttt{Площадные источники света}}
+\item \href{https://hal.science/hal-02155101v1/file/LTC_linearlights_GPUZen.pdf}{\texttt{Линейные}} и \href{https://learnopengl.com/Guest-Articles/2022/Area-Lights}{\texttt{площадные источники света}} с помощью linearly transformed cosines (LTC)
 \end{itemize}
 \end{frame}
 
@@ -575,7 +599,7 @@ void main()
 \begin{frame}[fragile]
 \frametitle{Очень большая сцена (e.g. планета)}
 \begin{itemize}
-\item LOD (e.g. для ландшафта)
+\item Иерархический LOD для ландшафта (например, в виде квадродерева)
 \item Проблемы с точностью (\mintinline{cpp}|float| не хватает; нужно рисовать относительно некой anchor-точки в \mintinline{cpp}|double|)
 \item Проблемы с буфером глубины (\href{https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/}{\texttt{reversed z}})
 \end{itemize}
@@ -584,10 +608,10 @@ void main()
 \begin{frame}[fragile]
 \frametitle{Сложные объекты}
 \begin{itemize}
-\item Вода: отражение + преломление (по Френелю) + `туман' в плотности воды + \href{https://en.wikipedia.org/wiki/Trochoidal_wave}{\texttt{волны Герстнера}}
-\item Растительность (vegetation): трава, кусты, деревья
-\item Облака + небо (volume rendering)
-\item Сложные BRDF
+\item Вода: отражение + преломление (по Френелю) + `туман' или честное рассеивание в плотности воды + \href{https://en.wikipedia.org/wiki/Trochoidal_wave}{\texttt{волны Герстнера}}
+\item Растительность (vegetation): трава, кусты, деревья (см. \href{https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-7-rendering-countless-blades-waving-grass}{\texttt{статья в GPU Gems}}, \href{https://www.youtube.com/watch?v=Ibe1JBF5i5Y}{\texttt{доклад про траву в Ghost of Tsushima}}, \href{https://www.youtube.com/watch?app=desktop&v=wavnKZNSYqU}{доклад про vegetation в Horizon Zero Dawn})
+\item Облака + небо (volume rendering) (см. \href{https://www.guerrilla-games.com/read/the-real-time-volumetric-cloudscapes-of-horizon-zero-dawn}{\texttt{доклад про облака в Horizon Zero Dawn}})
+\item Сложные BRDF (см. \href{https://boksajak.github.io/files/CrashCourseBRDF.pdf}{\texttt{Crash Course in BRDF Implementation}})
 \end{itemize}
 \end{frame}
 
@@ -608,6 +632,7 @@ void main()
 \item \href{https://research.nvidia.com/sites/default/files/publications/GIVoxels-pg2011-authors.pdf}{\texttt{Voxel cone tracing}}
 \item \href{https://www.ea.com/seed/news/siggraph21-global-illumination-surfels}{\texttt{Surflet-based GI}}
 \item \href{https://research.nvidia.com/publication/2021-06_restir-gi-path-resampling-real-time-path-tracing}{\texttt{ReSTIR GI}}
+\item \href{https://radiance-cascades.com/}{\texttt{Radiance cascades}}
 \end{itemize}
 \end{frame}
 
