@@ -55,7 +55,7 @@
 \pause
 \item За нас её делает OpenGL!
 \pause
-\item Некоторые современные графические движки GPU (Unreal 5 Nanite) делают растеризацию сами с помощью compute шейдеров
+\item Некоторые современные графические движки (Unreal 5 Nanite) делают растеризацию сами с помощью compute шейдеров
 \end{itemize}
 \end{frame}
 
@@ -65,7 +65,12 @@
 \item Исторически было очень много разных способов рисовать трёхмерные сцены; см. \href{https://dl.acm.org/doi/pdf/10.1145/356625.356626}{\texttt{Sutherland et al - A Characterization of Ten Hidden-Surface Algorithms}}
 \pause
 \item В современности есть два основных алгоритма: \textbf{растеризация} и \textbf{трассировка лучей/путей}
-\pause
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Почему растеризация?}
+\begin{itemize}
 \item Особенности растеризации:
 \begin{itemize}
 \item {\color{green}\texttt{+}} Быстрее в теории (зависит от сцены)
@@ -77,6 +82,12 @@
 \item {\color{green}\texttt{+}} Лучше работает с памятью (data locality)
 \pause
 \item {\color{red}\texttt{-}} Сложнее добиться фотореалистичной графики
+\end{itemize}
+\pause
+\item Особенности трассировки лучей:
+\pause
+\begin{itemize}
+\item Всё то же самое, только наоборот
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -389,7 +400,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \item Входные данные:
 \pause
 \begin{itemize}
-\item Аттрибуты вершин (мы позже узнаем, как их задавать) -- свои для каждой вершины
+\item Аттрибуты вершин (мы позже узнаем, как их задавать) -- свои значения для каждой вершины (позиция, цвет, нормаль)
 \pause
 \item Uniform-переменные -- глобальные значения, не меняющиеся в течение одного вызова команды рисования (напр. \mintinline{cpp}|glDrawArrays|):
 \mintinline{glsl}|uniform float scale;|
@@ -589,7 +600,7 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Матричные: \mintinline{glsl}|mat2|, \mintinline{glsl}|mat3|, \mintinline{glsl}|mat4|, \mintinline{glsl}|mat2x4|, ...
 \pause
-\item В GLSL 400 или с расширением \mintinline{glsl}|GL_ARB_gpu_shader_fp64| есть \mintinline{glsl}|double|, \mintinline{glsl}|dvec2|, ..., \mintinline{glsl}|dmat2|, ...
+\item В GLSL 400 или с расширением \mintinline{glsl}|GL_ARB_gpu_shader_fp64| есть \mintinline{glsl}|double|, \mintinline{glsl}|dvec2|, ..., \mintinline{glsl}|dmat2|, ... \pause (медленные и не везде поддерживаются)
 \end{itemize}
 \pause
 \item Конструкторы векторов:
@@ -617,7 +628,9 @@ for (int x = xmin; x <= xmax; ++x) {
 \pause
 \item Исключение: умножение двух матриц это умножение в смысле алгебры
 \pause
-\item Исключение: умножение матрицы на вектор это умножение в смысле алгебры
+\item Исключение: умножение матрицы на вектор слева это умножение в смысле алгебры
+\pause
+\item Исключение: умножение матрицы на вектор справа это умножение в смысле алгебры на транспонированную матрицу
 \end{itemize}
 \pause
 \item Доступ к координатам векторов: \mintinline{glsl}|a.x = b.y|
@@ -677,6 +690,19 @@ vec3 reflect(vec3 v, vec3 n) {
 \pause
 \item Рекурсия \alert{\textbf{запрещена}}
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Язык описания шейдеров GLSL}
+\begin{itemize}
+\item Про условные конструкции в шейдерах ходит очень много мифов, вот TL;DR:
+\pause
+\item Старые GPU действительно плохо умели их обрабатывать
+\pause
+\item Современные GPU хорошо обрабатывают условия, если их результат одинаковый в рамках одного \textit{wavefront'а} (близкие по номеру вершины, близкие на экране пиксели)
+\pause
+\item Например, когда условие зависит только от uniform-переменных (т.н. \textit{uniform control flow}), его результат один для всех вызовов шейдера (в рамках одной команды рисования)
 \end{itemize}
 \end{frame}
 
