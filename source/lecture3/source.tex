@@ -257,8 +257,6 @@ glDeleteTexture(1, &texture);
 glBufferData(GLenum target, GLsizeiptr size,
     const GLvoid * data, GLenum usage)
 \end{minted}
-\vspace*{-0.5cm}
-\pause
 \usemintedstyle{solarized-light}
 \begin{itemize}
 \item \mintinline{cpp}|target| -- \mintinline{cpp}|GL_ARRAY_BUFFER| и т.п.
@@ -333,8 +331,6 @@ glBufferData(GLenum target, GLsizeiptr size,
 glBufferSubData(GLenum target, GLintptr offset,
     GLsizeiptr size, const GLvoid * data)
 \end{minted}
-\vspace*{-0.5cm}
-\pause
 \usemintedstyle{solarized-light}
 \begin{itemize}
 \item Гарантированно не реаллоцирует память GPU
@@ -347,8 +343,6 @@ glBufferSubData(GLenum target, GLintptr offset,
 glGetBufferSubData(GLenum target, GLintptr offset,
     GLsizeiptr size, GLvoid * data)
 \end{minted}
-\vspace*{-0.5cm}
-\pause
 \begin{itemize}
 \item К моменту выхода из этой функции данные уже прочитаны
 \item \begin{math}\Rightarrow\end{math} Синхронная функция, \textbf{блокирующая исполнение}
@@ -523,9 +517,9 @@ void main() {
 \begin{itemize}
 \item Перед настройкой конкретного атрибута нужно сделать текущим VAO, который вы хотите настроить
 \pause
-\item Если атрибут объявлен в шейдере как floating-point (\mintinline{glsl}|vec3| и т.п.), нужно использовать функцию \mintinline{cpp}|glVertexAttribPointer|, но храниться он \textit{может} как целочисленный
+\item Если атрибут объявлен в шейдере как floating-point (\mintinline{glsl}|vec3| и т.п.), нужно использовать функцию \mintinline{cpp}|glVertexAttribPointer|, но храниться он \textbf{\textit{может}} как целочисленный
 \pause
-\item Если атрибут объявлен в шейдере как целочисленный (\mintinline{glsl}|ivec3,uvec4| и т.п.), нужно использовать функцию \mintinline{cpp}|glVertexAttribIPointer|, и храниться он \textit{должен} как целочисленный
+\item Если атрибут объявлен в шейдере как целочисленный (\mintinline{glsl}|ivec3,uvec4| и т.п.), нужно использовать функцию \mintinline{cpp}|glVertexAttribIPointer|, и храниться он \textbf{\textit{должен}} как целочисленный
 \end{itemize}
 \end{frame}
 
@@ -537,8 +531,6 @@ glVertexAttribPointer(GLuint index, GLint size,
     GLenum type, GLboolean normalized,
     GLsizei stride, const GLvoid * pointer)
 \end{minted}
-\vspace*{-0.5cm}
-\pause
 \usemintedstyle{solarized-light}
 \begin{itemize}
 \item \mintinline{cpp}|index| -- индекс аттрибута (\mintinline{glsl}|layout (location = index)| в шейдере)
@@ -570,7 +562,6 @@ glVertexAttribIPointer(GLuint index, GLint size,
     GLenum type,
     GLsizei stride, const GLvoid * pointer)
 \end{minted}
-\vspace*{-0.5cm}
 \usemintedstyle{solarized-light}
 \begin{itemize}
 \item Всё то же самое, но 
@@ -645,7 +636,6 @@ glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(12));
 glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex), (void*)(24));
 \end{minted}
-\vspace*{-1.125cm}
 \begin{center}
 \begin{tikzpicture}
 \foreach \x
@@ -698,7 +688,6 @@ glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)(12 * N));
 glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void*)(24 * N));
 \end{minted}
-\vspace*{-1cm}
 \begin{center}
 \begin{tikzpicture}
 \node[] at (0.0, 0.75) {0};
@@ -747,7 +736,6 @@ glBufferData(GL_ARRAY_BUFFER, 4 * N * sizeof(unsigned char), colors, GL_STATIC_D
 glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void*)(0));
 \end{minted}
-\vspace*{-1.5cm}
 \begin{center}
 \begin{tikzpicture}
 \node[] at (0.0, 0.75) {0};
@@ -939,7 +927,6 @@ glDrawArrays(GL_TRIANGLES, 0, count)
 glDrawElements(GLenum mode, GLsizei count,
     GLenum type, const GLvoid * indices)
 \end{minted}
-\vspace*{-0.5cm}
 \pause
 \begin{itemize}
 \usemintedstyle{solarized-light}
