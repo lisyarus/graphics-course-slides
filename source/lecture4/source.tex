@@ -277,7 +277,7 @@ X_z & Y_z & Z_z & C_z \\
 \end{math}
 \end{center}
 \pause
-\item Эту матрицу мы передаём в шейдер и применяем к входным вершинам
+\item Эту матрицу мы передаём в шейдер, применяем к входным вершинам, и записываем результат в \mintinline{glsl}|gl_Position|
 \end{itemize}
 \end{frame}
 
@@ -893,8 +893,8 @@ B = \frac{-2 far \cdot near}{far - near}
 \pause
 \item Аналогично top и bottom для Y
 \pause
-\item Хотим, чтобы точка с координатами X = left и Z = -near перешла (после применения матрица проекции и perspective divide) в точку с X = -1 и Z = -1
-\item Хотим, чтобы точка с координатами X = right и Z = -near перешла (после применения матрица проекции и perspective divide) в точку с X = 1 и Z = -1
+\item Хотим, чтобы точка с координатами X = left и Z = -near перешла (после применения матрицы проекции и perspective divide) в точку с X = -1 и Z = -1
+\item Хотим, чтобы точка с координатами X = right и Z = -near перешла (после применения матрицы проекции и perspective divide) в точку с X = 1 и Z = -1
 \end{itemize}
 \end{frame}
 
@@ -1105,15 +1105,32 @@ X_z & Y_z & Z_z & C_z \\
 \end{frame}
 
 \begin{frame}[fragile]
+\frametitle{Бонус: как найти координаты камеры, зная матрицу камеры?}
+\begin{itemize}
+\item Пусть \begin{math}T=\operatorname{Projection}\cdot\operatorname{View}\end{math} -- матрица камеры
+\pause
+\item При ортографической проекции центр видимой области переходит в \begin{math}(0,0,0,1)\end{math}
+\pause
+\item \begin{math}\Longrightarrow\end{math} нужно вычислить \begin{math}T^{-1} \cdot (0,0,0,1)\end{math}
+\pause
+\item При перспективной проекции центр проекции переходит в бесконечно удалённую точку \begin{math}(0,0,-1,0)\end{math}
+\pause
+\item \begin{math}\Longrightarrow\end{math} нужно вычислить \begin{math}T^{-1} \cdot (0,0,-1,0)\end{math} и применить к результату perspective divide (разделить XYZ на W)
+\pause
+\item Полезно, когда позиция камеры не задаётся явно, а вычисляется на основе других величин (точка фокуса камеры, углы поворота, расстояние до фокуса, etc)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Бонус: как перевести из экранных координат в мировые?}
 \begin{itemize}
 \item Есть точка на экране с координатами \begin{math}(P_X, P_Y) \in [-1, 1]^2\end{math} (например, координаты указателя мыши, переведённые из пиксельных координат в OpenGL-ные)
 \pause
-\item Есть матрица камеры \begin{math}T=\operatorname{Projection}\cdot\operatorname{View}\end{math}
-\pause
 \item В пространстве точке на экране соответствует луч из камеры -- как его найти?
 \pause
-\item Найдём две точки, пересекающие этот луч, на near и far плоскостях, и по ним восстановим луч
+\item Для перспективной проекции: найдём центр проекции, и точку на near или far плоскости, где её пересекает этот луч
+\pause
+\item Для любой проекции: найдём две точки, пересекающие этот луч, на near и far плоскостях
 \end{itemize}
 \end{frame}
 
