@@ -298,7 +298,7 @@ if (GLEW_EXT_texture_filter_anisotropic) {
 \begin{frame}
 \frametitle{Yandex maps}
 \begin{figure}
-\slideimage{yandex-maps.jpg}
+\slideimage{yandex-maps.png}
 \end{figure}
 \end{frame}
 
@@ -968,7 +968,7 @@ drawSomethingElseUsing(fbo_color_texture);
 \pause
 \item Gaussian blur: веса пропорциональны гауссиане \begin{math}\exp\left(-\frac{x^2+y^2}{r^2}\right)\end{math}, получается равномерное сглаживание
 \pause
-\item Несколько итераций box blur похожи на один gaussian blur (~центральная предельная теорема)
+\item Несколько итераций box blur похожи на один gaussian blur (центральная предельная теорема)
 \pause
 \item Обычно gaussian blur делают в два прохода: один размывает по горизонтали, второй -- по вертикали (\textit{separable blur})
 \end{itemize}
