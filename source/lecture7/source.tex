@@ -547,6 +547,7 @@
 \frametitle{Как решать уравнение рендеринга: raytracing + monte-carlo integration}
 \begin{itemize}
 \item Посылать лучи из камеры, симулируя обратное распространение света (\textit{raytracing})
+\pause
 \item В точке пересечения луча с объектом сцены аппроксимировать интеграл, пуская отражённые лучи в случайном направлении (\textit{monte-carlo integration})
 \pause
 \item Основной алгоритм, использующийся при offline рендеринге
@@ -604,27 +605,27 @@
 
 \begin{frame}[fragile]
 \frametitle{Только источник света}
-\slideimage{two_balls_only_emissive.png}
+\slideimage{sphere_only_emissive.png}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Только прямое освещение}
-\slideimage{two_balls_no_shadow.png}
+\slideimage{sphere_no_shadow.png}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Прямое освещение и тени}
-\slideimage{two_balls_no_diffuse.png}
+\slideimage{sphere_no_bounce.png}
 \end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Прямое и непрямое освещение, тени}
-\slideimage{two_balls_full.png}
+\slideimage{sphere_full.png}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Прозрачность и отражение}
-\slideimage{two_balls_ref.png}
+\frametitle{Прямое и непрямое освещение, тени, отражения}
+\slideimage{sphere_metallic.png}
 \end{frame}
 
 \begin{frame}[fragile]
