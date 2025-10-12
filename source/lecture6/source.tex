@@ -393,7 +393,7 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \end{minted}
 \usemintedstyle{solarized-light}
 \pause
-\item Это \textit{самый типичный} способ использовать blending
+\item Это \textit{один из самых типичных} способов использовать blending (но не самый правильный)
 \end{itemize}
 \end{frame}
 
@@ -477,9 +477,105 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 \begin{frame}[fragile]
 \frametitle{Blending (смешивание)}
 \begin{itemize}
+\item Формула \begin{math}
+dst \leftarrow src_A \cdot src + (1 - src_A) \cdot dst
+\end{math} работает только если destination -- непрозрачный цвет
+\pause
+\item Если мы хотим наложить несколько полупрозрачных объектов, и получить суммарную полупрозрачную картинку, нужна более сложная формула
+\pause
+\item Пусть есть цвет \begin{math}C_0\end{math}, на который накладывается цвет \begin{math}C_1\end{math} с opacity \begin{math}a_1\end{math}, а потом \begin{math}C_2\end{math} с opacity \begin{math}a_2\end{math}: получится цвет
+\pause
+\begin{equation*}
+C_2a_2 + C_1a_1(1-a_2) + C_0(1-a_1)(1-a_2)
+\end{equation*}
+\pause
+\item Мы хотим привести это к виду \begin{math}C'a' + C_0(1-a')\end{math}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
+\item Мы хотим привести это к виду \begin{math}C'a' + C_0(1-a')\end{math}
+\pause
+\item Отсюда
+\begin{equation*}
+\begin{matrix}
+a' = 1-(1-a_1)(1-a_2) = a_1+a_2-a_1a_2=a_2+a_1(1-a_2) \\
+\\
+C' = \frac{C_2a_2+C_1a_1(1-a_2)}{a_2+a_1(1-a_2)}
+\end{matrix}
+\end{equation*}
+\pause
+\item Это т.н. \textit{over operator} смешивания (см. \href{https://graphics.pixar.com/library/Compositing/paper.pdf}{Porter, Duff'84})
+\pause
+\item Такую функцию \textbf{не выразить} в OpenGL: блендинг не умеет разделить результирующий цвет на его альфа-канал
+\pause
+\item \begin{math}\Longrightarrow\end{math} Решение: \textit{премультиплицированный} альфа-канал
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Premultiplied alpha}
+\begin{itemize}
+\item Идея: давайте хранить цвета не в виде \begin{math}(R,G,B,A)\end{math}, а в виде \begin{math}(R\cdot A, G\cdot A, B\cdot A, A)\end{math}
+\pause
+\item Тогда формула blending'а заменится на
+\begin{equation*}
+\begin{matrix}
+a' = a_2+a_1(1-a_2) \\
+\\
+C'\cdot a' = (C_2\cdot a_2)+(C_1\cdot a_1)(1-a_2)
+\end{matrix}
+\end{equation*}
+\pause
+\item \begin{math}\Longrightarrow\end{math} Если и входные, и выходные цвета премультиплицированные, то правильный blending \textbf{можно} выразить встроенными операциями: 
+\usemintedstyle{lightbulb}
+\begin{minted}[bgcolor=codebg]{cpp}
+glBlendEquation(GL_FUNC_ADD);
+glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+\end{minted}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Premultiplied alpha: mipmaps}
+\begin{itemize}
+\item При обычной генерации mipmaps для полупрозрачных изображений есть проблема: очень прозрачные или полностью прозрачные пиксели дают такой же вклад в результат, как и непрозрачные
+\pause
+\item Пример: три чёрных прозрачных пикселя \begin{math}(R,G,B,A)=(0,0,0,0)\end{math} усредняются с одним красным непрозрачным \begin{math}(R,G,B,A)=(1,0,0,1)\end{math}, и получается тёмно-красный пиксель с opacity 25\%: \begin{math}(0.25,0,0,0.25)\end{math}
+\pause
+\item Значение opacity верное, но значение цвета -- нет: пиксель должен был остаться красным
+\pause
+\item Если хранить пиксели текстуры в премультиплицированном виде, проблема отпадает: цвета автоматически усредняются пропорционально значениям альфа-канала:
+\begin{equation*}
+\begin{matrix}
+a' = \frac{1}{4}(a_0+a_1+a_2+a_3) \\
+\\
+C'\cdot a' = \frac{1}{4}(C_0\cdot a_0+C_1\cdot a_1+C_2\cdot a_2+C_3\cdot a_3)
+\end{matrix}
+\end{equation*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Premultiplied alpha}
+\begin{itemize}
+\item У такого способа хранения текстур есть минус: значения цветовых каналов ограничены значением альфа-канала, и теряется их точность
+\pause
+\item Обычно это не проблема: если пиксель сильно прозрачный, то слабая точность его цвета всё равно слабо заметна
+\pause
+\item В общем случае, если вы делаете хоть что-то нетривиальное с полупрозрачностью, лучше \textbf{сразу использовать} премультиплицированные цвета
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Blending (смешивание)}
+\begin{itemize}
 \item \href{https://www.khronos.org/opengl/wiki/Blending}{\texttt{khronos.org/opengl/wiki/Blending}}
 \item \href{http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency/}{\texttt{opengl-tutorial.org/intermediate-tutorials/tutorial-10-transparency}}
 \item \href{https://learnopengl.com/Advanced-OpenGL/Blending}{\texttt{learnopengl.com/Advanced-OpenGL/Blending}}
+\item \href{https://graphics.pixar.com/library/Compositing/paper.pdf}{\texttt{Porter, Duff - Compositing Digital Images}}
 \end{itemize}
 \end{frame}
 
